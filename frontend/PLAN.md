@@ -76,12 +76,27 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - **Charts:** Recharts axes/grid/tooltip now use theme CSS vars; congested-segment + vehicle-donut palettes swap per theme (dark gets light ramp so bars/segments stay visible)
 - **Maps:** `applyTomTomTheme()` — SDK `setStyle('standardDark'|'standardLight')` (keepState, no flicker) wired into the 3 TomTom maps; style-bound layers (heatmap, trajectory lines) re-added idempotently on `load`
 
+## Phase 10: Responsive, Viewport-Driven Maps ✅
+- **New `src/components/map/incidentsApi.ts`:** typed `fetchIncidents()` for `traffic/services/5/incidentDetails` with const `fields` (geometry + `magnitudeOfDelay`/`iconCategory`/event text/road from→to/time validity); `paddedBounds()` (+15% margin); `clampBoundsArea()` keeps the padded bbox within TomTom's 10,000 km² limit (scales around center, no 400s at low zoom); `incidentAnchor()` (Point coord / first LineString coord); `IncidentApiError` with `retryable` flag; `isAbortError()`
+- **New `src/components/map/useViewportIncidents.ts`:**
+  - Fetches only for the **visible bbox + margin**; re-fetch on `load` (incl. after theme `setStyle`) and on debounced (500ms) `moveend` — panning/zooming to a new area shows that area's incidents immediately
+  - **Request safety:** AbortController cancels stale in-flight requests; 2s cooldown (postpones, never drops); skips when bounds moved <10% of extent AND zoom <0.7; skips identical-view requests while fresh; 30s poll only while the tab is visible (`visibilitychange` pause + catch-up); one `console.error` per failure streak (429/5xx → retry next poll, keep last good data)
+  - Returns `{ state, refresh }` — status (`idle|loading|live|error`), incident count, last-updated timestamp for UI chips
+- **`analysis/mapp.tsx`:**
+  - 20s fixed `setInterval` replaced by the hook → heatmap now follows the current viewport
+  - New **top-12 severity markers** over the heatmap (severity-colored dots, clickable popups with event description / road from→to / delay label); `Map<id, Marker>` diffing keeps markers clean across refreshes (incl. theme swaps which wipe raw layers — heatmap source re-created idempotently on `load`)
+  - Live status chip (pulsing dot, incident count, "updated Xs ago"), theme-aware
+- **`incident/map.tsx` / `anpr/map.tsx`:** demo data kept (no backend); both now `fitBounds` on first load (demo markers / camera+trajectory) so content is always framed; markers/layers stay idempotent across theme `setStyle`
+- **`helpers.ts`:** `fitBoundsToCoordinates(map, coords, padding)`
+- **`index.css`:** dark-theme MapLibre popup styles
+- Rules out API overuse: ~1 request per viewport change (dedup+cooldown) + 1/30s while visible
+
 ## Verification
 - `npm run lint` → 0 errors ✅
 - `npm run build` → clean build ✅
 
 ## Remaining notes / future work
 - `useTrafficData` still uses mock data (no backend yet — `backend/` and `ai/` are empty in the worktree)
-- Map heatmap updates via 20s polling to TomTom API; `live-traffic-heatmap` feed uses `VITE_TOMTOM_API_KEY`
+- Map heatmap updates from the current viewport bbox via `useViewportIncidents` (moveend + 30s visibility-aware polling) using `VITE_TOMTOM_API_KEY`; bbox clamped to TomTom's 10,000 km² limit
 - `maps` vendor chunk is ~1.1 MB (TomTom+MapLibre SDK); lazily loaded only on Overview
 - ANPR search / traffic charts / node selector are UI-only (no backend wiring yet)

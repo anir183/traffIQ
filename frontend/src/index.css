@@ -33,4 +33,25 @@
   #root {
     @apply h-screen;
   }
+
+  .dark .maplibregl-popup-content {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: #0f172a;
+  }
+
+  .dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #0f172a;
+  }
+
+  .dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: #0f172a;
+  }
+
+  .dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: #0f172a;
+  }
 }

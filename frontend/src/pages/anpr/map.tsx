@@ -7,6 +7,7 @@ import {
   applyTomTomTheme,
   addDotMarker,
   addLineLayer,
+  fitBoundsToCoordinates,
 } from '../../components/map/helpers'
 import { useTheme } from '../../theme/useTheme'
 
@@ -23,6 +24,13 @@ const HIGHLIGHTED_LANE: [number, number][] = [
 ]
 
 const VEHICLE_PATH: [number, number][] = [
+  [VEHICLE_START.lng, VEHICLE_START.lat],
+  [VEHICLE_MID.lng, VEHICLE_MID.lat],
+  [VEHICLE_END.lng, VEHICLE_END.lat],
+]
+
+const TRAJECTORY_POINTS: [number, number][] = [
+  [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat],
   [VEHICLE_START.lng, VEHICLE_START.lat],
   [VEHICLE_MID.lng, VEHICLE_MID.lat],
   [VEHICLE_END.lng, VEHICLE_END.lat],
@@ -47,6 +55,7 @@ function onMapLoad(map: Map): void {
 export default function VehicleTrajectoryMap() {
   const mapRef = useRef<HTMLDivElement | null>(null)
   const mapInstance = useRef<TomTomMap | null>(null)
+  const trajectoryFitted = useRef(false)
   const { resolvedTheme } = useTheme()
 
   useEffect(() => {
@@ -56,7 +65,13 @@ export default function VehicleTrajectoryMap() {
     const map = getVehicleTrajectoryMap(mapRef.current)
     mapInstance.current = map
 
-    map.mapLibreMap.on('load', () => onMapLoad(map.mapLibreMap))
+    map.mapLibreMap.on('load', () => {
+      onMapLoad(map.mapLibreMap)
+      if (!trajectoryFitted.current) {
+        trajectoryFitted.current = true
+        fitBoundsToCoordinates(map.mapLibreMap, TRAJECTORY_POINTS, 70)
+      }
+    })
 
     addDotMarker(map.mapLibreMap, [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat], '#2563eb')
     addDotMarker(map.mapLibreMap, [VEHICLE_START.lng, VEHICLE_START.lat], '#eab308')

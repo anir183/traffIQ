@@ -6,6 +6,7 @@ import {
   applyTomTomTheme,
   addPulseMarker,
   KOLKATA_CENTER,
+  fitBoundsToCoordinates,
 } from '../../components/map/helpers'
 import { useTheme } from '../../theme/useTheme'
 
@@ -45,6 +46,14 @@ export default function IncidentMap() {
       markersAdded.current = true
       addPulseMarker(map.mapLibreMap, [INCIDENT_1.lng, INCIDENT_1.lat])
       addPulseMarker(map.mapLibreMap, [INCIDENT_2.lng, INCIDENT_2.lat])
+      fitBoundsToCoordinates(
+        map.mapLibreMap,
+        [
+          [INCIDENT_1.lng, INCIDENT_1.lat],
+          [INCIDENT_2.lng, INCIDENT_2.lat],
+        ],
+        90,
+      )
     })
 
     return () => {

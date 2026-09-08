@@ -1,5 +1,5 @@
 import { TomTomConfig } from '@tomtom-org/maps-sdk/core'
-import { Marker } from 'maplibre-gl'
+import { LngLatBounds, Marker } from 'maplibre-gl'
 import type { Map } from 'maplibre-gl'
 import type { TomTomMap } from '@tomtom-org/maps-sdk/map'
 import { API_KEY } from '../../config'
@@ -64,4 +64,15 @@ export function addLineLayer(
       'line-width': width,
     },
   })
+}
+
+export function fitBoundsToCoordinates(
+  map: Map,
+  coordinates: [number, number][],
+  padding = 60,
+): void {
+  if (coordinates.length === 0) return
+  const bounds = new LngLatBounds()
+  coordinates.forEach(([lng, lat]) => bounds.extend([lng, lat]))
+  map.fitBounds(bounds, { padding, duration: 0, maxZoom: 13 })
 }
