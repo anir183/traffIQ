@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 
 const Feed = lazy(() => import("../pages/livefeed"));
+const CameraView = lazy(() => import("../pages/page2/camera-view"));
 const Overview = lazy(() => import("../pages/trafficanalysis"));
 const Incident = lazy(() => import("../pages/incidentmngmnt"));
 const Anpr = lazy(() => import("../pages/anpr"));
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/feed" element={<Feed />} />
+          <Route path="/feed/cam/:cameraId" element={<CameraView />} />
           <Route path="/incident" element={<Incident />} />
           <Route path="/anpr" element={<Anpr />} />
           <Route path="/analysis" element={<Analysis />} />

@@ -1,20 +1,30 @@
 import { useState } from "react";
-import { Video } from "lucide-react";
+import { NavLink } from "react-router-dom";
+import { Maximize2, Video } from "lucide-react";
 import { useListPageSize } from "../../hooks/useListPageSize";
-
-const CAMERAS = Array.from(
-  { length: 40 },
-  (_, i) => `CAM_${String(i + 1).padStart(3, "0")}`,
-);
+import { CAMERAS } from "./cameraData";
 
 const COLS = 2;
 
-function CameraView({ name }: { name: string }) {
+function CameraView({
+  id,
+  name,
+  circuit,
+}: {
+  id: string;
+  name: string;
+  circuit: string;
+}) {
   return (
-    <div
+    <NavLink
+      to={`/feed/cam/${id}`}
       data-sm-row
-      className="flex h-56 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+      className="group relative flex h-56 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 outline-none transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700/80"
     >
+      <Maximize2
+        className="absolute top-2 right-2 h-3.5 w-3.5 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-500"
+        aria-hidden="true"
+      />
       <Video
         className="h-8 w-8 text-slate-500 dark:text-slate-400"
         aria-hidden="true"
@@ -23,9 +33,9 @@ function CameraView({ name }: { name: string }) {
         {name}
       </span>
       <span className="text-xs text-slate-400 dark:text-slate-500">
-        No signal
+        {circuit}
       </span>
-    </div>
+    </NavLink>
   );
 }
 
@@ -59,8 +69,8 @@ export default function Feed() {
         ref={containerRef}
         className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-y-auto"
       >
-        {pageCameras.map((name) => (
-          <CameraView key={name} name={name} />
+        {pageCameras.map((cam) => (
+          <CameraView key={cam.id} {...cam} />
         ))}
       </div>
 
