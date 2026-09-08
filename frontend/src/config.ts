@@ -1,1 +1,1 @@
-export const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY as string
+export const API_KEY = import.meta.env.VITE_TOMTOM_API_KEY as string;

@@ -1,11 +1,11 @@
-import Profile from './profile'
+import Profile from "./profile";
 
 function App() {
   return (
     <div className="flex items-center">
-      <Profile/>
+      <Profile />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

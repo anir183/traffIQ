@@ -13,7 +13,7 @@ function CriticalIncidents() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default CriticalIncidents
+export default CriticalIncidents;

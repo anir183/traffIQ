@@ -13,6 +13,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 ---
 
 ## Phase 1: Foundation ✅
+
 - API key moved to `.env` (`VITE_TOMTOM_API_KEY`), read via `src/config.ts`, `.env`/.env.* gitignored, `.env.example` added
 - Dead code deleted: `notification.rsx`, `features.tsx`, `svg.tsx`, `analysis/index.ts`, `analysis/analytics.ts`, `public/icons.svg`
 - Tailwind consolidated to single `@import "tailwindcss"` in `src/index.css`; all duplicate `tailwind.css` files removed
@@ -20,6 +21,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Maps consolidated onto `@tomtom-org/maps-sdk` (npm), MapLibre GL `.mapLibreMap` for markers. ANPR + Incident + Analysis maps all use the SDK via `src/components/map/helpers.ts`. Map centers fixed to Kolkata (88.36, 22.57).
 
 ## Phase 2: Shared Components ✅
+
 - `src/components/ui/stat-card.tsx` (replaces 4 duplicate stat cards)
 - `src/components/ui/card.tsx` (card wrapper)
 - `src/components/ui/badge.tsx` (status badges)
@@ -27,11 +29,13 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - `src/types/traffic.ts` (consolidated domain interfaces)
 
 ## Phase 3: Shell Rebuild ✅
+
 - Header: white bar, `border-b border-slate-200`, search rounded-full `bg-slate-50`, profile with name + icons
 - Nav: `bg-white border border-slate-200 rounded-2xl`, `<NavLink>` with `bg-slate-900` active state; admin/logs section restored
 - Layout: `bg-slate-50` shell, sidebar + scrollable white content window
 
 ## Phase 4: Page Rebuilds ✅
+
 - **Overview:** slate-800 critical-incidents card, Recharts blue/slate palette, TomTom heatmap (Kolkata), rebuilt incident queue
 - **Analytics:** shared `StatCard` grid, date picker + time range, camera counts, traffic volume, avg speed, vehicle donut (hooks violation fixed via immutable prefix-sum)
 - **ANPR:** tabs/search/vehicle details in slate; trajectory map on SDK
@@ -40,9 +44,11 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - **Admin/Logs:** styled "Coming soon" placeholders
 
 ## Phase 5: Routing ✅
+
 - `<a href>` → `<NavLink>` with `isActive` state (no full page reloads)
 
 ## Phase 6: Lint & Code Quality ✅ (15 errors → 0)
+
 - Removed unused StrictMode-relevant import; `StrictMode` now actually wraps app
 - Fixed all `any` types (SDK rewrite, typed events, typed incidents)
 - Removed unused setters in incident hook (rewrote as filterable static list)
@@ -52,6 +58,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Deleted `bun.lock`; single `package-lock.json` remains
 
 ## Phase 7: Responsive & Polish ✅
+
 - Header: search hidden below `sm`; profile text hidden below `md`
 - Body: stacks column on mobile, row on `lg`; pages use `xl:`/`lg:` breakpoints
 - Nav: horizontal wrap strip on mobile, column + circuit footer on desktop
@@ -60,6 +67,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Profile image: 5760×3840 JPEG (3.3 MB) → 160px WebP (5 KB)
 
 ## Phase 8: Icons (lucide-react) ✅
+
 - Installed `lucide-react`; removed all raw embedded SVG icon markup
 - Deleted `src/header/notification.tsx` (CrosshairIcon) and `src/header/light.tsx` (BellIcon) hand-coded wrappers
 - `src/header/profile.tsx` now uses lucide `Sun` (dark-mode toggle) + `Bell` (notifications) — fixed 1:1 viewBox, no more stretching
@@ -68,6 +76,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Chart SVGs (donut, area/bar) and `assets/Union.svg` logo intentionally kept
 
 ## Phase 9: Dark / Light Mode ✅
+
 - **Infra:** `src/index.css` — `@custom-variant dark` (class-based Tailwind v4), `.dark` `color-scheme`, chart CSS vars (`--chart-grid/-axis/-tooltip-*`) defined per theme
 - **Pre-paint:** `index.html` inline script reads `localStorage['traffiq-theme']` (fallback `prefers-color-scheme`) and sets `.dark` before paint — no flash; `meta[name="color-scheme"]` added
 - **State:** `src/theme/context.ts` + `ThemeProvider.tsx` + `useTheme.ts` — default `system`, explicit toggle persisted to localStorage, live `matchMedia` listener while unset; `main.tsx` wrapped
@@ -77,6 +86,7 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - **Maps:** `applyTomTomTheme()` — SDK `setStyle('standardDark'|'standardLight')` (keepState, no flicker) wired into the 3 TomTom maps; style-bound layers (heatmap, trajectory lines) re-added idempotently on `load`
 
 ## Phase 10: Responsive, Viewport-Driven Maps ✅
+
 - **New `src/components/map/incidentsApi.ts`:** typed `fetchIncidents()` for `traffic/services/5/incidentDetails` with const `fields` (geometry + `magnitudeOfDelay`/`iconCategory`/event text/road from→to/time validity); `paddedBounds()` (+15% margin); `clampBoundsArea()` keeps the padded bbox within TomTom's 10,000 km² limit (scales around center, no 400s at low zoom); `incidentAnchor()` (Point coord / first LineString coord); `IncidentApiError` with `retryable` flag; `isAbortError()`
 - **New `src/components/map/useViewportIncidents.ts`:**
   - Fetches only for the **visible bbox + margin**; re-fetch on `load` (incl. after theme `setStyle`) and on debounced (500ms) `moveend` — panning/zooming to a new area shows that area's incidents immediately
@@ -92,10 +102,12 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Rules out API overuse: ~1 request per viewport change (dedup+cooldown) + 1/30s while visible
 
 ## Verification
+
 - `npm run lint` → 0 errors ✅
 - `npm run build` → clean build ✅
 
 ## Remaining notes / future work
+
 - `useTrafficData` still uses mock data (no backend yet — `backend/` and `ai/` are empty in the worktree)
 - Map heatmap updates from the current viewport bbox via `useViewportIncidents` (moveend + 30s visibility-aware polling) using `VITE_TOMTOM_API_KEY`; bbox clamped to TomTom's 10,000 km² limit
 - `maps` vendor chunk is ~1.1 MB (TomTom+MapLibre SDK); lazily loaded only on Overview

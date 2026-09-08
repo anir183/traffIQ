@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [tailwindcss(),react()],
+  plugins: [tailwindcss(), react()],
   optimizeDeps: {
-    exclude: ['maplibre-gl'],
+    exclude: ["maplibre-gl"],
   },
   build: {
     chunkSizeWarningLimit: 1200,
@@ -15,15 +15,15 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
-              name: 'maps',
+              name: "maps",
               test: /node_modules\/(@tomtom-org|maplibre-gl)/,
             },
             {
-              name: 'charts',
+              name: "charts",
               test: /node_modules\/(recharts|d3-)/,
             },
             {
-              name: 'react-vendor',
+              name: "react-vendor",
               test: /node_modules\/(react|react-dom|scheduler|react-router|@remix-run)/,
             },
           ],
@@ -31,4 +31,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

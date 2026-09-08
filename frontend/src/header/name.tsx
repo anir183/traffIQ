@@ -1,4 +1,4 @@
-import Logo from '../assets/logo.svg'
+import Logo from "../assets/logo.svg";
 
 function App() {
   return (
@@ -10,7 +10,7 @@ function App() {
         traff<span className="text-blue-600">IQ</span>
       </span>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

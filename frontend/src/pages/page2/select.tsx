@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState } from "react";
 
-const NODES = ['Esplanade Circuit', 'Joka Circuit']
+const NODES = ["Esplanade Circuit", "Joka Circuit"];
 
 function NodeSelector() {
-  const [selected, setSelected] = useState(NODES[0])
+  const [selected, setSelected] = useState(NODES[0]);
 
   return (
     <div className="flex items-center gap-2">
@@ -22,10 +22,12 @@ function NodeSelector() {
             </option>
           ))}
         </select>
-        <span className="pointer-events-none absolute right-3 text-xs text-slate-400 dark:text-slate-500">▾</span>
+        <span className="pointer-events-none absolute right-3 text-xs text-slate-400 dark:text-slate-500">
+          ▾
+        </span>
       </div>
     </div>
-  )
+  );
 }
 
-export default NodeSelector
+export default NodeSelector;

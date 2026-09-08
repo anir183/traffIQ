@@ -1,23 +1,24 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Overview', end: true },
-  { to: '/feed', label: 'Live Feed', end: false },
-  { to: '/anpr', label: 'ANPR Intelligence', end: false },
-  { to: '/incident', label: 'Incident Management', end: false },
-  { to: '/analysis', label: 'Traffic Analysis', end: false },
-]
+  { to: "/", label: "Overview", end: true },
+  { to: "/feed", label: "Live Feed", end: false },
+  { to: "/anpr", label: "ANPR Intelligence", end: false },
+  { to: "/incident", label: "Incident Management", end: false },
+  { to: "/analysis", label: "Traffic Analysis", end: false },
+];
 
 const ADMIN_ITEMS = [
-  { to: '/logs', label: 'Show Logs', end: false },
-  { to: '/admin', label: 'Admin Panel', end: false },
-]
+  { to: "/logs", label: "Show Logs", end: false },
+  { to: "/admin", label: "Admin Panel", end: false },
+];
 
 function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
   const base =
-    'flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors'
-  if (isActive) return `${base} bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900`
-  return `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100`
+    "flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors";
+  if (isActive)
+    return `${base} bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900`;
+  return `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100`;
 }
 
 function Nav() {
@@ -32,7 +33,12 @@ function Nav() {
 
       <div className="flex flex-wrap gap-1 lg:flex-col">
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={linkClass}
+          >
             <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
             {item.label}
           </NavLink>
@@ -46,7 +52,12 @@ function Nav() {
         <hr className="my-3 border-t border-slate-100 dark:border-slate-800" />
         <div className="flex flex-col gap-1">
           {ADMIN_ITEMS.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={linkClass}
+            >
               <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
               {item.label}
             </NavLink>
@@ -63,11 +74,13 @@ function Nav() {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
             Active Circuit
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">Esplanade-Joka Circuit</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            Esplanade-Joka Circuit
+          </span>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Nav
+export default Nav;
