@@ -257,3 +257,136 @@ traffic_metrics    (camera_id FK, window_start, window_end, total_vehicles, uniq
 3. Frontend can build the dashboard, GIS map, and search UI entirely against these mock shapes starting now.
 
 We'll push real events into `POST /api/anpr/events` from tonight's video test once temporal fusion is running — real payloads should match Section 1 exactly, so no contract changes should be needed on your end at that point.
+
+---
+
+## 12. Frontend Requirements (added by frontend team — 2026-09-08)
+
+These are the fields/endpoints the dashboard needs to render every existing UI surface. Where a feature has **no contract counterpart yet**, it's flagged **`[NEEDED]`** so the backend team can either add it or confirm a substitute. Treat this section as additive — it does not change Sections 1–11.
+
+### 12.1 Endpoints the frontend will actually call
+
+```
+GET    /api/anpr/events?from&to&camera_id&plate_text&limit&offset&sort=desc
+GET    /api/vehicles/{plate_text}
+GET    /api/vehicles/{plate_text}/trajectory?from&to
+GET    /api/cameras
+GET    /api/traffic/summary?camera_id=ALL&from&to
+GET    /api/alerts?from&to&limit&offset      ← also by status / alert_type
+POST   /api/alerts/{alert_id}/status         [NEEDED] update triage status
+POST   /api/blacklist
+DELETE /api/blacklist/{plate_text}
+```
+
+**List conventions:** every list endpoint (`anpr/events`, `alerts`, `vehicles` search) must support `limit`/`offset` and return the **total count** so the UI can render "Showing X–Y of Z" + page controls. Default ordering: newest first.
+
+### 12.2 Alert Event additions (Section 5 extension)
+
+Frontend expects these keys in addition to Section 5:
+
+```json
+{
+  "alert_id": "alrt_44a1",
+  "alert_type": "blacklisted_vehicle",
+  "status": "active",              // [NEEDED] triage: active | investigating | resolved
+  "severity": "high",              // high | medium | low (UI needs ≥3 levels for marker ramp)
+  "location_name": "Park Street",  // [NEEDED] display road name (Section 5 only has lat/lng)
+  "speed_kmh": 41.0,               // [OPTIONAL] shown on map legend / detail
+  "route": { "from": "A", "to": "B" }  // [OPTIONAL] display in stream rows
+}
+```
+
+- **`alert_type` enum must be extended** (UI currently surfaces): `accident`, `wrong_way`, `signal_malfunction`, `road_construction`, `suspicious_activity` — in addition to the existing `blacklisted_vehicle`, `route_anomaly`, `speed_violation`.
+- `status` is the UI's Active/Investigating/Resolved triage model. **Backend owning it is strongly preferred** (so operators can update it via `POST /api/alerts/{id}/status`); if backend builds first without it, frontend will fall back to local triage state.
+
+### 12.3 Vehicle additions (Section 2 extension)
+
+```json
+{
+  "make": "Maruti",      // [NEEDED] Vehicle Information card shows Make/Model
+  "model": "Swift",      // [NEEDED]
+  "detection_count": 3   // [OPTIONAL] default = camera_sequence.length
+}
+```
+
+Frontend's "Status: Normal" chip is derived from `is_blacklisted` (Normal = not blacklisted). No extra field required.
+
+### 12.4 Traffic summary additions (Section 4 extension)
+
+Frontend needs the following to fill the "Traffic Analysis" page:
+
+```json
+{
+  "camera_id": "ALL",
+  "window": { "from": "...", "to": "..." },
+  "metrics": {
+    "total_vehicles": 125430,
+    "unique_vehicles": 91245,
+    "avg_speed_kmh": 32.4,
+    "congestion_score": 68,
+    "density_per_km": 45.2,
+    "vehicle_type_breakdown": { "car": 71, "bike": 38, "bus": 9, "truck": 9 },
+    "trend": {                         // [NEEDED] stat-card ±% vs previous window
+      "total_vehicles_pct": 14,
+      "unique_vehicles_pct": 11,
+      "avg_speed_kmh_pct": -6,
+      "congestion_score_pct": 6
+    },
+    "per_camera": [                    // [NEEDED] camera-wise vehicle count bars
+      { "camera_id": "CAM_001", "total_vehicles": 18234 }
+    ],
+    "time_series": [                   // [NEEDED] hourly/daily buckets for volume + avg-speed graphs
+      { "bucket": "2026-09-06T14:00:00Z", "total_vehicles": 9800, "avg_speed_kmh": 30.1 }
+    ]
+  }
+}
+```
+
+### 12.5 Segment / forecast — new endpoint [NEEDED]
+
+The Overview shows "Top Congested Segments", "Average Speed by Segment", and a **density forecast** (current + projected days). No counterpart exists. Proposed:
+
+```
+GET /api/traffic/segments?window_from&window_to&limit=6
+→ { "segments": [ { "name": "VIP Road", "congestion_score": 80, "avg_speed_kmh": 25, "density": 62 } ] }
+
+GET /api/traffic/density-forecast?horizon_days=3
+→ { "forecast": [ { "day": "2026-09-09", "density": 45, "is_projection": false } ] }
+```
+
+If segment-level congestion isn't feasible yet, frontend will drop those charts and keep summary-based cards instead.
+
+### 12.6 Camera meta additions (Section 7 extension)
+
+```json
+{
+  "camera_id": "CAM_001",
+  "name": "MG Road Junction - North",
+  "circuit": "Esplanade",               // [NEEDED] node/area selector + nav "Active Circuit"
+  "group": "CAM_001",
+  "latitude": 22.5726,
+  "longitude": 88.3639,
+  "status": "online",
+  "stream_url": "rtsp://example/cam001",
+  "installed_direction": "north-facing"
+}
+```
+
+### 12.7 Error codes (Section 8 extension)
+
+Frontend branches on `error.code`. Please use a stable, documented set, incl.:
+
+```
+PLATE_NOT_FOUND   CAMERA_NOT_FOUND   NO_DATA   INVALID_PARAMS
+UNAUTHORIZED      RATE_LIMITED       INTERNAL
+```
+
+### 12.8 Realtime (roadmap)
+
+Live Feed and the alert stream would ideally `SSE`: `GET /api/events/stream?types=anpr&types=alert`. If not available, the frontend will poll the list endpoints (30s, visibility-aware). No blocking dependency.
+
+## 13. Sync Notes
+
+- Frontend shelf `useTrafficData.ts` refers to `/api/traffic/overview` — the real endpoint is `/api/traffic/summary` (frontend will align).
+- Frontend's hardcoded demo data is documented in `docs/Frontend_Requirements.md` (co-located with this file) for the replacement checklist.
+- Once endpoints above are live (even with mock data), the frontend can swap out all hardcoded arrays with zero shape changes — existing keys/types in Sections 1–8 remain the source of truth.
