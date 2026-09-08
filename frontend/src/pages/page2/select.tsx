@@ -1,6 +1,4 @@
-// NodeSelector.tsx
 import { useState } from 'react'
-import './select.css'
 
 const NODES = ['Esplanade Circuit', 'Joka Circuit']
 
@@ -8,11 +6,13 @@ function NodeSelector() {
   const [selected, setSelected] = useState(NODES[0])
 
   return (
-    <div className='node-selector'>
-      <span className='node-selector-label'>Selected node</span>
-      <div className='node-selector-dropdown'>
+    <div className="flex items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+        Selected node
+      </span>
+      <div className="relative inline-flex items-center">
         <select
-          className='node-selector-select'
+          className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm text-slate-700 outline-none transition-colors hover:bg-slate-50 focus:border-blue-500"
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
         >
@@ -22,7 +22,7 @@ function NodeSelector() {
             </option>
           ))}
         </select>
-        <span className='node-selector-arrow'>▾</span>
+        <span className="pointer-events-none absolute right-3 text-xs text-slate-400">▾</span>
       </div>
     </div>
   )

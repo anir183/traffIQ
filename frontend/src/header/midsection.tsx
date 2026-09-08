@@ -1,13 +1,13 @@
-import './name.css'
-import './tailwind.css'
-function App(){
-    return (<div className='flex flex-row w-full items-center justify-center gap-18 '>
-    <input type="text"
-    placeholder='Search...'
-    className='w-[40%]!  border text-2xl h-12 px-22! rounded-full focus:outline-none focus:border-emerald-400 '
-     />
-
-    </div>)
-
+function App() {
+  return (
+    <div className="flex w-full max-w-xl items-center justify-center px-4">
+      <input
+        type="text"
+        placeholder="Search..."
+        className="h-10 w-full rounded-full border border-slate-200 bg-slate-50 px-5 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+      />
+    </div>
+  )
 }
+
 export default App

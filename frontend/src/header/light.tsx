@@ -1,4 +1,6 @@
-const BellIcon = ({ size = 42, color = "#222222", ...props }: React.SVGProps<SVGSVGElement> & { size?: number, color?: string }) => {
+import type { SVGProps } from 'react'
+
+const BellIcon = ({ size = 24, color = "currentColor", ...props }: SVGProps<SVGSVGElement> & { size?: number, color?: string }) => {
   return (
     <svg 
       width={size} 

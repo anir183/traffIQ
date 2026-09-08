@@ -1,24 +1,29 @@
-import './tailwind.css'
-import ProfilePic from '../assets/profile1.jpg'
+import ProfilePic from '../assets/profile1.webp'
 import Notification from './notification'
 import Light from './light'
-function App(){
-    return(
-        <div className='profile'>
-            <div className='features flex! flex-row! gap-[25px] pr-[24px]! translate-y-2 '>
-                <div><Light/></div>
-                <div><Notification/></div>
-                
-                
-            </div>
-        <div className='flex flex-col p-4! justify-center text-[17px]'>
-            <span className=''>Rudraneel</span>
-            <span>Traffic Control</span>
+
+function App() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900">
+          <Light size={24} />
         </div>
-        <div className='w-12 h-12 rounded-full overflow-hidden translate-y-4 border-3 border-indigo-600'>
-            <img className='w-full h-full object-cover' src={ProfilePic} alt="profilepic" />
+        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900">
+          <Notification size={22} />
         </div>
-        </div>
-    )
+      </div>
+      <div className="hidden text-right md:block">
+        <p className="text-sm font-medium leading-tight text-slate-900">Rudraneel</p>
+        <p className="text-xs leading-tight text-slate-500">Traffic Control</p>
+      </div>
+      <img
+        className="h-9 w-9 rounded-full border border-slate-200 object-cover"
+        src={ProfilePic}
+        alt="Profile"
+      />
+    </div>
+  )
 }
+
 export default App

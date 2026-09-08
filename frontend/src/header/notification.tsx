@@ -1,4 +1,6 @@
-const CrosshairIcon = ({ size = 40, color = "#222222", ...props }: React.SVGProps<SVGSVGElement> & { size?: number, color?: string }) => {
+import type { SVGProps } from 'react'
+
+const CrosshairIcon = ({ size = 22, color = "currentColor", ...props }: SVGProps<SVGSVGElement> & { size?: number, color?: string }) => {
   return (
     <svg 
       width={size} 

@@ -1,17 +1,5 @@
-// IncidentQueue.tsx
-import './i.css'
 import { useState } from 'react'
-// import './incidentQueue.css'
-
-interface IncidentEvent {
-  id: string
-  status: 'error' | 'success' | 'neutral' | 'warning'
-  title: string
-  location: string
-  timestamp: string
-  detailLine: string
-  linkText: string
-}
+import type { IncidentEvent, IncidentEventStatus } from '../../types/traffic'
 
 const INCIDENTS: IncidentEvent[] = [
   { id: '1', status: 'error', title: 'Event Description + Incident Update', location: 'Bidhannagar Area, Kolkata | Traffic Monitoring', timestamp: 'Saturday, 12:30 AM', detailLine: 'Location: 09:36 AM | Status → Update', linkText: 'Container link' },
@@ -24,11 +12,18 @@ const INCIDENTS: IncidentEvent[] = [
 
 const PAGE_SIZE = 3
 
-const STATUS_ICON: Record<IncidentEvent['status'], string> = {
+const STATUS_ICON: Record<IncidentEventStatus, string> = {
   error: '✕',
   success: '✓',
   neutral: '•',
   warning: '!',
+}
+
+const STATUS_STYLE: Record<IncidentEventStatus, string> = {
+  error: 'bg-red-50 text-red-600',
+  success: 'bg-green-50 text-green-600',
+  neutral: 'bg-slate-100 text-slate-500',
+  warning: 'bg-amber-50 text-amber-600',
 }
 
 function IncidentQueue() {
@@ -37,44 +32,66 @@ function IncidentQueue() {
   const pageItems = INCIDENTS.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
-    <div className='incident-queue'>
-      <div className='incident-queue-header'>
-        <span className='incident-queue-title'>Incident & Event Stream</span>
-        <span className='incident-queue-menu'>⋮</span>
+    <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%]">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-900">Incident &amp; Event Stream</span>
+        <button type="button" className="text-slate-400" aria-label="More options">⋮</button>
       </div>
 
-      <div className='incident-list'>
+      <div className="flex flex-col divide-y divide-slate-100">
         {pageItems.map((item) => (
-          <div key={item.id} className='incident-item'>
-            <div className={`incident-icon incident-icon-${item.status}`}>
+          <div key={item.id} className="flex gap-3 py-3">
+            <span
+              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${STATUS_STYLE[item.status]}`}
+            >
               {STATUS_ICON[item.status]}
-            </div>
-            <div className='incident-body'>
-              <div className='incident-top-row'>
-                <span className='incident-title'>{item.title}</span>
-                {item.timestamp && <span className='incident-timestamp'>{item.timestamp}</span>}
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-[13px] font-medium text-slate-800">{item.title}</span>
+                {item.timestamp && (
+                  <span className="shrink-0 whitespace-nowrap text-[11px] text-slate-400">{item.timestamp}</span>
+                )}
               </div>
-              {item.location && <div className='incident-location'>{item.location}</div>}
-              <div className='incident-detail'>
-                {item.detailLine} : <a href='#' className='incident-link'>{item.linkText}</a>
+              {item.location && <div className="text-xs text-slate-500">{item.location}</div>}
+              <div className="text-xs text-slate-500">
+                {item.detailLine} :{' '}
+                <a href="#" className="text-blue-600 underline">{item.linkText}</a>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className='incident-pagination'>
-        <button disabled={page === 1} onClick={() => setPage(page - 1)} className='pagination-arrow'>‹</button>
+      <div className="mt-auto flex items-center justify-center gap-1 pt-4 text-xs">
+        <button
+          type="button"
+          disabled={page === 1}
+          onClick={() => setPage((p) => p - 1)}
+          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
+        >
+          ‹
+        </button>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
           <button
             key={p}
+            type="button"
             onClick={() => setPage(p)}
-            className={`pagination-dot ${p === page ? 'pagination-dot-active' : ''}`}
+            className={`h-6 w-6 rounded-full text-xs transition-colors ${
+              p === page ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'
+            }`}
           >
             {p}
           </button>
         ))}
-        <button disabled={page === totalPages} onClick={() => setPage(page + 1)} className='pagination-arrow'>Next ›</button>
+        <button
+          type="button"
+          disabled={page === totalPages}
+          onClick={() => setPage((p) => p + 1)}
+          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
+        >
+          Next ›
+        </button>
       </div>
     </div>
   )

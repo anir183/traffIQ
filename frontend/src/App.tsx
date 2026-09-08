@@ -1,13 +1,12 @@
-import './App.css'
 import Hero from './header'
 import Body from './body'
-function App() {
 
+function App() {
   return (
-      <div className='h-screen flex flex-col items-center'>
-        <Hero/>
-        <Body/>
-      </div>
+    <div className="flex h-full flex-col bg-slate-50">
+      <Hero/>
+      <Body/>
+    </div>
   )
 }
 

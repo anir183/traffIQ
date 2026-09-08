@@ -1,19 +1,12 @@
-import './App.css'
-
-import Navigation from '../src/body/navigation'
-import Window from '../src/body/window'
-
+import Navigation from './body/navigation'
+import Window from './body/window'
 
 function App() {
-
   return (
-    <>
-
-      <div className=' flex flex-row  justify-center items-stretch w-full h-[85%] bodycolour   '>
-        <div className='w-[20%] translate-x-4'><Navigation/></div>
-        <div className='w-[80%]'><Window/></div>
-      </div>
-    </>
+    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto p-4 lg:flex-row lg:gap-6 lg:overflow-hidden lg:p-6">
+      <Navigation/>
+      <Window/>
+    </div>
   )
 }
 

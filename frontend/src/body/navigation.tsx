@@ -1,39 +1,73 @@
-import './tailwind.css'
-import './body.css'
-function App() {
+import { NavLink } from 'react-router-dom'
 
+const NAV_ITEMS = [
+  { to: '/', label: 'Overview', end: true },
+  { to: '/feed', label: 'Live Feed', end: false },
+  { to: '/anpr', label: 'ANPR Intelligence', end: false },
+  { to: '/incident', label: 'Incident Management', end: false },
+  { to: '/analysis', label: 'Traffic Analysis', end: false },
+]
+
+const ADMIN_ITEMS = [
+  { to: '/logs', label: 'Show Logs', end: false },
+  { to: '/admin', label: 'Admin Panel', end: false },
+]
+
+function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
+  const base =
+    'flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors'
+  if (isActive) return `${base} bg-slate-900 text-white`
+  return `${base} text-slate-600 hover:bg-slate-100 hover:text-slate-900`
+}
+
+function Nav() {
   return (
-      <div className=' flex flex-col h-full  items-start justify-start w-[80%] rounded-3xl  pt-8! nav z-1000'>
-            <span className='heading-nav'>NAVIGATION</span>
-            <hr className="my-4 border-t-1 border-slate-300 w-[30%]" />
-            <div className='button-nav pt-4! flex flex-col gap-4 pb-4! justify-center items-start!'>
-                <div className='options flex flex-row  justify-center items-center'>
-                    <a href="/"><span></span> <pre>Overview</pre></a></div>
-                <div className='options flex flex-row justify-center items-center'><a href="/feed"><span></span><pre>LIVE FEED</pre></a></div>
-                <div className='options flex flex-row justify-center items-center'><a href="/anpr"><span></span><pre>ANPR INTELLIGENCE</pre></a></div>
-                <div className='options flex flex-row justify-center items-center'><a href="/incident"><span></span> <pre>Incident Management</pre> </a></div>
-                <div className='options flex flex-row justify-center items-center'><a href="/analysis"><span></span> <pre>Traffic Analysis</pre> </a></div>
-
-            </div>
-            {/* <span className='heading-nav'> SYSTEM ADMINISTRATION </span>
-            <hr className="my-4 border-t-1 border-slate-300 w-[50%]" />
-            <div className='button-nav pt-4! flex flex-col gap-4  justify-center items-start!'>
-                <div className='options flex flex-row justify-center items-center'><a href="/logs"><span></span> <pre>SHOW LOGS</pre> </a></div>
-                <div className='options flex flex-row justify-center items-center'><a href="/admin"><span></span> <pre>ADMIN PANEL</pre> </a></div>
-            </div> */}
-            <div className='mt-auto! footer '>
-                <span className='flex flex-row items-center gap-2'>
-                    <div className='circle'></div>
-                    <div> ACTIVE AREA</div>
-                </span>
-                <span className='circuit'>
-                    <div className=' w-full  h-[30%] flex items-center justify-center'>ACTIVE CIRCUIT</div>
-                    <div className='flex justify-center items-center h-[70%]'>ESPLANADE-JOKA CIRCUIT</div>
-                </span>
-            </div>
-
+    <div className="flex w-full shrink-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 lg:h-full lg:w-60">
+      <div className="flex items-center justify-between">
+        <span className="px-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          Navigation
+        </span>
       </div>
+      <hr className="my-3 hidden border-t border-slate-100 lg:block" />
+
+      <div className="flex flex-wrap gap-1 lg:flex-col">
+        {NAV_ITEMS.map((item) => (
+          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+            {item.label}
+          </NavLink>
+        ))}
+      </div>
+
+      <div className="mt-5 hidden lg:block">
+        <span className="px-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+          System Administration
+        </span>
+        <hr className="my-3 border-t border-slate-100" />
+        <div className="flex flex-col gap-1">
+          {ADMIN_ITEMS.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-60" />
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-auto hidden rounded-xl bg-slate-50 p-3 lg:block">
+        <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          Active Area
+        </span>
+        <div className="mt-2 flex flex-col gap-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700">
+            Active Circuit
+          </span>
+          <span className="text-xs text-slate-500">Esplanade-Joka Circuit</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
-export default App
+export default Nav

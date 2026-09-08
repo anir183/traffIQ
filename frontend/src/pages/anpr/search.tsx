@@ -1,45 +1,43 @@
-import { useState } from "react";
+import { useState } from 'react'
+import type { KeyboardEvent } from 'react'
 
-const TABS = ["Search by Plate", "Search by Camera", "Advanced Search"];
+const TABS = ['Search by Plate', 'Search by Camera', 'Advanced Search']
 
 export default function PlateSearch() {
-  const [activeTab, setActiveTab] = useState(TABS[0]);
-  const [plate, setPlate] = useState("WB02AM7555");
+  const [activeTab, setActiveTab] = useState(TABS[0])
+  const [plate, setPlate] = useState('WB02AM7555')
 
   const handleSearch = () => {
-    console.log(`Searching "${activeTab}" for:`, plate);
-  };
+    console.log(`Searching "${activeTab}" for:`, plate)
+  }
 
-  const handleKeyDown = (e : any) => {
-    if (e.key === "Enter") handleSearch();
-  };
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleSearch()
+  }
 
   return (
-    <div className="w-[800px] text-4xl!">
-      {/* Tabs */}
-      <div className="flex items-center gap-12 justify-center border-gray-200 mb-8!">
+    <div className="w-full max-w-xl">
+      <div className="mb-6 flex items-center gap-8 border-b border-slate-200">
         {TABS.map((tab) => {
-          const isActive = tab === activeTab;
+          const isActive = tab === activeTab
           return (
             <button
               key={tab}
+              type="button"
               onClick={() => setActiveTab(tab)}
-              className={`relative text-2xl  transition-colors justify-center items-center ${
-                isActive
-                  ? "text-gray-900 font-medium"
-                  : "text-gray-500 hover:text-gray-700"
+              className={`relative pb-2 text-sm font-medium transition-colors ${
+                isActive ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               {tab}
               {isActive && (
-                <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-blue-600 rounded-full" />
+                <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-slate-900" />
               )}
             </button>
-          );
+          )
         })}
       </div>
 
-      {/* Search row */}
       <div className="flex items-stretch gap-3">
         <input
           type="text"
@@ -47,15 +45,16 @@ export default function PlateSearch() {
           onChange={(e) => setPlate(e.target.value.toUpperCase())}
           onKeyDown={handleKeyDown}
           placeholder="Enter plate number"
-          className="flex-1 rounded-3xl border pl-4! pt-2! pb-2! border-gray-300 px-4 py-2.5 text-2xl  text-gray-800 tracking-wide placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm tracking-wide text-slate-800 outline-none placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
         <button
+          type="button"
           onClick={handleSearch}
-          className="rounded-3xl bg-blue-600 px-6 py-2.5 text-3xl w-[150px] font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors"
+          className="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-700"
         >
           Search
         </button>
       </div>
     </div>
-  );
+  )
 }

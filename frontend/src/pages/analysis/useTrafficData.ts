@@ -1,21 +1,10 @@
-// src/body/window/useTrafficData.ts
 import { useState, useEffect } from 'react'
-
-export interface SegmentDatum {
-  name: string
-  value: number
-}
-
-export interface TrafficData {
-  congestedSegments: SegmentDatum[]
-  avgSpeed: SegmentDatum[]
-  densityForecast: { day: string; density: number }[] 
-}
+import type { TrafficData } from '../../types/traffic'
 
 const MOCK_DATA: TrafficData = {
   congestedSegments: [
     { name: 'VIP Road', value: 800 },
-    { name: 'VIP Road', value: 130 },
+    { name: 'EM Bypass', value: 130 },
     { name: 'Sector 5', value: 100 },
     { name: 'Sector 2', value: 65 },
     { name: 'Salt Lake', value: 40 },
@@ -27,7 +16,7 @@ const MOCK_DATA: TrafficData = {
     { name: '25', value: 66 },
     { name: '23', value: 69 },
     { name: '18', value: 62 },
-    { name: '25', value: 66 },
+    { name: '21', value: 66 },
   ],
   densityForecast: [
     { day: 'Mon', density: 65 },
@@ -50,22 +39,27 @@ export function useTrafficData(pollMs?: number) {
   useEffect(() => {
     if (!pollMs) return
 
+    let cancelled = false
+
     const fetchLive = async () => {
       setLoading(true)
       try {
         const res = await fetch('/api/traffic/overview')
         const json: TrafficData = await res.json()
-        setData(json)
+        if (!cancelled) setData(json)
       } catch (err) {
         console.error('Failed to fetch traffic data', err)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     fetchLive()
     const id = setInterval(fetchLive, pollMs)
-    return () => clearInterval(id)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
   }, [pollMs])
 
   return { data, loading }

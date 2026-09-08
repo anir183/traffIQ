@@ -1,0 +1,70 @@
+# TraffIQ Frontend — Full Redesign Plan
+
+## Overview
+
+Full visual and architectural overhaul of the TraffIQ traffic management dashboard. Converts all pages to a modern, neutral cool-slate design system using Tailwind CSS v4, fixes lint errors, consolidates map implementations, removes dead code, and adds missing functionality (camera grid, active nav state, etc.).
+
+**Design system:** Tailwind `slate-*` grays, `blue-600` accent for interactive elements, clean card-based layout, consistent 4px-based spacing, 14/16/18px type scale.
+
+---
+
+## STATUS: ✅ COMPLETE (all phases done — see notes below)
+
+---
+
+## Phase 1: Foundation ✅
+- API key moved to `.env` (`VITE_TOMTOM_API_KEY`), read via `src/config.ts`, `.env`/.env.* gitignored, `.env.example` added
+- Dead code deleted: `notification.rsx`, `features.tsx`, `svg.tsx`, `analysis/index.ts`, `analysis/analytics.ts`, `public/icons.svg`
+- Tailwind consolidated to single `@import "tailwindcss"` in `src/index.css`; all duplicate `tailwind.css` files removed
+- All 11 custom CSS files deleted; everything inlined as Tailwind utilities
+- Maps consolidated onto `@tomtom-org/maps-sdk` (npm), MapLibre GL `.mapLibreMap` for markers. ANPR + Incident + Analysis maps all use the SDK via `src/components/map/helpers.ts`. Map centers fixed to Kolkata (88.36, 22.57).
+
+## Phase 2: Shared Components ✅
+- `src/components/ui/stat-card.tsx` (replaces 4 duplicate stat cards)
+- `src/components/ui/card.tsx` (card wrapper)
+- `src/components/ui/badge.tsx` (status badges)
+- `src/components/map/helpers.ts` (TomTom config init, dot/pulse markers, line layers)
+- `src/types/traffic.ts` (consolidated domain interfaces)
+
+## Phase 3: Shell Rebuild ✅
+- Header: white bar, `border-b border-slate-200`, search rounded-full `bg-slate-50`, profile with name + icons
+- Nav: `bg-white border border-slate-200 rounded-2xl`, `<NavLink>` with `bg-slate-900` active state; admin/logs section restored
+- Layout: `bg-slate-50` shell, sidebar + scrollable white content window
+
+## Phase 4: Page Rebuilds ✅
+- **Overview:** slate-800 critical-incidents card, Recharts blue/slate palette, TomTom heatmap (Kolkata), rebuilt incident queue
+- **Analytics:** shared `StatCard` grid, date picker + time range, camera counts, traffic volume, avg speed, vehicle donut (hooks violation fixed via immutable prefix-sum)
+- **ANPR:** tabs/search/vehicle details in slate; trajectory map on SDK
+- **Incident:** filter tabs now actually filter the list; SDK map with pulsing markers; status badges
+- **Live Feed:** NEW camera-grid placeholder (4 CAM boxes); ANPR log table in clean slate
+- **Admin/Logs:** styled "Coming soon" placeholders
+
+## Phase 5: Routing ✅
+- `<a href>` → `<NavLink>` with `isActive` state (no full page reloads)
+
+## Phase 6: Lint & Code Quality ✅ (15 errors → 0)
+- Removed unused StrictMode-relevant import; `StrictMode` now actually wraps app
+- Fixed all `any` types (SDK rewrite, typed events, typed incidents)
+- Removed unused setters in incident hook (rewrote as filterable static list)
+- Fixed `react-hooks/immutability` in `vehicletype.tsx`
+- Removed dead `analytics.ts` (erasableSyntaxOnly violations)
+- Duplicate mock keys fixed in `useTrafficData.ts`
+- Deleted `bun.lock`; single `package-lock.json` remains
+
+## Phase 7: Responsive & Polish ✅
+- Header: search hidden below `sm`; profile text hidden below `md`
+- Body: stacks column on mobile, row on `lg`; pages use `xl:`/`lg:` breakpoints
+- Nav: horizontal wrap strip on mobile, column + circuit footer on desktop
+- Code-split all routes via `React.lazy` + `Suspense`
+- Vendor chunk splitting (maps / charts / react-vendor)
+- Profile image: 5760×3840 JPEG (3.3 MB) → 160px WebP (5 KB)
+
+## Verification
+- `npm run lint` → 0 errors ✅
+- `npm run build` → clean build ✅
+
+## Remaining notes / future work
+- `useTrafficData` still uses mock data (no backend yet — `backend/` and `ai/` are empty in the worktree)
+- Map heatmap updates via 20s polling to TomTom API; `live-traffic-heatmap` feed uses `VITE_TOMTOM_API_KEY`
+- `maps` vendor chunk is ~1.1 MB (TomTom+MapLibre SDK); lazily loaded only on Overview
+- ANPR search / traffic charts / node selector are UI-only (no backend wiring yet)

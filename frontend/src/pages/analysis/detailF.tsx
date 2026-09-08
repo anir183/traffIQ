@@ -1,29 +1,19 @@
-import React from 'react'
-import '../tailwind.css'
-import './detailF.css'
-const detailF = () => {
+function CriticalIncidents() {
   return (
-        <div className=' flex flex-row w-[20%] bg-red-600 text-amber-50 redf'>
-            <div className='flex flex-col gap-3 '>
-                <span className='text-3xl pt-2!'>Critical Incidents</span>
-                <div className='flex flex-col text-2xl gap-4'>
-                    <div className='flex flex-col border-l-2 p-2! h-[40%] border-l-gray-400!'>
-                        <span>2</span>
-                        <span>suspicious activities</span>
-                    </div>
-                    <div className='flex flex-col border-l-2 p-2! h-[40%] border-l-gray-400!'>
-                        <span>1</span>
-                        <span>Accident</span>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div></div>
-                <div></div>
-            </div>
-            <div></div>
+    <div className="flex w-full flex-col justify-center gap-4 rounded-xl bg-slate-800 p-5 text-white shadow-sm xl:w-[20%]">
+      <span className="text-base font-semibold">Critical Incidents</span>
+      <div className="flex flex-col gap-4 text-base">
+        <div className="flex flex-col border-l-2 border-slate-500 pl-3">
+          <span className="text-2xl font-bold">2</span>
+          <span className="text-sm text-slate-300">Suspicious activities</span>
         </div>
+        <div className="flex flex-col border-l-2 border-slate-500 pl-3">
+          <span className="text-2xl font-bold">1</span>
+          <span className="text-sm text-slate-300">Accident</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
-export default detailF
+export default CriticalIncidents
