@@ -37,13 +37,13 @@ export default function VehicleTypeBreakdown() {
     <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="mb-4 text-base font-semibold text-slate-900">Vehicle Type Breakdown</h3>
 
-      <div className="flex items-center gap-6">
-        <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
+      <div className="flex min-w-0 flex-wrap items-center gap-4">
+        <div className="relative shrink-0" style={{ width: 140, height: 140 }}>
           <svg
             viewBox="0 0 160 160"
             className="-rotate-90"
-            width={160}
-            height={160}
+            width={140}
+            height={140}
           >
             {segments.map((segment) => (
               <circle
@@ -67,9 +67,9 @@ export default function VehicleTypeBreakdown() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-2.5">
+        <div className="flex min-w-0 flex-col gap-2.5">
           {segments.map((segment) => (
-            <div key={segment.label} className="flex items-center justify-between gap-6 text-sm">
+            <div key={segment.label} className="flex min-w-0 items-center justify-between gap-4 text-sm">
               <span className="flex items-center gap-2 text-slate-600">
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"

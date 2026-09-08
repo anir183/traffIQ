@@ -212,14 +212,14 @@ export default function TrafficAnalysisHeader({
         <StatCard label="Congestion Score" value="68/100" change="6%" trend="up" invertTrendColor />
       </div>
 
-      <div className="flex flex-col gap-6 xl:flex-row">
-        <div className="w-full xl:w-[40%]">
+      <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
+        <div className="min-w-0 w-full xl:w-[40%]">
           <CameraCount/>
         </div>
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
-          <TrafficVolume/>
-          <AverageSpeed/>
-          <VehicleGraph/>
+        <div className="grid min-w-0 w-full grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="min-w-0"><TrafficVolume/></div>
+          <div className="min-w-0"><AverageSpeed/></div>
+          <div className="min-w-0"><VehicleGraph/></div>
         </div>
       </div>
     </div>

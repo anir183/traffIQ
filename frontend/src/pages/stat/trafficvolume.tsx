@@ -44,13 +44,13 @@ export default function TrafficVolumeChart() {
         </div>
 
         <div className="flex-1">
-          <div className="flex items-end gap-2" style={{ height: chartHeight }}>
+          <div className="flex items-end gap-1" style={{ height: chartHeight }}>
             {DATA.map((point) => {
               const barHeightPct = (point.value / Y_MAX) * 100
               return (
-                <div key={point.time} className="flex h-full flex-1 items-end justify-center">
+                <div key={point.time} className="flex h-full min-w-0 flex-1 items-end justify-center">
                   <div
-                    className="w-[22px] rounded-t-md bg-blue-500"
+                    className="w-full max-w-[18px] rounded-t-md bg-blue-500"
                     style={{ height: `${barHeightPct}%` }}
                     title={`${point.time}: ${point.value.toLocaleString()}`}
                   />
@@ -59,9 +59,9 @@ export default function TrafficVolumeChart() {
             })}
           </div>
 
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex gap-1">
             {DATA.map((point, i) => (
-              <div key={point.time} className="flex-1 text-center">
+              <div key={point.time} className="min-w-0 flex-1 text-center">
                 {i % X_LABEL_INTERVAL === 0 && (
                   <span className="text-xs text-slate-400">{point.time}</span>
                 )}
