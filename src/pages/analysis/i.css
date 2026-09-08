@@ -1,0 +1,146 @@
+.incident-queue {
+  border: 1px solid #e5e5e5;
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.incident-queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.incident-queue-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.incident-queue-menu {
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.incident-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.incident-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.incident-item:last-child {
+  border-bottom: none;
+}
+
+.incident-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+}
+
+.incident-icon-error {
+  background-color: #fdecea;
+  color: #c0392b;
+}
+
+.incident-icon-success {
+  background-color: #eafaf1;
+  color: #1e8449;
+}
+
+.incident-icon-neutral {
+  background-color: #f4f6f6;
+  color: #7f8c8d;
+}
+
+.incident-icon-warning {
+  background-color: #fef5e7;
+  color: #d68910;
+}
+
+.incident-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.incident-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.incident-title {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.incident-timestamp {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+}
+
+.incident-location {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.incident-detail {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.incident-link {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.incident-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  font-size: 0.75rem;
+}
+
+.pagination-arrow {
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.pagination-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pagination-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: none;
+  color: #6b7280;
+  background: none;
+  cursor: pointer;
+}
+
+.pagination-dot-active {
+  background-color: #3b82f6;
+  color: #fff;
+}
