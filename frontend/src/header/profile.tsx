@@ -1,5 +1,5 @@
 import ProfilePic from "../assets/profile1.webp";
-import { Bell } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 import ThemeToggle from "../theme/ThemeToggle";
 
 function App() {
@@ -7,9 +7,7 @@ function App() {
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2 border-r border-slate-200 pr-4 dark:border-slate-700">
         <ThemeToggle />
-        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
-          <Bell size={22} />
-        </div>
+        <NotificationBell />
       </div>
       <div className="hidden text-right md:block">
         <p className="text-sm font-medium leading-tight text-slate-900 dark:text-slate-100">
