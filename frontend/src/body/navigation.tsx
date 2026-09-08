@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+import { useState } from "react";
+import SearchableSelect from "../components/ui/searchable-select";
 
 const NAV_ITEMS = [
   { to: "/", label: "Overview", end: true },
@@ -13,6 +15,17 @@ const ADMIN_ITEMS = [
   { to: "/admin", label: "Admin Panel", end: false },
 ];
 
+const AREA_NODES = [
+  "Esplanade Circuit",
+  "Joka Circuit",
+  "Salt Lake Circuit",
+  "Ballygunge Circuit",
+  "Park Street Circuit",
+  "New Town Circuit",
+  "Ballygunge-Lanka Circuit",
+  "Howrah Circuit",
+];
+
 function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
   const base =
     "flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors";
@@ -22,6 +35,8 @@ function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
 }
 
 function Nav() {
+  const [selectedNode, setSelectedNode] = useState(AREA_NODES[0]);
+
   return (
     <div className="flex w-full shrink-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 lg:h-full lg:w-60 dark:border-slate-700 dark:bg-slate-900">
       <div className="flex items-center justify-between">
@@ -70,13 +85,12 @@ function Nav() {
           <span className="h-2 w-2 rounded-full bg-green-500" />
           Active Area
         </span>
-        <div className="mt-2 flex flex-col gap-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-            Active Circuit
-          </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Esplanade-Joka Circuit
-          </span>
+        <div className="mt-2">
+          <SearchableSelect
+            value={selectedNode}
+            options={AREA_NODES}
+            onSelect={setSelectedNode}
+          />
         </div>
       </div>
     </div>

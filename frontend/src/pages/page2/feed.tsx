@@ -1,18 +1,28 @@
+import { useState } from "react";
 import { Video } from "lucide-react";
+import { useListPageSize } from "../../hooks/useListPageSize";
 
-const CAMERAS = ["CAM_001", "CAM_002", "CAM_003", "CAM_004"];
+const CAMERAS = Array.from(
+  { length: 40 },
+  (_, i) => `CAM_${String(i + 1).padStart(3, "0")}`,
+);
+
+const COLS = 2;
 
 function CameraView({ name }: { name: string }) {
   return (
-    <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 dark:border-slate-600 dark:bg-slate-800">
+    <div
+      data-sm-row
+      className="flex h-56 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+    >
       <Video
-        className="h-8 w-8 text-slate-600 dark:text-slate-400"
+        className="h-8 w-8 text-slate-500 dark:text-slate-400"
         aria-hidden="true"
       />
-      <span className="text-sm font-medium text-slate-300 dark:text-slate-200">
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
         {name}
       </span>
-      <span className="text-xs text-slate-500 dark:text-slate-400">
+      <span className="text-xs text-slate-400 dark:text-slate-500">
         No signal
       </span>
     </div>
@@ -20,22 +30,83 @@ function CameraView({ name }: { name: string }) {
 }
 
 export default function Feed() {
+  const [page, setPage] = useState(1);
+
+  const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
+    { min: 2, max: 8 },
+    CAMERAS.length,
+  );
+
+  const tilesPerPage = rowsPerPage * COLS;
+  const totalPages = Math.max(1, Math.ceil(CAMERAS.length / tilesPerPage));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * tilesPerPage;
+  const pageCameras = CAMERAS.slice(startIndex, startIndex + tilesPerPage);
+
   return (
-    <div className="flex w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex h-full min-h-0 w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
           Camera Feed
         </h3>
         <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          Live preview placeholder
+          {CAMERAS.length} cameras
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {CAMERAS.map((name) => (
+
+      <div
+        ref={containerRef}
+        className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-y-auto"
+      >
+        {pageCameras.map((name) => (
           <CameraView key={name} name={name} />
         ))}
       </div>
+
+      {CAMERAS.length > 0 && (
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
+          <span className="text-slate-400 dark:text-slate-500">
+            Showing {startIndex + 1}–{startIndex + pageCameras.length} of{" "}
+            {CAMERAS.length}
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={safePage === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  className={`h-6 w-6 rounded-full text-xs transition-colors ${
+                    p === safePage
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                      : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={safePage === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Next ›
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
