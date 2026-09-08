@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { IncidentEvent, IncidentEventStatus } from '../../types/traffic'
+import { useListPageSize } from '../../hooks/useListPageSize'
 
 const INCIDENTS: IncidentEvent[] = [
   { id: '1', status: 'error', title: 'Event Description + Incident Update', location: 'Bidhannagar Area, Kolkata | Traffic Monitoring', timestamp: 'Saturday, 12:30 AM', detailLine: 'Location: 09:36 AM | Status → Update', linkText: 'Container link' },
@@ -8,9 +9,11 @@ const INCIDENTS: IncidentEvent[] = [
   { id: '4', status: 'neutral', title: 'Status Description Summary', location: '', timestamp: '', detailLine: 'Location: 09:36 AM | Update', linkText: 'Crops one link' },
   { id: '5', status: 'neutral', title: 'Status Description Summary', location: '', timestamp: '', detailLine: 'Location: 07:35 PM | Status Update', linkText: 'Links the link' },
   { id: '6', status: 'warning', title: 'Incident & Event Stream', location: 'Bidhannagar Area, Kolkata | Kolkata', timestamp: 'Saturday, 09:35 PM', detailLine: 'Location: 09:36 AM | Where → Update', linkText: 'Starting cost link' },
+  { id: '7', status: 'success', title: 'Event Update: Access restored', location: 'Salt Lake, Kolkata | Video Monitoring', timestamp: 'Saturday, 08:45 PM', detailLine: 'Location: 08:40 PM | Status → Resolved', linkText: 'View resolution link' },
+  { id: '8', status: 'error', title: 'Incident Update: Signal failure', location: 'EM Bypass, Kolkata | Traffic Signals', timestamp: 'Saturday, 08:12 PM', detailLine: 'Location: 08:05 PM | Status → Escalated', linkText: 'Escalation link' },
+  { id: '9', status: 'neutral', title: 'Status Description Summary', location: '', timestamp: 'Saturday, 07:58 PM', detailLine: 'Location: 07:50 PM | Update', linkText: 'Routine update link' },
+  { id: '10', status: 'warning', title: 'Incident & Event Stream', location: 'New Town, Kolkata | Kolkata', timestamp: 'Saturday, 07:30 PM', detailLine: 'Location: 07:25 PM | Where → Update', linkText: 'Follow-up link' },
 ]
-
-const PAGE_SIZE = 3
 
 const STATUS_ICON: Record<IncidentEventStatus, string> = {
   error: '✕',
@@ -28,8 +31,12 @@ const STATUS_STYLE: Record<IncidentEventStatus, string> = {
 
 function IncidentQueue() {
   const [page, setPage] = useState(1)
-  const totalPages = Math.max(1, Math.ceil(INCIDENTS.length / PAGE_SIZE))
-  const pageItems = INCIDENTS.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
+    { min: 3, max: 10 },
+    INCIDENTS.length,
+  )
+  const totalPages = Math.max(1, Math.ceil(INCIDENTS.length / rowsPerPage))
+  const pageItems = INCIDENTS.slice((page - 1) * rowsPerPage, page * rowsPerPage)
 
   return (
     <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%] dark:border-slate-700 dark:bg-slate-900">
@@ -38,9 +45,9 @@ function IncidentQueue() {
         <button type="button" className="text-slate-400 dark:text-slate-500" aria-label="More options">⋮</button>
       </div>
 
-      <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+      <div ref={containerRef} className="flex min-h-0 flex-1 flex-col divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
         {pageItems.map((item) => (
-          <div key={item.id} className="flex gap-3 py-3">
+          <div key={item.id} data-sm-row className="flex gap-3 py-3">
             <span
               className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${STATUS_STYLE[item.status]}`}
             >
@@ -63,6 +70,7 @@ function IncidentQueue() {
         ))}
       </div>
 
+      {totalPages > 1 && (
       <div className="mt-auto flex items-center justify-center gap-1 pt-4 text-xs">
         <button
           type="button"
@@ -93,6 +101,7 @@ function IncidentQueue() {
           Next ›
         </button>
       </div>
+      )}
     </div>
   )
 }
