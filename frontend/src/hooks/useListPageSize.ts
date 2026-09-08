@@ -17,17 +17,25 @@ export function useListPageSize<T extends HTMLElement>(
     if (!container) return;
 
     const compute = () => {
-      const firstRow = container.querySelector<HTMLElement>("[data-sm-row]");
-      if (!firstRow) return;
+      const rows = container.querySelectorAll<HTMLElement>("[data-sm-row]");
+      if (rows.length === 0) return;
+      const firstRow = rows[0];
       const rowHeight = firstRow.getBoundingClientRect().height;
       if (rowHeight <= 0) return;
+
+      const step =
+        rows.length > 1
+          ? rows[1].getBoundingClientRect().top -
+            firstRow.getBoundingClientRect().top
+          : rowHeight;
+      if (step <= 0) return;
 
       const containerTop = container.getBoundingClientRect().top;
       const firstRowTop = firstRow.getBoundingClientRect().top;
       const available = container.clientHeight - (firstRowTop - containerTop);
       if (available <= 0) return;
 
-      const fit = Math.floor(available / rowHeight);
+      const fit = Math.max(0, Math.floor((available - rowHeight) / step) + 1);
       const next = Math.min(max, Math.max(min, fit));
 
       setRowsPerPage((prev) => (prev === next ? prev : next));

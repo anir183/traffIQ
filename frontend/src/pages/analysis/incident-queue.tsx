@@ -93,6 +93,60 @@ const INCIDENTS: IncidentEvent[] = [
     detailLine: "Location: 07:25 PM | Where → Update",
     linkText: "Follow-up link",
   },
+  {
+    id: "11",
+    status: "success",
+    title: "Event Update: Lane reopened",
+    location: "Gariahat, Kolkata | Traffic Signals",
+    timestamp: "Saturday, 07:05 PM",
+    detailLine: "Location: 07:00 PM | Status → Resolved",
+    linkText: "Reopening link",
+  },
+  {
+    id: "12",
+    status: "warning",
+    title: "Incident Update: Delays expected",
+    location: "Howrah Bridge, Kolkata | Kolkata",
+    timestamp: "Saturday, 06:40 PM",
+    detailLine: "Location: 06:35 PM | Where → Update",
+    linkText: "Delay advisory link",
+  },
+  {
+    id: "13",
+    status: "neutral",
+    title: "Status Description Summary",
+    location: "",
+    timestamp: "Saturday, 06:15 PM",
+    detailLine: "Location: 06:10 PM | Update",
+    linkText: "Routine update link",
+  },
+  {
+    id: "14",
+    status: "error",
+    title: "Incident Update: Signal failure",
+    location: "Sealdah, Kolkata | Traffic Signals",
+    timestamp: "Saturday, 05:50 PM",
+    detailLine: "Location: 05:45 PM | Status → Escalated",
+    linkText: "Escalation link",
+  },
+  {
+    id: "15",
+    status: "success",
+    title: "Event Update: Access restored",
+    location: "Rajabazar, Kolkata | Video Monitoring",
+    timestamp: "Saturday, 05:20 PM",
+    detailLine: "Location: 05:10 PM | Status → Resolved",
+    linkText: "View resolution link",
+  },
+  {
+    id: "16",
+    status: "warning",
+    title: "Incident & Event Stream",
+    location: "Ballygunge, Kolkata | Kolkata",
+    timestamp: "Saturday, 04:50 PM",
+    detailLine: "Location: 04:40 PM | Where → Update",
+    linkText: "Follow-up link",
+  },
 ];
 
 const STATUS_ICON: Record<IncidentEventStatus, string> = {
@@ -114,7 +168,7 @@ const STATUS_STYLE: Record<IncidentEventStatus, string> = {
 function IncidentQueue() {
   const [page, setPage] = useState(1);
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
-    { min: 3, max: 10 },
+    { min: 3, max: 12 },
     INCIDENTS.length,
   );
   const totalPages = Math.max(1, Math.ceil(INCIDENTS.length / rowsPerPage));
