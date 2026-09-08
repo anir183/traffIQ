@@ -2,7 +2,13 @@ import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { TomTomMap } from '@tomtom-org/maps-sdk/map'
 import type { Map } from 'maplibre-gl'
-import { ensureTomTomConfig, addDotMarker, addLineLayer } from '../../components/map/helpers'
+import {
+  ensureTomTomConfig,
+  applyTomTomTheme,
+  addDotMarker,
+  addLineLayer,
+} from '../../components/map/helpers'
+import { useTheme } from '../../theme/useTheme'
 
 type LngLat = { lng: number; lat: number }
 
@@ -33,18 +39,15 @@ function getVehicleTrajectoryMap(container: HTMLDivElement): TomTomMap {
 }
 
 function onMapLoad(map: Map): void {
+  if (map.getSource('highlighted-lane')) return
   addLineLayer(map, 'highlighted-lane', HIGHLIGHTED_LANE, '#2563eb', 5)
   addLineLayer(map, 'vehicle-path', VEHICLE_PATH, '#dc2626', 4)
-
-  addDotMarker(map, [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat], '#2563eb')
-  addDotMarker(map, [VEHICLE_START.lng, VEHICLE_START.lat], '#eab308')
-  addDotMarker(map, [VEHICLE_MID.lng, VEHICLE_MID.lat], '#dc2626')
-  addDotMarker(map, [VEHICLE_END.lng, VEHICLE_END.lat], '#16a34a')
 }
 
 export default function VehicleTrajectoryMap() {
   const mapRef = useRef<HTMLDivElement | null>(null)
   const mapInstance = useRef<TomTomMap | null>(null)
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
     ensureTomTomConfig()
@@ -55,17 +58,28 @@ export default function VehicleTrajectoryMap() {
 
     map.mapLibreMap.on('load', () => onMapLoad(map.mapLibreMap))
 
+    addDotMarker(map.mapLibreMap, [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat], '#2563eb')
+    addDotMarker(map.mapLibreMap, [VEHICLE_START.lng, VEHICLE_START.lat], '#eab308')
+    addDotMarker(map.mapLibreMap, [VEHICLE_MID.lng, VEHICLE_MID.lat], '#dc2626')
+    addDotMarker(map.mapLibreMap, [VEHICLE_END.lng, VEHICLE_END.lat], '#16a34a')
+
     return () => {
       map.mapLibreMap.remove()
       mapInstance.current = null
     }
   }, [])
 
+  useEffect(() => {
+    if (mapInstance.current) {
+      applyTomTomTheme(mapInstance.current, resolvedTheme === 'dark')
+    }
+  }, [resolvedTheme])
+
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-3 flex shrink-0 items-center justify-between">
-        <h3 className="text-base font-semibold text-slate-900">Vehicle Trajectory</h3>
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Vehicle Trajectory</h3>
+        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
             <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
             Camera Location
@@ -77,7 +91,7 @@ export default function VehicleTrajectoryMap() {
         </div>
       </div>
 
-      <div ref={mapRef} className="min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100" />
+      <div ref={mapRef} className="min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700" />
     </div>
   )
 }

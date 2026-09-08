@@ -59,23 +59,23 @@ function DatePicker({
   ]
 
   return (
-    <div className="absolute right-0 z-10 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+    <div className="absolute right-0 z-10 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-3 shadow-lg dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-2 flex items-center justify-between">
         <button
           type="button"
           onClick={() => setViewDate(new Date(year, month - 1, 1))}
-          className="rounded p-1 text-slate-500 hover:bg-slate-100"
+          className="rounded p-1 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
           aria-label="Previous month"
         >
           ‹
         </button>
-        <span className="text-sm font-medium text-slate-900">
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
           {MONTH_NAMES[month]} {year}
         </span>
         <button
           type="button"
           onClick={() => setViewDate(new Date(year, month + 1, 1))}
-          className="rounded p-1 text-slate-500 hover:bg-slate-100"
+          className="rounded p-1 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
           aria-label="Next month"
         >
           ›
@@ -84,7 +84,7 @@ function DatePicker({
 
       <div className="mb-1 grid grid-cols-7 gap-1">
         {WEEKDAYS.map((d, i) => (
-          <div key={`${d}-${i}`} className="flex h-7 items-center justify-center text-xs text-slate-400">
+          <div key={`${d}-${i}`} className="flex h-7 items-center justify-center text-xs text-slate-400 dark:text-slate-500">
             {d}
           </div>
         ))}
@@ -107,10 +107,10 @@ function DatePicker({
               }}
               className={`h-7 w-7 rounded-full text-xs transition-colors ${
                 isSelected
-                  ? 'bg-slate-900 font-medium text-white'
+                  ? 'bg-slate-900 font-medium text-white dark:bg-slate-100 dark:text-slate-900'
                   : isToday
-                  ? 'font-medium text-blue-600 hover:bg-slate-100'
-                  : 'text-slate-700 hover:bg-slate-100'
+                  ? 'font-medium text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
               }`}
             >
               {day}
@@ -143,15 +143,15 @@ export default function TrafficAnalysisHeader({
     <div className="flex flex-col gap-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">{title}</h2>
-          <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="relative">
             <button
               type="button"
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={() => {
                 setIsDateOpen((open) => !open)
                 setIsRangeOpen(false)
@@ -159,7 +159,7 @@ export default function TrafficAnalysisHeader({
             >
               <span className="font-medium">DATE :</span>
               {formatDate(selectedDate)}
-              <span className="text-xs text-slate-400">▾</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">▾</span>
             </button>
 
             {isDateOpen && (
@@ -174,23 +174,23 @@ export default function TrafficAnalysisHeader({
           <div className="relative">
             <button
               type="button"
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               onClick={() => {
                 setIsRangeOpen((open) => !open)
                 setIsDateOpen(false)
               }}
             >
               {timeRange}
-              <span className="text-xs text-slate-400">▾</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">▾</span>
             </button>
 
             {isRangeOpen && (
-              <div className="absolute right-0 z-10 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+              <div className="absolute right-0 z-10 mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
                 {TIME_RANGES.map((range) => (
                   <button
                     key={range}
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     onClick={() => {
                       onTimeRangeChange?.(range)
                       setIsRangeOpen(false)

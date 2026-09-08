@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import type { LucideIcon } from 'lucide-react'
+import { Route, TriangleAlert } from 'lucide-react'
 import type { Incident, IncidentIcon } from '../../types/traffic'
 import StatusBadge from '../../components/ui/badge'
 
@@ -12,10 +14,10 @@ const HARDCODED_INCIDENTS: Incident[] = [
   { id: '5', icon: 'wrongway', title: 'Route Anomaly', detail: 'MH01AB9876', location: 'New Town', time: '12:30', status: 'Resolved' },
 ]
 
-const ICON_STYLES: Record<IncidentIcon, { bg: string; fg: string; symbol: string }> = {
-  alert: { bg: 'bg-red-50', fg: 'text-red-600', symbol: '▲' },
-  warning: { bg: 'bg-amber-50', fg: 'text-amber-600', symbol: '▲' },
-  wrongway: { bg: 'bg-amber-50', fg: 'text-amber-600', symbol: '⟲' },
+const ICON_STYLES: Record<IncidentIcon, { bg: string; fg: string; Icon: LucideIcon }> = {
+  alert: { bg: 'bg-red-50', fg: 'text-red-600', Icon: TriangleAlert },
+  warning: { bg: 'bg-amber-50', fg: 'text-amber-600', Icon: TriangleAlert },
+  wrongway: { bg: 'bg-amber-50', fg: 'text-amber-600', Icon: Route },
 }
 
 const FILTER_MAP: Record<FilterKey, Incident['status'] | undefined> = {
@@ -26,24 +28,22 @@ const FILTER_MAP: Record<FilterKey, Incident['status'] | undefined> = {
 }
 
 function IncidentRow({ incident }: { incident: Incident }) {
-  const icon = ICON_STYLES[incident.icon]
+  const { bg, fg, Icon } = ICON_STYLES[incident.icon]
 
   return (
     <div className="flex items-start gap-3 p-4">
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${icon.bg} ${icon.fg}`}
-      >
-        {icon.symbol}
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${bg} ${fg}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-900">{incident.title}</p>
-        <p className="truncate text-sm text-slate-500">{incident.detail}</p>
-        <p className="text-sm text-slate-400">{incident.location}</p>
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{incident.title}</p>
+        <p className="truncate text-sm text-slate-500 dark:text-slate-400">{incident.detail}</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500">{incident.location}</p>
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span className="text-xs text-slate-400">{incident.time}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{incident.time}</span>
         <StatusBadge status={incident.status} />
       </div>
     </div>
@@ -58,8 +58,8 @@ export default function RecentIncidents({ filter = 'all' }: { filter?: FilterKey
   }, [filter])
 
   return (
-    <div className="flex w-full max-w-sm flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-1 shrink-0 pl-2 pt-2 text-base font-semibold text-slate-900">Recent Incidents</h3>
+    <div className="flex w-full max-w-sm flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="mb-1 shrink-0 pl-2 pt-2 text-base font-semibold text-slate-900 dark:text-slate-100">Recent Incidents</h3>
 
       <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-auto">
         {incidents.map((incident) => (

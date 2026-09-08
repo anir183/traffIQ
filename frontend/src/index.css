@@ -1,13 +1,33 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   * {
     padding: 0;
     margin: 0;
   }
 
+  :root {
+    color-scheme: light;
+
+    --chart-grid: #e2e8f0;
+    --chart-axis: #94a3b8;
+    --chart-tooltip-bg: #ffffff;
+    --chart-tooltip-border: #e2e8f0;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    --chart-grid: #1e293b;
+    --chart-axis: #64748b;
+    --chart-tooltip-bg: #0f172a;
+    --chart-tooltip-border: #334155;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
   }
 
   #root {

@@ -30,12 +30,12 @@ export default function TrafficVolumeChart() {
   const chartHeight = 180
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="mb-4 text-base font-semibold text-slate-900">Traffic Volume</h3>
+    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">Traffic Volume</h3>
 
       <div className="flex">
         <div
-          className="flex flex-col justify-between pr-2 pb-2 text-xs text-slate-400"
+          className="flex flex-col justify-between pr-2 pb-2 text-xs text-slate-400 dark:text-slate-500"
           style={{ height: chartHeight }}
         >
           {[...Y_TICKS].reverse().map((tick) => (
@@ -63,7 +63,7 @@ export default function TrafficVolumeChart() {
             {DATA.map((point, i) => (
               <div key={point.time} className="min-w-0 flex-1 text-center">
                 {i % X_LABEL_INTERVAL === 0 && (
-                  <span className="text-xs text-slate-400">{point.time}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{point.time}</span>
                 )}
               </div>
             ))}

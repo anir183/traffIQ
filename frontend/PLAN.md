@@ -59,6 +59,23 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - Vendor chunk splitting (maps / charts / react-vendor)
 - Profile image: 5760×3840 JPEG (3.3 MB) → 160px WebP (5 KB)
 
+## Phase 8: Icons (lucide-react) ✅
+- Installed `lucide-react`; removed all raw embedded SVG icon markup
+- Deleted `src/header/notification.tsx` (CrosshairIcon) and `src/header/light.tsx` (BellIcon) hand-coded wrappers
+- `src/header/profile.tsx` now uses lucide `Sun` (dark-mode toggle) + `Bell` (notifications) — fixed 1:1 viewBox, no more stretching
+- `src/pages/page2/feed.tsx` camera placeholder → lucide `Video`
+- `src/pages/incident/incidents.tsx` unicode glyphs → lucide `TriangleAlert` / `Route`
+- Chart SVGs (donut, area/bar) and `assets/Union.svg` logo intentionally kept
+
+## Phase 9: Dark / Light Mode ✅
+- **Infra:** `src/index.css` — `@custom-variant dark` (class-based Tailwind v4), `.dark` `color-scheme`, chart CSS vars (`--chart-grid/-axis/-tooltip-*`) defined per theme
+- **Pre-paint:** `index.html` inline script reads `localStorage['traffiq-theme']` (fallback `prefers-color-scheme`) and sets `.dark` before paint — no flash; `meta[name="color-scheme"]` added
+- **State:** `src/theme/context.ts` + `ThemeProvider.tsx` + `useTheme.ts` — default `system`, explicit toggle persisted to localStorage, live `matchMedia` listener while unset; `main.tsx` wrapped
+- **Toggle:** `src/theme/ThemeToggle.tsx` (Sun/Moon, animated) replaces static icon in `header/profile.tsx`
+- **Theming pass:** `dark:` classes across shell (header/nav/layout), shared UI (card/stat-card/badge), Overview, Traffic Analysis, ANPR, Incident, Live Feed, and placeholder pages; active/inverted pills flip to light (`dark:bg-slate-100 dark:text-slate-900`); status chips → `/10` tinted backgrounds
+- **Charts:** Recharts axes/grid/tooltip now use theme CSS vars; congested-segment + vehicle-donut palettes swap per theme (dark gets light ramp so bars/segments stay visible)
+- **Maps:** `applyTomTomTheme()` — SDK `setStyle('standardDark'|'standardLight')` (keepState, no flicker) wired into the 3 TomTom maps; style-bound layers (heatmap, trajectory lines) re-added idempotently on `load`
+
 ## Verification
 - `npm run lint` → 0 errors ✅
 - `npm run build` → clean build ✅

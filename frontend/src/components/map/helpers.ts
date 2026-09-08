@@ -1,6 +1,7 @@
 import { TomTomConfig } from '@tomtom-org/maps-sdk/core'
 import { Marker } from 'maplibre-gl'
 import type { Map } from 'maplibre-gl'
+import type { TomTomMap } from '@tomtom-org/maps-sdk/map'
 import { API_KEY } from '../../config'
 
 export const KOLKATA_CENTER: [number, number] = [88.3639, 22.5726]
@@ -11,6 +12,10 @@ export function ensureTomTomConfig(): void {
   if (configured) return
   TomTomConfig.instance.put({ apiKey: API_KEY, language: 'en-GB' })
   configured = true
+}
+
+export function applyTomTomTheme(map: TomTomMap, dark: boolean): void {
+  map.setStyle(dark ? 'standardDark' : 'standardLight')
 }
 
 export function addDotMarker(map: Map, lngLat: [number, number], color: string): Marker {

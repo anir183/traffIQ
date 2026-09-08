@@ -16,8 +16,8 @@ const IncidentManagement = () => {
     <div className="flex min-h-0 flex-col gap-6 p-6 xl:h-full xl:flex-row">
       <div className="flex min-w-0 flex-col gap-4 xl:min-h-0 xl:flex-1">
         <div className="shrink-0">
-          <h1 className="text-2xl font-semibold text-slate-900">Incident Management</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Incident Management</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Track and manage traffic incidents and alerts
           </p>
         </div>
@@ -32,8 +32,8 @@ const IncidentManagement = () => {
                 onClick={() => setActiveFilter(filter.key)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-slate-900 text-white'
-                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`}
               >
                 {filter.label}

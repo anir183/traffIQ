@@ -43,21 +43,21 @@ export default function AverageSpeedChart() {
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${CHART_HEIGHT} L ${points[0].x} ${CHART_HEIGHT} Z`
 
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-slate-900">Average Speed</h3>
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Average Speed</h3>
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 transition-colors hover:bg-slate-50"
+          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
         >
           km/h
-          <span className="text-slate-400">▾</span>
+          <span className="text-slate-400 dark:text-slate-500">▾</span>
         </button>
       </div>
 
       <div className="flex">
         <div
-          className="flex flex-col justify-between pr-2 text-xs text-slate-400"
+          className="flex flex-col justify-between pr-2 text-xs text-slate-400 dark:text-slate-500"
           style={{ height: CHART_HEIGHT }}
         >
           {[...Y_TICKS].reverse().map((tick) => (
@@ -99,7 +99,7 @@ export default function AverageSpeedChart() {
             {DATA.map((point, i) => (
               <div key={point.time} className="flex-1 text-center">
                 {i % X_LABEL_INTERVAL === 0 && (
-                  <span className="text-xs text-slate-400">{point.time}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{point.time}</span>
                 )}
               </div>
             ))}

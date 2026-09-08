@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { TomTomMap, TrafficFlowModule } from '@tomtom-org/maps-sdk/map'
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl'
 import type { Feature, Geometry } from 'geojson'
 import { API_KEY } from '../../config'
-import { ensureTomTomConfig, KOLKATA_CENTER } from '../../components/map/helpers'
+import {
+  ensureTomTomConfig,
+  applyTomTomTheme,
+  KOLKATA_CENTER,
+} from '../../components/map/helpers'
+import { useTheme } from '../../theme/useTheme'
 
 interface TomTomIncident {
   properties: { magnitudeOfDelay?: number }
@@ -73,6 +78,10 @@ function updateTrafficHeatmap(map: MapLibreMap): Promise<void> {
 }
 
 const Mapp = () => {
+  const mapInstance = useRef<TomTomMap | null>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+  const { resolvedTheme } = useTheme()
+
   useEffect(() => {
     ensureTomTomConfig()
 
@@ -83,6 +92,7 @@ const Mapp = () => {
         zoom: 11,
       },
     })
+    mapInstance.current = map
 
     TrafficFlowModule.get(map, { visible: true }).then((trafficFlowModule) => {
       trafficFlowModule.filter({
@@ -95,22 +105,35 @@ const Mapp = () => {
       })
     })
 
-    let intervalId: ReturnType<typeof setInterval> | undefined
+    const mapLibreMap = map.mapLibreMap
 
-    map.mapLibreMap.on('load', () => {
-      setupHeatmap(map.mapLibreMap)
-      void updateTrafficHeatmap(map.mapLibreMap)
-      intervalId = setInterval(() => void updateTrafficHeatmap(map.mapLibreMap), 20000)
-    })
+    const handleLoad = () => {
+      if (!mapLibreMap.getSource('traffic-heatmap-source')) {
+        setupHeatmap(mapLibreMap)
+      }
+      void updateTrafficHeatmap(mapLibreMap)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = setInterval(() => void updateTrafficHeatmap(mapLibreMap), 20000)
+    }
+
+    mapLibreMap.on('load', handleLoad)
 
     return () => {
-      if (intervalId) clearInterval(intervalId)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      intervalRef.current = undefined
       map.mapLibreMap.remove()
+      mapInstance.current = null
     }
   }, [])
 
+  useEffect(() => {
+    if (mapInstance.current) {
+      applyTomTomTheme(mapInstance.current, resolvedTheme === 'dark')
+    }
+  }, [resolvedTheme])
+
   return (
-    <div className="flex-1 min-w-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+    <div className="flex-1 min-w-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700">
       <div id="sdk-map" className="h-full min-h-[300px] w-full" />
     </div>
   )

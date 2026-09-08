@@ -20,10 +20,10 @@ const STATUS_ICON: Record<IncidentEventStatus, string> = {
 }
 
 const STATUS_STYLE: Record<IncidentEventStatus, string> = {
-  error: 'bg-red-50 text-red-600',
-  success: 'bg-green-50 text-green-600',
-  neutral: 'bg-slate-100 text-slate-500',
-  warning: 'bg-amber-50 text-amber-600',
+  error: 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400',
+  success: 'bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400',
+  neutral: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+  warning: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
 }
 
 function IncidentQueue() {
@@ -32,13 +32,13 @@ function IncidentQueue() {
   const pageItems = INCIDENTS.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
-    <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%]">
+    <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%] dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-sm font-semibold text-slate-900">Incident &amp; Event Stream</span>
-        <button type="button" className="text-slate-400" aria-label="More options">⋮</button>
+        <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Incident &amp; Event Stream</span>
+        <button type="button" className="text-slate-400 dark:text-slate-500" aria-label="More options">⋮</button>
       </div>
 
-      <div className="flex flex-col divide-y divide-slate-100">
+      <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
         {pageItems.map((item) => (
           <div key={item.id} className="flex gap-3 py-3">
             <span
@@ -48,13 +48,13 @@ function IncidentQueue() {
             </span>
             <div className="min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <span className="text-[13px] font-medium text-slate-800">{item.title}</span>
+                <span className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{item.title}</span>
                 {item.timestamp && (
-                  <span className="shrink-0 whitespace-nowrap text-[11px] text-slate-400">{item.timestamp}</span>
+                  <span className="shrink-0 whitespace-nowrap text-[11px] text-slate-400 dark:text-slate-500">{item.timestamp}</span>
                 )}
               </div>
-              {item.location && <div className="text-xs text-slate-500">{item.location}</div>}
-              <div className="text-xs text-slate-500">
+              {item.location && <div className="text-xs text-slate-500 dark:text-slate-400">{item.location}</div>}
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 {item.detailLine} :{' '}
                 <a href="#" className="text-blue-600 underline">{item.linkText}</a>
               </div>
@@ -68,7 +68,7 @@ function IncidentQueue() {
           type="button"
           disabled={page === 1}
           onClick={() => setPage((p) => p - 1)}
-          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
+          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
         >
           ‹
         </button>
@@ -78,7 +78,7 @@ function IncidentQueue() {
             type="button"
             onClick={() => setPage(p)}
             className={`h-6 w-6 rounded-full text-xs transition-colors ${
-              p === page ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'
+              p === page ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
             }`}
           >
             {p}
@@ -88,7 +88,7 @@ function IncidentQueue() {
           type="button"
           disabled={page === totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30"
+          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
         >
           Next ›
         </button>

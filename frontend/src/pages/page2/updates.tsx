@@ -15,10 +15,10 @@ const ENTRIES: AnprEntry[] = [
 ]
 
 const TYPE_STYLE: Record<VehicleType, { bg: string; fg: string; icon: string }> = {
-  Car: { bg: 'bg-blue-50', fg: 'text-blue-700', icon: '🚗' },
-  Truck: { bg: 'bg-red-50', fg: 'text-red-700', icon: '🚚' },
-  Bike: { bg: 'bg-green-50', fg: 'text-green-700', icon: '🏍️' },
-  Bus: { bg: 'bg-amber-50', fg: 'text-amber-700', icon: '🚌' },
+  Car: { bg: 'bg-blue-50 dark:bg-blue-500/10', fg: 'text-blue-700 dark:text-blue-400', icon: '🚗' },
+  Truck: { bg: 'bg-red-50 dark:bg-red-500/10', fg: 'text-red-700 dark:text-red-400', icon: '🚚' },
+  Bike: { bg: 'bg-green-50 dark:bg-green-500/10', fg: 'text-green-700 dark:text-green-400', icon: '🏍️' },
+  Bus: { bg: 'bg-amber-50 dark:bg-amber-500/10', fg: 'text-amber-700 dark:text-amber-400', icon: '🚌' },
 }
 
 function AnprLog() {
@@ -29,10 +29,10 @@ function AnprLog() {
   )
 
   return (
-    <div className="flex w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-4 flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2">
+    <div className="flex w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mb-4 flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-slate-800">
         <input
-          className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+          className="flex-1 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200 dark:placeholder:text-slate-500"
           type="text"
           placeholder="Search..."
           value={search}
@@ -43,7 +43,7 @@ function AnprLog() {
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+            <tr className="border-b border-slate-100 text-left text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
               <th className="px-2 py-2.5 font-medium" />
               <th className="px-2 py-2.5 font-medium">Time</th>
               <th className="px-2 py-2.5 font-medium">Vehicle Number</th>
@@ -54,13 +54,13 @@ function AnprLog() {
           </thead>
           <tbody>
             {filtered.map((entry) => (
-              <tr key={entry.id} className="border-b border-slate-50 last:border-0">
+              <tr key={entry.id} className="border-b border-slate-50 last:border-0 dark:border-slate-800/60">
                 <td className="px-2 py-2">
                   <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
                 </td>
-                <td className="px-2 py-2 text-slate-600">{entry.time}</td>
-                <td className="px-2 py-2 font-medium text-slate-800">{entry.vehicleNumber}</td>
-                <td className="px-2 py-2 text-slate-500">{entry.camera}</td>
+                <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{entry.time}</td>
+                <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{entry.vehicleNumber}</td>
+                <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{entry.camera}</td>
                 <td className="px-2 py-2">
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${TYPE_STYLE[entry.vehicleType].bg} ${TYPE_STYLE[entry.vehicleType].fg}`}
@@ -69,7 +69,7 @@ function AnprLog() {
                   </span>
                 </td>
                 <td className="px-2 py-2">
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                  <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-500/10 dark:text-green-400">
                     {entry.confidence}%
                   </span>
                 </td>
@@ -78,7 +78,7 @@ function AnprLog() {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400">No vehicles found.</p>
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">No vehicles found.</p>
         )}
       </div>
     </div>

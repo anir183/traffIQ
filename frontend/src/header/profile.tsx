@@ -1,21 +1,19 @@
 import ProfilePic from '../assets/profile1.webp'
-import Notification from './notification'
-import Light from './light'
+import { Bell } from 'lucide-react'
+import ThemeToggle from '../theme/ThemeToggle'
 
 function App() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
-        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900">
-          <Light size={24} />
-        </div>
-        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900">
-          <Notification size={22} />
+      <div className="flex items-center gap-2 border-r border-slate-200 pr-4 dark:border-slate-700">
+        <ThemeToggle/>
+        <div className="cursor-pointer text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+          <Bell size={22} />
         </div>
       </div>
       <div className="hidden text-right md:block">
-        <p className="text-sm font-medium leading-tight text-slate-900">Rudraneel</p>
-        <p className="text-xs leading-tight text-slate-500">Traffic Control</p>
+        <p className="text-sm font-medium leading-tight text-slate-900 dark:text-slate-100">Rudraneel</p>
+        <p className="text-xs leading-tight text-slate-500 dark:text-slate-400">Traffic Control</p>
       </div>
       <img
         className="h-9 w-9 rounded-full border border-slate-200 object-cover"

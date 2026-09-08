@@ -11,8 +11,8 @@ const Analysis = lazy(() => import('../pages/stat'))
 
 function App() {
   return (
-    <div className="min-w-0 flex-1 overflow-auto rounded-2xl bg-white">
-      <Suspense fallback={<div className="p-6 text-sm text-slate-400">Loading&hellip;</div>}>
+    <div className="min-w-0 flex-1 overflow-auto rounded-2xl bg-white dark:bg-slate-900">
+      <Suspense fallback={<div className="p-6 text-sm text-slate-400 dark:text-slate-500">Loading&hellip;</div>}>
         <Routes>
           <Route path='/' element={<Overview/>} />
           <Route path='/feed' element={<Feed/>} />
