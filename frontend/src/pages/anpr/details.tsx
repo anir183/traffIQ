@@ -9,7 +9,7 @@ const rows = [
 
 export default function VehicleInformation() {
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <h3 className="mb-4 text-base font-semibold text-slate-900">Vehicle Information</h3>
 
       <dl className="space-y-3">

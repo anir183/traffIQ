@@ -62,8 +62,8 @@ export default function VehicleTrajectoryMap() {
   }, [])
 
   return (
-    <div className="flex w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
+    <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <h3 className="text-base font-semibold text-slate-900">Vehicle Trajectory</h3>
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <span className="flex items-center gap-1">
@@ -77,7 +77,7 @@ export default function VehicleTrajectoryMap() {
         </div>
       </div>
 
-      <div ref={mapRef} className="h-72 w-full overflow-hidden rounded-lg border border-slate-100" />
+      <div ref={mapRef} className="min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100" />
     </div>
   )
 }

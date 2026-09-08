@@ -59,15 +59,15 @@ export default function RecentIncidents({ filter = 'all' }: { filter?: FilterKey
 
   return (
     <div className="flex w-full max-w-sm flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-1 pl-2 pt-2 text-base font-semibold text-slate-900">Recent Incidents</h3>
+      <h3 className="mb-1 shrink-0 pl-2 pt-2 text-base font-semibold text-slate-900">Recent Incidents</h3>
 
-      <div className="divide-y divide-slate-100">
+      <div className="min-h-0 flex-1 divide-y divide-slate-100 overflow-auto">
         {incidents.map((incident) => (
           <IncidentRow key={incident.id} incident={incident} />
         ))}
       </div>
       {incidents.length === 0 && (
-        <p className="py-8 text-center text-sm text-slate-400">No incidents match this filter.</p>
+        <p className="flex-1 py-8 text-center text-sm text-slate-400">No incidents match this filter.</p>
       )}
     </div>
   )
