@@ -17,7 +17,7 @@ export default function PlateSearch() {
 
   return (
     <div className="w-full max-w-xl">
-      <div className="mb-6 flex items-center gap-8 border-b border-slate-200 dark:border-slate-700">
+      <div className="mb-6 flex items-center justify-center gap-8 border-b border-slate-200 dark:border-slate-700">
         {TABS.map((tab) => {
           const isActive = tab === activeTab;
           return (

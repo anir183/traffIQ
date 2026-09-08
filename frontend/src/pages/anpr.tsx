@@ -8,7 +8,7 @@ const anpr = () => {
       <div className="flex shrink-0 items-center justify-center gap-3">
         <span className="h-3 w-3 rounded-full bg-green-500" />
         <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          ANPR Intelligence
+          Trajectory Recognition
         </h2>
       </div>
       <h3 className="shrink-0 text-center text-sm text-slate-500 dark:text-slate-400">

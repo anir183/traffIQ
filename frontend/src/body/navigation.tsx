@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   { to: "/", label: "Overview", end: true },
   { to: "/feed", label: "Live Feed", end: false },
-  { to: "/anpr", label: "ANPR Intelligence", end: false },
+  { to: "/anpr", label: "Trajectory Recognition", end: false },
   { to: "/incident", label: "Incident Management", end: false },
   { to: "/analysis", label: "Traffic Analysis", end: false },
 ];
