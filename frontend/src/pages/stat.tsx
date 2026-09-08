@@ -5,7 +5,9 @@ import VolumeSpeed from "./stat/volume-speed";
 import VehicleGraph from "./stat/vehicletype";
 import Insights from "./stat/insights";
 
-const TIME_RANGES = ["Last 24 Hours", "Last 7 Days", "Last 30 Days"];
+const CONTROL_BUTTON_CLASS =
+  "flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800";
+const TIME_RANGES = ["Last 24 Hours", "Last 7 Days", "Last 30 Days", "Custom"];
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTH_NAMES = [
   "January",
@@ -25,9 +27,7 @@ const MONTH_NAMES = [
 interface TrafficAnalysisHeaderProps {
   title?: string;
   subtitle?: string;
-  date?: Date;
   timeRange?: string;
-  onDateChange?: (date: Date) => void;
   onTimeRangeChange?: (range: string) => void;
 }
 
@@ -138,20 +138,20 @@ function DatePicker({
 export default function TrafficAnalysisHeader({
   title = "Traffic Analysis",
   subtitle = "Detailed traffic insights and analytics",
-  date,
   timeRange = "Last 24 Hours",
-  onDateChange,
   onTimeRangeChange,
 }: TrafficAnalysisHeaderProps) {
-  const [selectedDate, setSelectedDate] = useState(
-    date ?? new Date(2026, 8, 6),
-  );
-  const [isDateOpen, setIsDateOpen] = useState(false);
+  const [activeRange, setActiveRange] = useState(timeRange);
+  const [fromDate, setFromDate] = useState(new Date(2026, 8, 6));
+  const [toDate, setToDate] = useState(new Date(2026, 8, 9));
   const [isRangeOpen, setIsRangeOpen] = useState(false);
+  const [isFromOpen, setIsFromOpen] = useState(false);
+  const [isToOpen, setIsToOpen] = useState(false);
 
-  const handleDateSelect = (newDate: Date) => {
-    setSelectedDate(newDate);
-    onDateChange?.(newDate);
+  const handleRangeSelect = (range: string) => {
+    setActiveRange(range);
+    onTimeRangeChange?.(range);
+    setIsRangeOpen(false);
   };
 
   return (
@@ -170,38 +170,14 @@ export default function TrafficAnalysisHeader({
           <div className="relative">
             <button
               type="button"
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
-              onClick={() => {
-                setIsDateOpen((open) => !open);
-                setIsRangeOpen(false);
-              }}
-            >
-              <span className="font-medium">DATE :</span>
-              {formatDate(selectedDate)}
-              <span className="text-xs text-slate-400 dark:text-slate-500">
-                ▾
-              </span>
-            </button>
-
-            {isDateOpen && (
-              <DatePicker
-                selected={selectedDate}
-                onSelect={handleDateSelect}
-                onClose={() => setIsDateOpen(false)}
-              />
-            )}
-          </div>
-
-          <div className="relative">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+              className={CONTROL_BUTTON_CLASS}
               onClick={() => {
                 setIsRangeOpen((open) => !open);
-                setIsDateOpen(false);
+                setIsFromOpen(false);
+                setIsToOpen(false);
               }}
             >
-              {timeRange}
+              {activeRange}
               <span className="text-xs text-slate-400 dark:text-slate-500">
                 ▾
               </span>
@@ -214,10 +190,7 @@ export default function TrafficAnalysisHeader({
                     key={range}
                     type="button"
                     className="block w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
-                    onClick={() => {
-                      onTimeRangeChange?.(range);
-                      setIsRangeOpen(false);
-                    }}
+                    onClick={() => handleRangeSelect(range)}
                   >
                     {range}
                   </button>
@@ -225,6 +198,68 @@ export default function TrafficAnalysisHeader({
               </div>
             )}
           </div>
+
+          {activeRange === "Custom" && (
+            <>
+              <div className="relative">
+                <button
+                  type="button"
+                  className={CONTROL_BUTTON_CLASS}
+                  onClick={() => {
+                    setIsFromOpen((open) => !open);
+                    setIsToOpen(false);
+                    setIsRangeOpen(false);
+                  }}
+                >
+                  <span className="font-medium">FROM :</span>
+                  {formatDate(fromDate)}
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    ▾
+                  </span>
+                </button>
+
+                {isFromOpen && (
+                  <DatePicker
+                    selected={fromDate}
+                    onSelect={(date) => {
+                      setFromDate(date);
+                      setIsFromOpen(false);
+                    }}
+                    onClose={() => setIsFromOpen(false)}
+                  />
+                )}
+              </div>
+
+              <div className="relative">
+                <button
+                  type="button"
+                  className={CONTROL_BUTTON_CLASS}
+                  onClick={() => {
+                    setIsToOpen((open) => !open);
+                    setIsFromOpen(false);
+                    setIsRangeOpen(false);
+                  }}
+                >
+                  <span className="font-medium">TO :</span>
+                  {formatDate(toDate)}
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    ▾
+                  </span>
+                </button>
+
+                {isToOpen && (
+                  <DatePicker
+                    selected={toDate}
+                    onSelect={(date) => {
+                      setToDate(date);
+                      setIsToOpen(false);
+                    }}
+                    onClose={() => setIsToOpen(false)}
+                  />
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
