@@ -80,6 +80,19 @@ One dead scaffold: `useTrafficData.ts` contains `fetch("/api/traffic/overview")`
 - Profile (`header/profile`) — "Rudraneel / Traffic Control" hardcoded.
 - Nav (`body/navigation`) — "Active Circuit: Esplanade-Joka Circuit" hardcoded; Admin/Logs placeholders (future home of blacklist management via `POST/DELETE /api/blacklist`).
 
+### Planned features (not yet built — see §7)
+| Feature | Status | Target contract |
+|---|---|---|
+| Login page + auth | Not built — no auth code exists | `POST /api/auth/login`, refresh, `GET /api/auth/me` (§14.1) |
+| Protected routes + role gating | Not built | §14.2 roles (admin/operator/viewer) |
+| Admin Panel (user CRUD, blacklist mgmt, cameras) | "Coming soon" placeholder | `GET/POST/PUT/DELETE /api/users`, `/api/blacklist`, `/api/cameras` (§14.2) |
+| System Logs (audit trail) | "Coming soon" placeholder | `GET /api/logs` (§14.4) |
+| Settings (display + notification prefs) | Not built | `GET/PUT /api/settings` (§14.3) |
+| Notification bell/dropdown + toasts | Static Bell icon only | `GET/PUT /api/notifications` + SSE (§14.5, §14.7) |
+| Global header search | Non-functional input | `GET /api/search` (§14.6) |
+| Camera live preview | "No signal" placeholder | `/api/cameras.stream_url` + HLS/WebRTC relay (§7) |
+| 404 page | No catch-all route | — (frontend-only) |
+
 ## 5. Gaps that need Backend decisions (reflected in updated Handoff)
 
 - **Gap A — Segment-level traffic:** "Top Congested Segments", "Average Speed by Segment", and "Traffic Density Forecast" have no endpoint. Need either `GET /api/traffic/segments` or an expanded summary payload.
@@ -99,10 +112,12 @@ One dead scaffold: `useTrafficData.ts` contains `fetch("/api/traffic/overview")`
 
 ## 6. Suggested Phasing (P0–P3, for when build begins)
 
-- **P0 — Foundation:** contract types in `src/types/` (mirroring §1–§7), `src/api/` client (base URL, `ApiEnvelope<T>` unwrap, typed error codes, AbortController + retry), `VITE_API_BASE_URL`, backend/mock toggle. Remove TomTom `fetchIncidents` after this.
-- **P1 — Pure-read surfaces:** Live-Feed ANPR log (`/api/anpr/events`), Vehicle info + trajectory search/map (`/api/vehicles/...`), Incident Management list + alert map markers (`/api/alerts`), Analysis stat cards + charts (`/api/traffic/summary`).
-- **P2 — Remaining:** Overview heatmap/stream + event stream (`/api/alerts`), `/api/cameras` (node selector, feed grid, nav circuit), blacklist admin (`POST/DELETE /api/blacklist`), header search + profile into contract.
-- **P3 — Extras:** Resolve Gap A–E with backend, realtime push, camera player (HLS/WebRTC dependency).
+- **P0 — Foundation:** contract types in `src/types/contract/` (mirroring §1–§14), `src/api/` client (base URL, `ApiEnvelope<T>` unwrap, typed error codes, AbortController + retry, mock/live source factory), `VITE_API_BASE_URL` + `VITE_DATA_SOURCE` + `VITE_AUTH_ENABLED`, backend/mock toggle. Auth infrastructure (`AuthProvider`, `useAuth`, `ProtectedRoute`, `RequireRole`), login page, shell refactor (Header/NavSidebar/ContentWindow), 404 page. Delete dead `useTrafficData`. *(Full file-level spec: `docs/Implementation_Plan.md` Phase 0.)*
+- **P1 — Pure-read surfaces:** ANPR log (`/api/anpr/events`), Vehicle info + trajectory search/map (`/api/vehicles/...`), Incident Management list + alert map markers (`/api/alerts`), Analysis stat cards + charts (`/api/traffic/summary`), camera grid/selector (`/api/cameras`), Overview heatmap + event stream from alerts, header search, notification bell, profile dropdown. Delete TomTom `fetchIncidents`/`useViewportIncidents`.
+- **P2 — Auth-gated features:** role-aware nav, admin panel (user CRUD / blacklist / cameras), audit-log viewer, settings page (display + notification prefs), toast system, notification mark-read.
+- **P3 — Extras:** Resolve Gap A–E with backend, SSE realtime (`/api/events/stream`), camera player (HLS/WebRTC), segments/density endpoints.
+
+*See `docs/Implementation_Plan.md` for the authoritative, file-by-file spec of all four phases.*
 
 ## 7. Concrete checklist of hardcoded locations (future replacements)
 

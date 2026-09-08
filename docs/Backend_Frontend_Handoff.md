@@ -390,3 +390,162 @@ Live Feed and the alert stream would ideally `SSE`: `GET /api/events/stream?type
 - Frontend shelf `useTrafficData.ts` refers to `/api/traffic/overview` — the real endpoint is `/api/traffic/summary` (frontend will align).
 - Frontend's hardcoded demo data is documented in `docs/Frontend_Requirements.md` (co-located with this file) for the replacement checklist.
 - Once endpoints above are live (even with mock data), the frontend can swap out all hardcoded arrays with zero shape changes — existing keys/types in Sections 1–8 remain the source of truth.
+
+---
+
+## 14. Frontend Requirements — Phase 2 (Auth, Users, Settings, Logs, Notifications)
+
+Added by frontend team (2026-09-08) alongside `docs/Implementation_Plan.md`. Auth flow is JWT with refresh-token rotation. All fields below are additive to Sections 1–12.
+
+### 14.1 Authentication
+
+```
+POST   /api/auth/login    { email, password }           → LoginResponse
+POST   /api/auth/refresh  { refresh_token }             → RefreshResponse
+POST   /api/auth/logout   { refresh_token }             → 204
+GET    /api/auth/me                                      → User (session restoration)
+```
+
+```json
+// LoginResponse / RefreshResponse
+{
+  "access_token": "eyJhbGciOi...",
+  "expires_in": 900,
+  "refresh_token": "rft_abc123",
+  "token_type": "Bearer",
+  "user": { "id": "usr_001", "name": "Rudraneel", "email": "admin@traffiq.in", "role": "admin" }
+}
+```
+
+**Token storage contract:** `access_token` lives in frontend memory only; `refresh_token` is set as an **httpOnly cookie** by the backend on login (path `/api/auth/refresh`). Backend rotates it on every refresh. 401 on any endpoint triggers silent refresh + retry once; refresh failure clears session → frontend redirects to `/login`.
+
+### 14.2 User + Roles
+
+`UserRole` enum: `admin | operator | viewer`.
+
+Permissions:
+- `admin` — all pages + user CRUD + blacklist management + audit logs + settings
+- `operator` — dashboards + alert triage (update `status`)
+- `viewer` — read-only dashboards
+
+```json
+{
+  "id": "usr_001",
+  "name": "Rudraneel",
+  "email": "admin@traffiq.in",
+  "role": "admin",
+  "avatar_url": "https://.../avatar.png",
+  "circuits": ["Esplanade", "Joka"],
+  "created_at": "2026-09-01T10:00:00Z",
+  "is_active": true
+}
+```
+
+```
+GET    /api/users?limit&offset&search&role             → Paginated<User>   (admin)
+POST   /api/users                                      → User               (admin; creates with password)
+PUT    /api/users/{user_id}                            → User               (admin; update name/role/password/is_active)
+DELETE /api/users/{user_id}                            → 204                (admin)
+```
+
+**Accounts are admin-created only — no self-registration.** Backend enforces password policy: ≥8 chars, ≥1 uppercase, ≥1 lowercase, ≥1 number.
+
+### 14.3 User Settings
+
+```
+GET    /api/settings/{user_id}                          → UserSettings
+PUT    /api/settings/{user_id}                          → UserSettings
+```
+
+```json
+{
+  "theme": "system",
+  "timezone": "Asia/Kolkata",
+  "layout_density": "compact",
+  "notification_prefs": {
+    "alert_high": true,
+    "alert_medium": true,
+    "plate_detected": false,
+    "system": true
+  }
+}
+```
+
+### 14.4 Audit Logs
+
+```
+GET    /api/logs?user_id&action&entity_type&from&to&limit&offset&sort   → Paginated<AuditLogEntry>  (admin)
+```
+
+```json
+{
+  "id": "log_001",
+  "user_id": "usr_001",
+  "user_name": "Rudraneel",
+  "action": "create",
+  "entity_type": "blacklist",
+  "entity_id": "WB02AM7555",
+  "details": "Added plate to blacklist",
+  "timestamp": "2026-09-06T14:50:00Z",
+  "ip_address": "192.168.1.10"
+}
+```
+
+`action` enum: `login | logout | create | update | delete`.
+`entity_type` enum: `user | blacklist | alert | camera | settings`.
+
+### 14.5 Notifications
+
+```
+GET    /api/notifications?limit&offset&unread_only     → Paginated<Notification>
+PUT    /api/notifications/{id}/read                    → 204
+PUT    /api/notifications/read-all                     → 204
+```
+
+```json
+{
+  "id": "ntf_001",
+  "type": "alert",
+  "severity": "high",
+  "title": "Blacklisted vehicle detected",
+  "message": "WB02AM7555 at CAM_002, Park Street",
+  "read": false,
+  "entity_type": "alert",
+  "entity_id": "alrt_44a1",
+  "created_at": "2026-09-06T14:47:55Z"
+}
+```
+
+`type` enum: `alert | plate_detected | system`.
+
+### 14.6 Global Search
+
+```
+GET    /api/search?q=WB02&types=plate,camera,alert&limit=8
+→ { "results": [
+    { "type": "plate", "label": "WB02AM7555", "subtitle": "GV_00017 · Car · Active", "href": "/anpr?plate=WB02AM7555" },
+    { "type": "camera", "label": "CAM_001", "subtitle": "MG Road Junction - North", "href": "/feed?camera=CAM_001" }
+  ] }
+```
+
+`type` enum: `plate | camera | alert`.
+
+### 14.7 Realtime (roadmap)
+
+`GET /api/events/stream` — SSE channel. Events: `alert.created`, `notification.created`. Connection authenticated via cookie. Auto-reconnect with exponential backoff.
+
+### 14.8 Error codes (extend §12.7)
+
+Add: `INVALID_CREDENTIALS`, `EMAIL_TAKEN`, `PASSWORD_WEAK`, `FORBIDDEN`, `NOT_FOUND`.
+
+### 14.9 Backend security requirements
+
+1. `refresh_token` delivered/rotated via httpOnly cookie — never exposed to JS.
+2. CSRF token (double-submit cookie) for `POST/PUT/DELETE` mutations when using cookie auth.
+3. Rate-limit login (+ account lockout after N failures).
+4. All admin endpoints enforce `admin` role server-side (frontend gating is UX only).
+5. Audit-log every mutation + login/logout.
+
+### 14.10 Alert triage ownership
+
+`alerts.status` (`active | investigating | resolved`, §12.2) is **backend-owned**, updated via `POST /api/alerts/{alert_id}/status` and recorded in audit logs. Frontend renders triage from backend state — no local override.

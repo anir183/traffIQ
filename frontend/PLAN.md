@@ -101,6 +101,17 @@ Full visual and architectural overhaul of the TraffIQ traffic management dashboa
 - **`index.css`:** dark-theme MapLibre popup styles
 - Rules out API overuse: ~1 request per viewport change (dedup+cooldown) + 1/30s while visible
 
+## Phase 11: Post-Redesign Fixes & Foundation Planning ✅
+
+- **Node container / locale fixes:** `dns`, `stdin`, `fs` polyfills added to `vite.config.ts` (fixes `ERR_INVALID_ARG_TYPE` from `dns.setDefaultResultOrder`); `npm run lint` uses `LC_ALL=C.UTF-8(0)` wrapper (uses same locale logic as CI); `lint:try` script removed
+- **Dynamic page sizing:** `src/hooks/useListPageSize.ts` — ResizeObserver + `[data-sm-row]` measurement → rows-per-page adapts to list height (min/max clamps, `safePage` on resize, deduped setState, requires `recomputeKey`); wired into incident-queue (min 3/max 10), updates log (min 5/max 15), incidents list (min 4/max 12); hard-coded `PAGE_SIZE` constants removed; lists got `overflow-y-auto`
+- **Logo:** `assets/Union.svg` renamed → `assets/logo.svg`; `name.tsx` import fixed; rendered smaller (`h-6`, `p-1` padding)
+- **Rename:** "ANPR Intelligence" → "Trajectory Recognition" (`navigation.tsx`, `pages/anpr.tsx`)
+- **Tab alignment:** ANPR search tabs centered (`justify-center`)
+- **Planning (no code):** authored `../docs/Implementation_Plan.md` (4-phase, file-level) + `../docs/Frontend_Requirements.md`; added §14 (auth/users/settings/logs/notifications/search/SSE contracts) to `../docs/Backend_Frontend_Handoff.md`
+
+> **Next work (Phases 0–3) is specified in `../docs/Implementation_Plan.md`.** It covers: pluggable data layer (mock/live toggle via `VITE_DATA_SOURCE`), auth (JWT + roles, mock login `admin@traffiq.in`/`admin123`), login page, shell refactor, 404, data hooks wiring into every page, admin panel, system logs, settings, notifications/toasts, then realtime SSE + camera player. No implementation started — awaiting go-ahead.
+
 ## Verification
 
 - `npm run lint` → 0 errors ✅
