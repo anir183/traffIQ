@@ -1,34 +1,36 @@
-interface CameraCount {
-  camera: string;
+import { CAMERAS } from "../page2/cameraData";
+
+interface CameraCountRow {
+  id: string;
   count: number;
 }
 
-const DATA: CameraCount[] = [
-  { camera: "CAM_001", count: 18234 },
-  { camera: "CAM_002", count: 15621 },
-  { camera: "CAM_003", count: 14982 },
-  { camera: "CAM_004", count: 12450 },
-  { camera: "CAM_005", count: 10321 },
-];
+const ROWS: CameraCountRow[] = CAMERAS.map((cam, i) => ({
+  id: cam.id,
+  count: 18500 - i * 310 + ((i * 37) % 900),
+})).sort((a, b) => b.count - a.count);
 
-const MAX_COUNT = Math.max(...DATA.map((d) => d.count));
+const MAX_COUNT = Math.max(...ROWS.map((row) => row.count));
 
 export default function CameraVehicleCount() {
   return (
-    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-      <div className="mb-4 flex items-center justify-between">
+    <div className="flex h-full min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
           Camera-wise Vehicle Count
         </h3>
+        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          {ROWS.length} cameras
+        </span>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {DATA.map((row) => {
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
+        {ROWS.map((row) => {
           const widthPct = (row.count / MAX_COUNT) * 100;
           return (
-            <div key={row.camera}>
+            <div key={row.id}>
               <span className="mb-1 block text-sm text-slate-500 dark:text-slate-400">
-                {row.camera}
+                {row.id}
               </span>
               <div className="flex items-center gap-3">
                 <div className="h-4 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -37,7 +39,7 @@ export default function CameraVehicleCount() {
                     style={{ width: `${widthPct}%` }}
                   />
                 </div>
-                <span className="w-16 text-right text-sm font-medium text-slate-900 dark:text-slate-100">
+                <span className="w-16 shrink-0 text-right text-sm font-medium text-slate-900 dark:text-slate-100">
                   {row.count.toLocaleString()}
                 </span>
               </div>

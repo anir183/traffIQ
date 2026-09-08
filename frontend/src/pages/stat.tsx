@@ -1,9 +1,9 @@
 import { useState } from "react";
 import StatCard from "../components/ui/stat-card";
 import CameraCount from "./stat/cameraviewcount";
-import TrafficVolume from "./stat/trafficvolume";
-import AverageSpeed from "./stat/avgspeedgraph";
+import VolumeSpeed from "./stat/volume-speed";
 import VehicleGraph from "./stat/vehicletype";
+import Insights from "./stat/insights";
 
 const TIME_RANGES = ["Last 24 Hours", "Last 7 Days", "Last 30 Days"];
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -256,22 +256,22 @@ export default function TrafficAnalysisHeader({
         />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-6 xl:flex-row">
-        <div className="min-w-0 w-full xl:w-[40%]">
-          <CameraCount />
+      <div className="grid min-w-0 w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <VolumeSpeed />
         </div>
-        <div className="grid min-w-0 w-full grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="min-w-0">
-            <TrafficVolume />
+
+        <div className="flex min-h-0 flex-col gap-6">
+          <div className="min-h-0 grow basis-[240px] shrink-0">
+            <CameraCount />
           </div>
-          <div className="min-w-0">
-            <AverageSpeed />
-          </div>
-          <div className="min-w-0">
+          <div className="shrink-0">
             <VehicleGraph />
           </div>
         </div>
       </div>
+
+      <Insights />
     </div>
   );
 }
