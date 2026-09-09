@@ -25,7 +25,7 @@ export default function VehicleInformation({ plate }: { plate: string }) {
     : [];
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
-    { min: 4, max: 12 },
+    { min: 4 },
     history.length,
   );
 
@@ -80,17 +80,17 @@ export default function VehicleInformation({ plate }: { plate: string }) {
 
           <div
             ref={containerRef}
-            className="min-h-0 flex-1 overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-800"
+            className="min-h-0 flex-1 overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800"
           >
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full table-fixed border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                  <th className="px-3 py-2 font-medium" />
-                  <th className="px-3 py-2 font-medium">Time</th>
-                  <th className="px-3 py-2 font-medium">Camera</th>
+                  <th className="w-6 px-3 py-2 font-medium" />
+                  <th className="w-24 px-3 py-2 font-medium">Time</th>
+                  <th className="w-28 px-3 py-2 font-medium">Camera</th>
                   <th className="px-3 py-2 font-medium">Location</th>
-                  <th className="px-3 py-2 font-medium">Speed</th>
-                  <th className="px-3 py-2 font-medium">Confidence</th>
+                  <th className="w-20 px-3 py-2 font-medium">Speed</th>
+                  <th className="w-24 px-3 py-2 font-medium">Confidence</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,16 +103,16 @@ export default function VehicleInformation({ plate }: { plate: string }) {
                     <td className="px-3 py-2">
                       <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
                     </td>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                    <td className="truncate px-3 py-2 text-slate-600 dark:text-slate-300">
                       {record.time}
                     </td>
-                    <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">
+                    <td className="truncate px-3 py-2 font-medium text-slate-800 dark:text-slate-200">
                       {record.camera}
                     </td>
-                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
+                    <td className="truncate px-3 py-2 text-slate-500 dark:text-slate-400">
                       {record.location}
                     </td>
-                    <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
+                    <td className="truncate px-3 py-2 text-slate-600 dark:text-slate-300">
                       {record.speed} km/h
                     </td>
                     <td className="px-3 py-2">

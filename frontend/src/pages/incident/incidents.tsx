@@ -38,13 +38,13 @@ function IncidentRow({ incident }: { incident: Incident }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+        <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
           {incident.title}
         </p>
         <p className="truncate text-sm text-slate-500 dark:text-slate-400">
           {incident.detail}
         </p>
-        <p className="text-sm text-slate-400 dark:text-slate-500">
+        <p className="truncate text-sm text-slate-400 dark:text-slate-500">
           {incident.location}
         </p>
       </div>
@@ -81,7 +81,7 @@ export default function RecentIncidents({
   }, [alerts, filter]);
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
-    { min: 4, max: 12 },
+    { min: 4 },
     incidents.length,
   );
 
@@ -98,7 +98,7 @@ export default function RecentIncidents({
 
       <div
         ref={containerRef}
-        className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800"
+        className="min-h-0 flex-1 divide-y divide-slate-100 overflow-hidden dark:divide-slate-800"
       >
         {pageItems.map((incident) => (
           <IncidentRow key={incident.id} incident={incident} />

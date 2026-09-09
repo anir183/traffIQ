@@ -30,7 +30,7 @@ function IncidentQueue() {
     incidentStreamAlerts(alerts).map(alertToEventStream);
   const [page, setPage] = useState(1);
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
-    { min: 3, max: 12 },
+    { min: 3 },
     items.length,
   );
   const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
@@ -53,10 +53,10 @@ function IncidentQueue() {
 
       <div
         ref={containerRef}
-        className="flex min-h-0 flex-1 flex-col divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800"
+        className="flex min-h-0 flex-1 flex-col divide-y divide-slate-100 overflow-hidden dark:divide-slate-800"
       >
         {pageItems.map((item) => (
-          <div key={item.id} data-sm-row className="flex gap-3 py-3">
+          <div key={item.id} data-sm-row className="flex gap-3 py-2">
             <span
               className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${STATUS_STYLE[item.status]}`}
             >
@@ -64,7 +64,7 @@ function IncidentQueue() {
             </span>
             <div className="min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <span className="text-[13px] font-medium text-slate-800 dark:text-slate-200">
+                <span className="min-w-0 truncate text-[13px] leading-4 font-medium text-slate-800 dark:text-slate-200">
                   {item.title}
                 </span>
                 {item.timestamp && (
@@ -73,12 +73,10 @@ function IncidentQueue() {
                   </span>
                 )}
               </div>
-              {item.location && (
-                <div className="text-xs text-slate-500 dark:text-slate-400">
-                  {item.location}
-                </div>
-              )}
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="truncate text-xs leading-4 text-slate-500 dark:text-slate-400">
+                {item.location}
+              </div>
+              <div className="truncate text-xs leading-4 text-slate-500 dark:text-slate-400">
                 {item.detailLine} :{" "}
                 <a href="#" className="text-blue-600 underline">
                   {item.linkText}

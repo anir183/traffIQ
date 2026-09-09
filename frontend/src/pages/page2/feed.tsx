@@ -45,7 +45,7 @@ export default function Feed() {
   const [page, setPage] = useState(1);
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
-    { min: 2, max: 8 },
+    { min: 2 },
     cameras.length,
   );
 
@@ -71,7 +71,7 @@ export default function Feed() {
 
       <div
         ref={containerRef}
-        className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-y-auto"
+        className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-hidden"
       >
         {pageCameras.map((cam) => (
           <CameraView
