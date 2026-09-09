@@ -1,15 +1,16 @@
 import { useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Video, X } from "lucide-react";
+import { useCameras } from "../../hooks/useCameras";
 import {
-  getCameraById,
-  getCameraNeighbors,
-  getCameraPosition,
-  CAMERAS,
-} from "./cameraData";
+  cameraById,
+  cameraNeighbors,
+  cameraPosition,
+} from "../../types/ui/adapters";
 
 function CameraViewer() {
   const { cameraId } = useParams<{ cameraId: string }>();
+  const { items: cameras, loading } = useCameras();
   const navigate = useNavigate();
   const close = useCallback(() => navigate(-1), [navigate]);
 
@@ -22,11 +23,13 @@ function CameraViewer() {
   }, [close]);
 
   if (!cameraId) return null;
-  const camera = getCameraById(cameraId);
+  const camera = loading ? undefined : cameraById(cameras, cameraId);
   if (!camera) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 text-slate-200">
-        <p className="text-lg font-medium">Camera not found</p>
+        <p className="text-lg font-medium">
+          {loading ? "Loading…" : "Camera not found"}
+        </p>
         <button
           type="button"
           onClick={close}
@@ -38,8 +41,8 @@ function CameraViewer() {
     );
   }
 
-  const neighbors = getCameraNeighbors(cameraId);
-  const position = getCameraPosition(cameraId);
+  const neighbors = cameraNeighbors(cameras, cameraId);
+  const position = cameraPosition(cameras, cameraId);
 
   return (
     <div
@@ -80,7 +83,9 @@ function CameraViewer() {
           <button
             type="button"
             onClick={() =>
-              navigate(`/feed/cam/${neighbors.prev.id}`, { replace: true })
+              navigate(`/feed/cam/${neighbors.prev.camera_id}`, {
+                replace: true,
+              })
             }
             aria-label={`Previous camera: ${neighbors.prev.name}`}
             className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-slate-800/80 p-2.5 text-slate-300 transition-colors hover:bg-slate-700"
@@ -102,7 +107,9 @@ function CameraViewer() {
           <button
             type="button"
             onClick={() =>
-              navigate(`/feed/cam/${neighbors.next.id}`, { replace: true })
+              navigate(`/feed/cam/${neighbors.next.camera_id}`, {
+                replace: true,
+              })
             }
             aria-label={`Next camera: ${neighbors.next.name}`}
             className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-slate-800/80 p-2.5 text-slate-300 transition-colors hover:bg-slate-700"
@@ -116,7 +123,7 @@ function CameraViewer() {
       <div className="flex items-center justify-between border-t border-slate-800 px-6 py-2.5">
         {position !== null && (
           <span className="text-xs text-slate-500">
-            {position} / {CAMERAS.length}
+            {position} / {cameras.length}
           </span>
         )}
         <span className="text-xs text-slate-600">Esc to close</span>

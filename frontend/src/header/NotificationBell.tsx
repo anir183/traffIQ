@@ -4,9 +4,11 @@ import type { LucideIcon } from "lucide-react";
 import { Bell, Route, TriangleAlert } from "lucide-react";
 import type { Incident, IncidentIcon } from "../types/traffic";
 import {
-  getActiveCount,
-  getRecentIncidents,
-} from "../pages/incident/incidentData";
+  activeAlertCount,
+  activeAlerts,
+  alertToIncident,
+} from "../types/ui/adapters";
+import { useAlerts } from "../hooks/useAlerts";
 import StatusBadge from "../components/ui/badge";
 
 const ICON_STYLES: Record<
@@ -52,9 +54,10 @@ function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { items: alerts } = useAlerts();
 
-  const activeCount = getActiveCount();
-  const recent = getRecentIncidents(MAX_ITEMS);
+  const activeCount = activeAlertCount(alerts);
+  const recent = activeAlerts(alerts, MAX_ITEMS).map(alertToIncident);
 
   useEffect(() => {
     if (!open) return;

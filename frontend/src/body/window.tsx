@@ -9,6 +9,7 @@ const Anpr = lazy(() => import("../pages/anpr"));
 const Admin = lazy(() => import("../pages/admin"));
 const Logs = lazy(() => import("../pages/logs"));
 const Analysis = lazy(() => import("../pages/stat"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/logs" element={<Logs />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
     </div>

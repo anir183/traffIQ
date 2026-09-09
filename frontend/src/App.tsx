@@ -1,12 +1,21 @@
-import Hero from "./header";
-import Body from "./body";
+import { Route, Routes } from "react-router-dom";
+import ProtectedLayout from "./components/layout/ProtectedLayout";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import LoginPage from "./pages/auth/LoginPage";
 
 function App() {
   return (
-    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
-      <Hero />
-      <Body />
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="*"
+        element={
+          <ProtectedRoute>
+            <ProtectedLayout />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 

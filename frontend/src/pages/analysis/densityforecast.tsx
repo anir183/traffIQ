@@ -8,7 +8,8 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from "recharts";
-import { useTrafficData } from "./useTrafficData";
+import { useTrafficDensityForecast } from "../../hooks/useTrafficDensityForecast";
+import { forecastToDensityPoints } from "../../types/ui/adapters";
 
 const axisTick = { fontSize: 10, fill: "var(--chart-axis)" } as const;
 const tooltipStyle = {
@@ -20,7 +21,8 @@ const tooltipStyle = {
 } as const;
 
 function DensityForecastChart() {
-  const { data } = useTrafficData();
+  const { data } = useTrafficDensityForecast();
+  const points = data ? forecastToDensityPoints(data.points) : [];
 
   return (
     <div className="flex w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[40%] dark:border-slate-700 dark:bg-slate-900">
@@ -29,7 +31,7 @@ function DensityForecastChart() {
       </span>
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data.densityForecast}>
+          <LineChart data={points}>
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}

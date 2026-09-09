@@ -1,19 +1,17 @@
 import { useEffect, useRef } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { TomTomMap } from "@tomtom-org/maps-sdk/map";
+import type { Map } from "maplibre-gl";
 import {
-  ensureTomTomConfig,
-  applyTomTomTheme,
+  baseStyle,
+  applyMapTheme,
   addPulseMarker,
   KOLKATA_CENTER,
   fitBoundsToCoordinates,
 } from "../../components/map/helpers";
 import { useTheme } from "../../theme/useTheme";
-
-type LngLat = { lng: number; lat: number };
-
-const INCIDENT_1: LngLat = { lng: 88.3095, lat: 22.5975 };
-const INCIDENT_2: LngLat = { lng: 88.4103, lat: 22.582 };
+import { useAlerts } from "../../hooks/useAlerts";
+import { mapAlertMarkers } from "../../types/ui/adapters";
 
 const LEGEND = [
   { label: "Normal", color: "#22c55e" },
@@ -22,50 +20,53 @@ const LEGEND = [
   { label: "Incident", color: "#dc2626" },
 ];
 
+function drawMarkers(map: Map, markers: [number, number][]): void {
+  if (markers.length === 0) return;
+  markers.forEach(([lng, lat]) => addPulseMarker(map, [lng, lat]));
+  if (markers.length > 1) {
+    fitBoundsToCoordinates(map, markers, 90);
+  }
+}
+
 export default function IncidentMap() {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<TomTomMap | null>(null);
-  const markersAdded = useRef(false);
+  const mapInstance = useRef<Map | null>(null);
+  const drawnKey = useRef("");
   const { resolvedTheme } = useTheme();
+  const { items } = useAlerts();
+  const markers = mapAlertMarkers(items);
 
   useEffect(() => {
-    ensureTomTomConfig();
     if (!mapRef.current) return;
-
-    const map = new TomTomMap({
-      mapLibre: {
-        container: mapRef.current,
-        center: KOLKATA_CENTER,
-        zoom: 12,
-      },
+    const map = new maplibregl.Map({
+      container: mapRef.current,
+      style: baseStyle(),
+      center: KOLKATA_CENTER,
+      zoom: 12,
     });
     mapInstance.current = map;
-
-    map.mapLibreMap.on("load", () => {
-      if (markersAdded.current) return;
-      markersAdded.current = true;
-      addPulseMarker(map.mapLibreMap, [INCIDENT_1.lng, INCIDENT_1.lat]);
-      addPulseMarker(map.mapLibreMap, [INCIDENT_2.lng, INCIDENT_2.lat]);
-      fitBoundsToCoordinates(
-        map.mapLibreMap,
-        [
-          [INCIDENT_1.lng, INCIDENT_1.lat],
-          [INCIDENT_2.lng, INCIDENT_2.lat],
-        ],
-        90,
-      );
-    });
-
     return () => {
-      map.mapLibreMap.remove();
+      map.remove();
       mapInstance.current = null;
-      markersAdded.current = false;
     };
   }, []);
 
   useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || markers.length === 0) return;
+    const key = JSON.stringify(markers);
+    if (drawnKey.current === key) return;
+    drawnKey.current = key;
+    if (map.loaded()) {
+      drawMarkers(map, markers);
+    } else {
+      map.once("load", () => drawMarkers(map, markers));
+    }
+  }, [markers]);
+
+  useEffect(() => {
     if (mapInstance.current) {
-      applyTomTomTheme(mapInstance.current, resolvedTheme === "dark");
+      applyMapTheme(mapInstance.current, resolvedTheme === "dark");
     }
   }, [resolvedTheme]);
 

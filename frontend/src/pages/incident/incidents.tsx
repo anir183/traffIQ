@@ -2,9 +2,10 @@ import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Route, TriangleAlert } from "lucide-react";
 import type { Incident, IncidentIcon } from "../../types/traffic";
-import { INCIDENTS } from "./incidentData";
 import StatusBadge from "../../components/ui/badge";
 import { useListPageSize } from "../../hooks/useListPageSize";
+import { useAlerts } from "../../hooks/useAlerts";
+import { alertToIncident, triageAlerts } from "../../types/ui/adapters";
 
 export type FilterKey = "all" | "active" | "investigating" | "resolved";
 
@@ -62,6 +63,7 @@ export default function RecentIncidents({
 }: {
   filter?: FilterKey;
 }) {
+  const { items: alerts } = useAlerts();
   const [page, setPage] = useState(1);
   const [prevFilter, setPrevFilter] = useState(filter);
 
@@ -71,10 +73,11 @@ export default function RecentIncidents({
   }
 
   const incidents = useMemo(() => {
+    const source = triageAlerts(alerts).map(alertToIncident);
     const status = FILTER_MAP[filter];
-    if (!status) return INCIDENTS;
-    return INCIDENTS.filter((incident) => incident.status === status);
-  }, [filter]);
+    if (!status) return source;
+    return source.filter((incident) => incident.status === status);
+  }, [alerts, filter]);
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
     { min: 4, max: 12 },

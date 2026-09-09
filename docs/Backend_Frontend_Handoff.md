@@ -1,6 +1,6 @@
 # City-Wide ANPR & Traffic Intelligence — Handoff Contracts
 
-**Purpose:** This document gives the backend and frontend teams everything needed to start building the API, database schema, and dashboard *today*, independent of ongoing OCR/detection accuracy work. All payloads below are the agreed shape — fields may gain new optional keys later, but existing keys and types should be treated as stable.
+**Purpose:** This document gives the backend and frontend teams everything needed to start building the API, database schema, and dashboard _today_, independent of ongoing OCR/detection accuracy work. All payloads below are the agreed shape — fields may gain new optional keys later, but existing keys and types should be treated as stable.
 
 ---
 
@@ -39,6 +39,7 @@ This is the atomic unit produced every time a plate is read on one camera. This 
 ```
 
 **Field notes:**
+
 - `local_track_id` — ByteTrack ID, valid only within this camera's session. Not unique city-wide.
 - `plate.confidence` — 0-100 scale, our internal OCR consensus score (not a probability).
 - `plate.format_valid` — whether the plate matches expected Indian plate structure (state+RTO+series+number). `false` doesn't mean the read is wrong — it means treat it as lower-trust / flag for review.
@@ -59,9 +60,21 @@ Once the same plate is seen on more than one camera, backend merges local track 
   "first_seen": "2026-09-06T14:30:02.000Z",
   "last_seen": "2026-09-06T14:47:55.000Z",
   "camera_sequence": [
-    { "camera_id": "CAM_001", "timestamp": "2026-09-06T14:30:02.000Z", "local_track_id": 17 },
-    { "camera_id": "CAM_004", "timestamp": "2026-09-06T14:41:18.000Z", "local_track_id": 8 },
-    { "camera_id": "CAM_002", "timestamp": "2026-09-06T14:47:55.000Z", "local_track_id": 31 }
+    {
+      "camera_id": "CAM_001",
+      "timestamp": "2026-09-06T14:30:02.000Z",
+      "local_track_id": 17
+    },
+    {
+      "camera_id": "CAM_004",
+      "timestamp": "2026-09-06T14:41:18.000Z",
+      "local_track_id": 8
+    },
+    {
+      "camera_id": "CAM_002",
+      "timestamp": "2026-09-06T14:47:55.000Z",
+      "local_track_id": 31
+    }
   ],
   "is_blacklisted": false
 }
@@ -94,7 +107,7 @@ This is what the frontend calls when a user searches for a plate on the GIS map.
     },
     {
       "camera_id": "CAM_004",
-      "latitude": 22.5810,
+      "latitude": 22.581,
       "longitude": 88.3701,
       "timestamp": "2026-09-06T14:41:18.000Z",
       "speed_kmh": 41.0,
@@ -146,7 +159,7 @@ Also expose a **city-wide** version of this same shape with `"camera_id": "ALL"`
   "timestamp": "2026-09-06T14:47:55.000Z",
   "severity": "high",
   "message": "Blacklisted vehicle detected",
-  "location": { "latitude": 22.5810, "longitude": 88.3701 }
+  "location": { "latitude": 22.581, "longitude": 88.3701 }
 }
 ```
 
@@ -193,7 +206,7 @@ Use this envelope for every endpoint so frontend error-handling is consistent:
 ```json
 {
   "success": true,
-  "data": { },
+  "data": {},
   "error": null,
   "meta": {
     "request_id": "req_abc123",
@@ -236,15 +249,18 @@ traffic_metrics    (camera_id FK, window_start, window_end, total_vehicles, uniq
 ## 10. What's Confirmed vs. Still In Progress
 
 **Confirmed / stable — safe to build against now:**
+
 - Section 1 (ANPR event) field names and types
 - Section 6 (API endpoint list)
 - Section 8 (response wrapper)
 
 **In progress — shape is stable, values will improve in accuracy:**
+
 - `plate.confidence` and `plate.format_valid` — scoring logic still being tuned, but the fields themselves won't change shape
 - `speed` block — teammate is actively building this; confirm exact field names with them directly since this doc assumes `value_kmh` / `estimated` / `direction`
 
 **Not yet implemented — build UI placeholders, don't block on it:**
+
 - Cross-camera trajectory (Section 2/3) is MVP-simple (plate-text matching only) — no re-identification model yet
 - Blacklist/alerts (Section 5) — schema is ready, detection logic not wired up yet
 
@@ -288,11 +304,11 @@ Frontend expects these keys in addition to Section 5:
 {
   "alert_id": "alrt_44a1",
   "alert_type": "blacklisted_vehicle",
-  "status": "active",              // [NEEDED] triage: active | investigating | resolved
-  "severity": "high",              // high | medium | low (UI needs ≥3 levels for marker ramp)
-  "location_name": "Park Street",  // [NEEDED] display road name (Section 5 only has lat/lng)
-  "speed_kmh": 41.0,               // [OPTIONAL] shown on map legend / detail
-  "route": { "from": "A", "to": "B" }  // [OPTIONAL] display in stream rows
+  "status": "active", // [NEEDED] triage: active | investigating | resolved
+  "severity": "high", // high | medium | low (UI needs ≥3 levels for marker ramp)
+  "location_name": "Park Street", // [NEEDED] display road name (Section 5 only has lat/lng)
+  "speed_kmh": 41.0, // [OPTIONAL] shown on map legend / detail
+  "route": { "from": "A", "to": "B" } // [OPTIONAL] display in stream rows
 }
 ```
 
@@ -303,9 +319,9 @@ Frontend expects these keys in addition to Section 5:
 
 ```json
 {
-  "make": "Maruti",      // [NEEDED] Vehicle Information card shows Make/Model
-  "model": "Swift",      // [NEEDED]
-  "detection_count": 3   // [OPTIONAL] default = camera_sequence.length
+  "make": "Maruti", // [NEEDED] Vehicle Information card shows Make/Model
+  "model": "Swift", // [NEEDED]
+  "detection_count": 3 // [OPTIONAL] default = camera_sequence.length
 }
 ```
 
@@ -326,17 +342,24 @@ Frontend needs the following to fill the "Traffic Analysis" page:
     "congestion_score": 68,
     "density_per_km": 45.2,
     "vehicle_type_breakdown": { "car": 71, "bike": 38, "bus": 9, "truck": 9 },
-    "trend": {                         // [NEEDED] stat-card ±% vs previous window
+    "trend": {
+      // [NEEDED] stat-card ±% vs previous window
       "total_vehicles_pct": 14,
       "unique_vehicles_pct": 11,
       "avg_speed_kmh_pct": -6,
       "congestion_score_pct": 6
     },
-    "per_camera": [                    // [NEEDED] camera-wise vehicle count bars
+    "per_camera": [
+      // [NEEDED] camera-wise vehicle count bars
       { "camera_id": "CAM_001", "total_vehicles": 18234 }
     ],
-    "time_series": [                   // [NEEDED] hourly/daily buckets for volume + avg-speed graphs
-      { "bucket": "2026-09-06T14:00:00Z", "total_vehicles": 9800, "avg_speed_kmh": 30.1 }
+    "time_series": [
+      // [NEEDED] hourly/daily buckets for volume + avg-speed graphs
+      {
+        "bucket": "2026-09-06T14:00:00Z",
+        "total_vehicles": 9800,
+        "avg_speed_kmh": 30.1
+      }
     ]
   }
 }
@@ -362,7 +385,7 @@ If segment-level congestion isn't feasible yet, frontend will drop those charts 
 {
   "camera_id": "CAM_001",
   "name": "MG Road Junction - North",
-  "circuit": "Esplanade",               // [NEEDED] node/area selector + nav "Active Circuit"
+  "circuit": "Esplanade", // [NEEDED] node/area selector + nav "Active Circuit"
   "group": "CAM_001",
   "latitude": 22.5726,
   "longitude": 88.3639,
@@ -387,9 +410,9 @@ Live Feed and the alert stream would ideally `SSE`: `GET /api/events/stream?type
 
 ## 13. Sync Notes
 
-- Frontend shelf `useTrafficData.ts` refers to `/api/traffic/overview` — the real endpoint is `/api/traffic/summary` (frontend will align).
-- Frontend's hardcoded demo data is documented in `docs/Frontend_Requirements.md` (co-located with this file) for the replacement checklist.
-- Once endpoints above are live (even with mock data), the frontend can swap out all hardcoded arrays with zero shape changes — existing keys/types in Sections 1–8 remain the source of truth.
+- Frontend is now aligned to `/api/traffic/summary` (the old `/api/traffic/overview` shelf `useTrafficData.ts` was deleted in Phase 1).
+- Frontend's pluggable data layer is documented in `docs/Frontend_Requirements.md` + `docs/Implementation_Plan.md`. All read surfaces consume hooks in `src/hooks/`; `VITE_DATA_SOURCE=mock|backend` swaps the transport with zero shape changes.
+- Once endpoints above are live, the frontend can attach the backend source with identical payload shapes — existing keys/types in Sections 1–8 remain the source of truth. Contract extensions already implemented client-side (frontend mock serves them): `alert.status`, `alert.location{label,latitude,longitude}`, extended `alert_type` enum, `TrafficMetrics.*_change_pct`, `TrafficSummaryResponse.time_series` + `per_camera`, `GlobalVehicle.make/model`, `CameraMeta.circuit`, segment + density-forecast endpoints (`GET /api/traffic/segments`, `GET /api/traffic/density-forecast`), and `limit/offset` pagination.
 
 ---
 
@@ -413,7 +436,12 @@ GET    /api/auth/me                                      → User (session resto
   "expires_in": 900,
   "refresh_token": "rft_abc123",
   "token_type": "Bearer",
-  "user": { "id": "usr_001", "name": "Rudraneel", "email": "admin@traffiq.in", "role": "admin" }
+  "user": {
+    "id": "usr_001",
+    "name": "Rudraneel",
+    "email": "admin@traffiq.in",
+    "role": "admin"
+  }
 }
 ```
 
@@ -424,6 +452,7 @@ GET    /api/auth/me                                      → User (session resto
 `UserRole` enum: `admin | operator | viewer`.
 
 Permissions:
+
 - `admin` — all pages + user CRUD + blacklist management + audit logs + settings
 - `operator` — dashboards + alert triage (update `status`)
 - `viewer` — read-only dashboards

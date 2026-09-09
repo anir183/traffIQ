@@ -6,7 +6,11 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { useTrafficData } from "./useTrafficData";
+import { useTrafficSegments } from "../../hooks/useTrafficSegments";
+import {
+  segmentCongestionData,
+  segmentSpeedData,
+} from "../../types/ui/adapters";
 import { useTheme } from "../../theme/useTheme";
 
 const CONGESTION_COLORS = [
@@ -28,8 +32,10 @@ const CONGESTION_COLORS_DARK = [
 const SPEED_COLOR = "#3b82f6";
 
 function Charts() {
-  const { data } = useTrafficData();
+  const { data } = useTrafficSegments();
   const { resolvedTheme } = useTheme();
+  const congestedSegments = data ? segmentCongestionData(data.congested) : [];
+  const avgSpeed = data ? segmentSpeedData(data.speed) : [];
   const congestionColors =
     resolvedTheme === "dark" ? CONGESTION_COLORS_DARK : CONGESTION_COLORS;
   const axisTick = { fontSize: 10, fill: "var(--chart-axis)" } as const;
@@ -42,7 +48,7 @@ function Charts() {
         </span>
         <div className="min-h-0 flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.congestedSegments}>
+            <BarChart data={congestedSegments}>
               <XAxis
                 dataKey="name"
                 tick={axisTick}
@@ -52,7 +58,7 @@ function Charts() {
               />
               <YAxis tick={axisTick} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                {data.congestedSegments.map((_, i) => (
+                {congestedSegments.map((_, i) => (
                   <Cell
                     key={i}
                     fill={congestionColors[i % congestionColors.length]}
@@ -70,7 +76,7 @@ function Charts() {
         </span>
         <div className="min-h-0 flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.avgSpeed}>
+            <BarChart data={avgSpeed}>
               <XAxis dataKey="name" tick={axisTick} />
               <YAxis tick={axisTick} />
               <Bar dataKey="value" fill={SPEED_COLOR} radius={[4, 4, 0, 0]} />

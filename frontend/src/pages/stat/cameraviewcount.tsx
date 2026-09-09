@@ -1,18 +1,12 @@
-import { CAMERAS } from "../page2/cameraData";
+import { useTrafficSummary } from "../../hooks/useTrafficSummary";
 
-interface CameraCountRow {
-  id: string;
-  count: number;
-}
+function CameraVehicleCount() {
+  const { data } = useTrafficSummary();
+  const rows = (data?.per_camera ?? [])
+    .map((row) => ({ id: row.camera_id, count: row.vehicle_count }))
+    .sort((a, b) => b.count - a.count);
+  const maxCount = Math.max(...rows.map((row) => row.count));
 
-const ROWS: CameraCountRow[] = CAMERAS.map((cam, i) => ({
-  id: cam.id,
-  count: 18500 - i * 310 + ((i * 37) % 900),
-})).sort((a, b) => b.count - a.count);
-
-const MAX_COUNT = Math.max(...ROWS.map((row) => row.count));
-
-export default function CameraVehicleCount() {
   return (
     <div className="flex h-full min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-4 flex shrink-0 items-center justify-between">
@@ -20,13 +14,14 @@ export default function CameraVehicleCount() {
           Camera-wise Vehicle Count
         </h3>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-          {ROWS.length} cameras
+          {rows.length} cameras
         </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
-        {ROWS.map((row) => {
-          const widthPct = (row.count / MAX_COUNT) * 100;
+        {rows.map((row) => {
+          const widthPct =
+            maxCount > 0 ? Math.round((row.count / maxCount) * 100) : 0;
           return (
             <div key={row.id}>
               <span className="mb-1 block text-sm text-slate-500 dark:text-slate-400">
@@ -50,3 +45,5 @@ export default function CameraVehicleCount() {
     </div>
   );
 }
+
+export default CameraVehicleCount;

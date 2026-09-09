@@ -8,6 +8,12 @@ export interface DensityPoint {
   density: number;
 }
 
+export interface VolumeSpeedPoint {
+  time: string;
+  volume: number;
+  speed: number;
+}
+
 export interface TrafficData {
   congestedSegments: SegmentDatum[];
   avgSpeed: SegmentDatum[];

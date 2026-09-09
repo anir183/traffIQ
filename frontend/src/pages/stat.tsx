@@ -4,6 +4,8 @@ import CameraCount from "./stat/cameraviewcount";
 import VolumeSpeed from "./stat/volume-speed";
 import VehicleGraph from "./stat/vehicletype";
 import Insights from "./stat/insights";
+import { useTrafficSummary } from "../hooks/useTrafficSummary";
+import { metricsToStatCards } from "../types/ui/adapters";
 
 const CONTROL_BUTTON_CLASS =
   "flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800";
@@ -135,6 +137,66 @@ function DatePicker({
   );
 }
 
+function TrafficAnalysisBody() {
+  const { data } = useTrafficSummary();
+  const cards = data
+    ? metricsToStatCards(data.metrics)
+    : [
+        {
+          label: "Total Vehicles",
+          value: "—",
+          change: "—",
+          trend: "up" as const,
+        },
+        {
+          label: "Unique Vehicles",
+          value: "—",
+          change: "—",
+          trend: "up" as const,
+        },
+        {
+          label: "Average Speed",
+          value: "—",
+          change: "—",
+          trend: "down" as const,
+        },
+        {
+          label: "Congestion Score",
+          value: "—",
+          change: "—",
+          trend: "up" as const,
+          invertTrendColor: true,
+        },
+      ];
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {cards.map((card) => (
+          <StatCard key={card.label} {...card} />
+        ))}
+      </div>
+
+      <div className="grid min-w-0 w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <VolumeSpeed />
+        </div>
+
+        <div className="flex min-h-0 flex-col gap-6">
+          <div className="min-h-0 grow basis-[240px] shrink-0">
+            <CameraCount />
+          </div>
+          <div className="shrink-0">
+            <VehicleGraph />
+          </div>
+        </div>
+      </div>
+
+      <Insights />
+    </>
+  );
+}
+
 export default function TrafficAnalysisHeader({
   title = "Traffic Analysis",
   subtitle = "Detailed traffic insights and analytics",
@@ -263,50 +325,7 @@ export default function TrafficAnalysisHeader({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Total Vehicles"
-          value="125,430"
-          change="14%"
-          trend="up"
-        />
-        <StatCard
-          label="Unique Vehicles"
-          value="91,245"
-          change="11%"
-          trend="up"
-        />
-        <StatCard
-          label="Average Speed"
-          value="32.4 km/h"
-          change="6%"
-          trend="down"
-        />
-        <StatCard
-          label="Congestion Score"
-          value="68/100"
-          change="6%"
-          trend="up"
-          invertTrendColor
-        />
-      </div>
-
-      <div className="grid min-w-0 w-full grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-        <div className="min-w-0">
-          <VolumeSpeed />
-        </div>
-
-        <div className="flex min-h-0 flex-col gap-6">
-          <div className="min-h-0 grow basis-[240px] shrink-0">
-            <CameraCount />
-          </div>
-          <div className="shrink-0">
-            <VehicleGraph />
-          </div>
-        </div>
-      </div>
-
-      <Insights />
+      <TrafficAnalysisBody />
     </div>
   );
 }

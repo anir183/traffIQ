@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import SearchableSelect from "../components/ui/searchable-select";
+import { useCameras } from "../hooks/useCameras";
+import { cameraCircuits } from "../types/ui/adapters";
 
 const NAV_ITEMS = [
   { to: "/", label: "Overview", end: true },
@@ -15,17 +17,6 @@ const ADMIN_ITEMS = [
   { to: "/admin", label: "Admin Panel", end: false },
 ];
 
-const AREA_NODES = [
-  "Esplanade Circuit",
-  "Joka Circuit",
-  "Salt Lake Circuit",
-  "Ballygunge Circuit",
-  "Park Street Circuit",
-  "New Town Circuit",
-  "Ballygunge-Lanka Circuit",
-  "Howrah Circuit",
-];
-
 function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
   const base =
     "flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors";
@@ -35,7 +26,12 @@ function linkClass({ isActive }: { isActive: boolean; isPending: boolean }) {
 }
 
 function Nav() {
-  const [selectedNode, setSelectedNode] = useState(AREA_NODES[0]);
+  const { items } = useCameras();
+  const [selectedNode, setSelectedNode] = useState<string | undefined>(
+    undefined,
+  );
+  const options = cameraCircuits(items);
+  const value = selectedNode ?? options[0] ?? "";
 
   return (
     <div className="flex w-full shrink-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 lg:h-full lg:w-60 dark:border-slate-700 dark:bg-slate-900">
@@ -87,8 +83,8 @@ function Nav() {
         </span>
         <div className="mt-2">
           <SearchableSelect
-            value={selectedNode}
-            options={AREA_NODES}
+            value={value}
+            options={options}
             onSelect={setSelectedNode}
           />
         </div>

@@ -1,8 +1,13 @@
+import { useState } from "react";
 import Search from "../pages/anpr/search";
 import Details from "../pages/anpr/details";
 import Map from "../pages/anpr/map";
 
-const anpr = () => {
+const INITIAL_PLATE = "WB02AM7555";
+
+const Anpr = () => {
+  const [plate, setPlate] = useState(INITIAL_PLATE);
+
   return (
     <div className="flex min-h-0 flex-col gap-6 p-6 lg:h-full">
       <div className="flex shrink-0 items-center justify-center gap-3">
@@ -16,19 +21,19 @@ const anpr = () => {
       </h3>
 
       <div className="flex shrink-0 justify-center">
-        <Search />
+        <Search value={plate} onChange={setPlate} />
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         <div className="flex min-w-0 w-full flex-col lg:flex-1">
-          <Details />
+          <Details plate={plate} />
         </div>
         <div className="flex min-w-0 w-full flex-col lg:flex-1">
-          <Map />
+          <Map plate={plate} />
         </div>
       </div>
     </div>
   );
 };
 
-export default anpr;
+export default Anpr;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Maximize2, Video } from "lucide-react";
 import { useListPageSize } from "../../hooks/useListPageSize";
-import { CAMERAS } from "./cameraData";
+import { useCameras } from "../../hooks/useCameras";
 
 const COLS = 2;
 
@@ -40,18 +40,19 @@ function CameraView({
 }
 
 export default function Feed() {
+  const { items: cameras } = useCameras();
   const [page, setPage] = useState(1);
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
     { min: 2, max: 8 },
-    CAMERAS.length,
+    cameras.length,
   );
 
   const tilesPerPage = rowsPerPage * COLS;
-  const totalPages = Math.max(1, Math.ceil(CAMERAS.length / tilesPerPage));
+  const totalPages = Math.max(1, Math.ceil(cameras.length / tilesPerPage));
   const safePage = Math.min(page, totalPages);
   const startIndex = (safePage - 1) * tilesPerPage;
-  const pageCameras = CAMERAS.slice(startIndex, startIndex + tilesPerPage);
+  const pageCameras = cameras.slice(startIndex, startIndex + tilesPerPage);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -61,7 +62,7 @@ export default function Feed() {
         </h3>
         <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          {CAMERAS.length} cameras
+          {cameras.length} cameras
         </span>
       </div>
 
@@ -70,15 +71,20 @@ export default function Feed() {
         className="grid min-h-0 flex-1 grid-cols-2 content-start gap-3 overflow-y-auto"
       >
         {pageCameras.map((cam) => (
-          <CameraView key={cam.id} {...cam} />
+          <CameraView
+            key={cam.camera_id}
+            id={cam.camera_id}
+            name={cam.name}
+            circuit={cam.circuit}
+          />
         ))}
       </div>
 
-      {CAMERAS.length > 0 && (
+      {cameras.length > 0 && (
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
           <span className="text-slate-400 dark:text-slate-500">
             Showing {startIndex + 1}–{startIndex + pageCameras.length} of{" "}
-            {CAMERAS.length}
+            {cameras.length}
           </span>
 
           {totalPages > 1 && (

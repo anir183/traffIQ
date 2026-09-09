@@ -22,20 +22,20 @@ Updated live as work lands. Toggle from mock → live is a single env var: `VITE
 
 ## Phase 0 — Foundation
 
-| # | File(s) | Status |
-|---|---|---|
-| 0A | `src/types/contract/{apiEnvelope,errorCodes,pagination,anprEvent,vehicle,trajectory,trafficSummary,alert,camera,auth,user}.ts` | [ ] |
-| 0B | `src/api/env.ts`, `src/api/http.ts`, `src/api/sources.ts` (+ `services/storage.ts`) | [ ] |
-| 0B | `src/api/endpoints/{anpr,vehicles,cameras,traffic,alerts,auth,search}.ts` | [ ] |
-| 0B | `src/api/mock/data/{anprEvents,vehicles,cameras,traffic,segments,densityForecast,alerts,users}.ts` | [ ] |
-| 0B | `src/api/mock/{handlers,middleware}.ts` | [ ] |
-| 0C | `src/types/ui/{incidentStatus,severityRamp,adapters}.ts` | [ ] |
-| 0D | `src/auth/{types,AuthProvider,useAuth,ProtectedRoute}.tsx/.ts` | [ ] |
-| 0E | `src/hooks/{useAnprEvents,useCameras,useVehicles,useTrajectory,useAlerts,useTrafficSummary,useTrafficSegments,useTrafficDensityForecast,useSearch}.ts` | [ ] |
-| 0F | `src/pages/auth/LoginPage.tsx` | [ ] |
-| 0G | `src/components/layout/ProtectedLayout.tsx`, `App.tsx` routes, `main.tsx` AuthProvider | [ ] |
-| 0H | `src/pages/NotFound.tsx` | [ ] |
-| env | `.env.example`, `.env`, `vite.config.ts` proxy | [ ] |
+| #   | File(s)                                                                                                                                                | Status |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| 0A  | `src/types/contract/{apiEnvelope,errorCodes,pagination,anprEvent,vehicle,trajectory,trafficSummary,alert,camera,auth,user}.ts`                         | [x]    |
+| 0B  | `src/api/env.ts`, `src/api/http.ts`, `src/api/sources.ts` (+ `services/storage.ts`)                                                                    | [x]    |
+| 0B  | `src/api/endpoints/{anpr,vehicles,cameras,traffic,alerts,auth,search}.ts`                                                                              | [x]    |
+| 0B  | `src/api/mock/data/{anprEvents,vehicles,cameras,traffic,segments,densityForecast,alerts,users}.ts`                                                     | [x]    |
+| 0B  | `src/api/mock/{handlers,middleware}.ts`                                                                                                                | [x]    |
+| 0C  | `src/types/ui/{incidentStatus,severityRamp,adapters}.ts`                                                                                               | [x]    |
+| 0D  | `src/auth/{types,AuthProvider,useAuth,ProtectedRoute}.tsx/.ts`                                                                                         | [x]    |
+| 0E  | `src/hooks/{useAnprEvents,useCameras,useVehicles,useTrajectory,useAlerts,useTrafficSummary,useTrafficSegments,useTrafficDensityForecast,useSearch}.ts` | [x]    |
+| 0F  | `src/pages/auth/LoginPage.tsx`                                                                                                                         | [x]    |
+| 0G  | `src/components/layout/ProtectedLayout.tsx`, `App.tsx` routes, `main.tsx` AuthProvider                                                                 | [x]    |
+| 0H  | `src/pages/NotFound.tsx`                                                                                                                               | [x]    |
+| env | `.env.example`, `.env`, `vite.config.ts` proxy                                                                                                         | [x]    |
 
 **Phase 0 gate:** lint + build clean; pages render identically (nothing re-wired yet).
 
@@ -43,20 +43,24 @@ Updated live as work lands. Toggle from mock → live is a single env var: `VITE
 
 ## Phase 1 — Pluggable read surfaces
 
-| # | Surface | Files | Status |
-|---|---|---|---|
-| 1A | Overview | `analysis/detailF`, `analysis/stataf`, `analysis/densityforecast`, `analysis/mapp` (heatmap→alerts), `analysis/incident-queue` | [ ] |
-| 1B | Live Feed | `page2/feed`, `page2/updates`, `page2/camera-view`, `body/navigation` (circuits→cameras) | [ ] |
-| 1C | ANPR | `anpr/search`, `anpr/details`, `anpr/map` | [ ] |
-| 1D | Incidents | `incident/incidents`, `incident/map` | [ ] |
-| 1E | Analysis | `stat.tsx` (4 cards + range), `stat/cameraviewcount`, `stat/volume-speed`, `stat/vehicletype`, `stat/insights` | [ ] |
-| 1F | Header search | `components/forms/SearchBar.tsx` + `SearchDropdown.tsx` + `header.tsx` + `useSearch` | [ ] |
-| 1G | Bell | `header/NotificationBell.tsx` → `useAlerts(active)` | [ ] |
-| 1H | Profile identity | `header/profile.tsx` → `useAuth().user` | [ ] |
+| #   | Surface          | Files                                                                                                                          | Status |
+| --- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| 1A  | Overview         | `analysis/detailF`, `analysis/stataf`, `analysis/densityforecast`, `analysis/mapp` (heatmap→alerts), `analysis/incident-queue` | [x]    |
+| 1B  | Live Feed        | `page2/feed`, `page2/updates`, `page2/camera-view`, `body/navigation` (circuits→cameras)                                       | [x]    |
+| 1C  | ANPR             | `anpr/search`, `anpr/details`, `anpr/map`                                                                                      | [x]    |
+| 1D  | Incidents        | `incident/incidents`, `incident/map`                                                                                           | [x]    |
+| 1E  | Analysis         | `stat.tsx` (4 cards + range), `stat/cameraviewcount`, `stat/volume-speed`, `stat/vehicletype`, `stat/insights`                 | [x]    |
+| 1F  | Header search    | `header/search.tsx` (`useSearch` dropdown) + `header.tsx`                                                                      | [x]    |
+| 1G  | Bell             | `header/NotificationBell.tsx` → `useAlerts` (active count + 6 newest)                                                          | [x]    |
+| 1H  | Profile identity | `header/profile.tsx` → `useAuth().user`                                                                                        | [x]    |
 
-**Deletions at end:** `analysis/useTrafficData.ts`, `components/map/incidentsApi.ts`, `components/map/useViewportIncidents.ts`, `incident/incidentData.ts`, `stat/analysisData.ts`, `page2/cameraData.ts`, `navigation` `AREA_NODES`.
+**Deleted (Phase 0/1):** [`x`] `analysis/useTrafficData.ts`, [`x`] `incident/incidentData.ts`, [`x`] `stat/analysisData.ts`, [`x`] `page2/cameraData.ts`, [`x`] `navigation` `AREA_NODES`.
 
-**Phase 1 gate:** lint + build clean; demo renders identical; no page imports `api/mock/` internals; no TomTom data reads.
+**Restored for the mock map viewer:** [`x`] `components/map/incidentsApi.ts`, [`x`] `components/map/useViewportIncidents.ts`, [`x`] `src/config.ts` (`VITE_TOMTOM_API_KEY`), [`x`] dependency `@tomtom-org/maps-sdk`.
+
+**Phase 1 gate:** [`x`] PASSED — lint + build clean; demo renders identical; no page imports `api/mock/` internals.
+
+**Map render modes:** [`x`] `mapRenderMode` in `api/sources.ts` = `isMock ? "tomtom" : "custom"`. `mock` → real TomTom SDK viewer (`TomTomMap` + `TrafficFlowModule` + `useViewportIncidents` incidents heatmap via `HEATMAP_TOMTOM` + severity markers w/ popups; needs `VITE_TOMTOM_API_KEY`); `backend` → custom maplibre renderer (OSM raster + `HEATMAP_CUSTOM` red heatmap from `useAlerts()`). Shared `components/map/heatmap.ts` gates all source/layer mutations behind the map `load` event.
 
 ---
 
@@ -66,4 +70,4 @@ Updated live as work lands. Toggle from mock → live is a single env var: `VITE
 - eslint react-hooks v7: no setState synchronously in effects; full deps.
 - `verbatimModuleSyntax` → type-only imports use `import type`.
 - Pure adapters in `types/ui/` (no React). Hooks own fetch + abort lifecycle.
-- No new dependencies.
+- Map viewers: mock mode ships `@tomtom-org/maps-sdk` (real traffic viewer; `VITE_TOMTOM_API_KEY` in gitignored `.env`); `maplibre-gl` stays for the backend/custom renderer + incident/ANPR maps. No new dependencies beyond these.

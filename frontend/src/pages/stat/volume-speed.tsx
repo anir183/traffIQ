@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { VOLUME_SPEED } from "./analysisData";
+import { useTrafficSummary } from "../../hooks/useTrafficSummary";
+import { timeSeriesToVolumeSpeed } from "../../types/ui/adapters";
 
 const VOLUME_Y_MAX = 15000;
 const SPEED_Y_MAX = 60;
@@ -27,9 +28,13 @@ interface Slot {
   lineY: number;
 }
 
-function buildSlots(width: number, height: number): Slot[] {
-  const slotW = width / VOLUME_SPEED.length;
-  return VOLUME_SPEED.map((point, i) => {
+function buildSlots(
+  width: number,
+  height: number,
+  points: { time: string; volume: number; speed: number }[],
+): Slot[] {
+  const slotW = points.length > 0 ? width / points.length : width;
+  return points.map((point, i) => {
     const barW = Math.max(4, slotW * 0.55);
     const barX = i * slotW + (slotW - barW) / 2;
     const barH = (point.volume / VOLUME_Y_MAX) * height;
@@ -41,6 +46,8 @@ function buildSlots(width: number, height: number): Slot[] {
 }
 
 export default function VolumeSpeedChart() {
+  const { data } = useTrafficSummary();
+  const points = timeSeriesToVolumeSpeed(data?.time_series ?? []);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [size, setSize] = useState({
     width: FALLBACK_WIDTH,
@@ -68,7 +75,7 @@ export default function VolumeSpeedChart() {
     return () => observer.disconnect();
   }, []);
 
-  const slots = buildSlots(size.width, size.height);
+  const slots = buildSlots(size.width, size.height, points);
   const linePath = slots
     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.lineX} ${p.lineY}`)
     .join(" ");
@@ -91,81 +98,95 @@ export default function VolumeSpeedChart() {
         </div>
       </div>
 
-      <div className="flex min-h-0 w-full flex-1">
-        <div className="flex w-10 shrink-0 flex-col justify-between pb-2 pr-1 text-xs text-slate-400 dark:text-slate-500">
-          {[...VOLUME_TICKS].reverse().map((tick) => (
-            <span key={tick}>{formatVolumeLabel(tick)}</span>
-          ))}
+      {slots.length === 0 ? (
+        <p className="flex flex-1 items-center justify-center py-8 text-sm text-slate-400 dark:text-slate-500">
+          No traffic data available.
+        </p>
+      ) : (
+        <div className="flex min-h-0 w-full flex-1">
+          <div className="flex w-10 shrink-0 flex-col justify-between pb-2 pr-1 text-xs text-slate-400 dark:text-slate-500">
+            {[...VOLUME_TICKS].reverse().map((tick) => (
+              <span key={tick}>{formatVolumeLabel(tick)}</span>
+            ))}
+          </div>
+
+          <svg
+            ref={svgRef}
+            className="min-h-0 min-w-0 flex-1"
+            width="100%"
+            height="100%"
+          >
+            <defs>
+              <linearGradient id="volumeGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {slots.map((p) => (
+              <rect
+                key={`${p.time}-bar`}
+                x={p.barX}
+                y={p.barY}
+                width={p.barW}
+                height={p.barH}
+                fill="#3b82f6"
+              >
+                <title>{`${p.time}: ${p.volume.toLocaleString()} vehicles`}</title>
+              </rect>
+            ))}
+
+            <path
+              d={`${linePath} L ${slots[slots.length - 1].lineX} ${size.height} L ${slots[0].lineX} ${size.height} Z`}
+              fill="url(#volumeGlow)"
+              opacity={0.5}
+            />
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {slots.map((p) => (
+              <circle
+                key={p.time}
+                cx={p.lineX}
+                cy={p.lineY}
+                r={3}
+                fill="#10b981"
+              >
+                <title>{`${p.time}: ${p.speed} km/h`}</title>
+              </circle>
+            ))}
+          </svg>
+
+          <div className="flex w-8 shrink-0 flex-col justify-between pb-2 pl-1 text-xs text-slate-400 dark:text-slate-500">
+            {[...SPEED_TICKS].reverse().map((tick) => (
+              <span key={tick}>{tick}</span>
+            ))}
+          </div>
         </div>
+      )}
 
-        <svg
-          ref={svgRef}
-          className="min-h-0 min-w-0 flex-1"
-          width="100%"
-          height="100%"
-        >
-          <defs>
-            <linearGradient id="volumeGlow" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {slots.map((p) => (
-            <rect
-              key={`${p.time}-bar`}
-              x={p.barX}
-              y={p.barY}
-              width={p.barW}
-              height={p.barH}
-              fill="#3b82f6"
-            >
-              <title>{`${p.time}: ${p.volume.toLocaleString()} vehicles`}</title>
-            </rect>
-          ))}
-
-          <path
-            d={`${linePath} L ${slots[slots.length - 1].lineX} ${size.height} L ${slots[0].lineX} ${size.height} Z`}
-            fill="url(#volumeGlow)"
-            opacity={0.5}
-          />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#10b981"
-            strokeWidth={2}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          {slots.map((p) => (
-            <circle key={p.time} cx={p.lineX} cy={p.lineY} r={3} fill="#10b981">
-              <title>{`${p.time}: ${p.speed} km/h`}</title>
-            </circle>
-          ))}
-        </svg>
-
-        <div className="flex w-8 shrink-0 flex-col justify-between pb-2 pl-1 text-xs text-slate-400 dark:text-slate-500">
-          {[...SPEED_TICKS].reverse().map((tick) => (
-            <span key={tick}>{tick}</span>
-          ))}
+      {slots.length > 0 && (
+        <div className="flex shrink-0 pt-2">
+          <div className="w-10 shrink-0" />
+          <div className="flex min-w-0 flex-1">
+            {slots.map((p, i) => (
+              <div key={p.time} className="min-w-0 flex-1 text-center">
+                {i % X_LABEL_INTERVAL === 0 && (
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    {p.time}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="w-8 shrink-0" />
         </div>
-      </div>
-
-      <div className="flex shrink-0 pt-2">
-        <div className="w-10 shrink-0" />
-        <div className="flex min-w-0 flex-1">
-          {slots.map((p, i) => (
-            <div key={p.time} className="min-w-0 flex-1 text-center">
-              {i % X_LABEL_INTERVAL === 0 && (
-                <span className="text-xs text-slate-400 dark:text-slate-500">
-                  {p.time}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="w-8 shrink-0" />
-      </div>
+      )}
     </div>
   );
 }

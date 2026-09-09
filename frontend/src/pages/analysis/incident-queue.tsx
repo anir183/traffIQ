@@ -1,153 +1,11 @@
 import { useState } from "react";
 import type { IncidentEvent, IncidentEventStatus } from "../../types/traffic";
 import { useListPageSize } from "../../hooks/useListPageSize";
-
-const INCIDENTS: IncidentEvent[] = [
-  {
-    id: "1",
-    status: "error",
-    title: "Event Description + Incident Update",
-    location: "Bidhannagar Area, Kolkata | Traffic Monitoring",
-    timestamp: "Saturday, 12:30 AM",
-    detailLine: "Location: 09:36 AM | Status → Update",
-    linkText: "Container link",
-  },
-  {
-    id: "2",
-    status: "success",
-    title: "Event Update: Media content operational",
-    location: "",
-    timestamp: "1:00 PM",
-    detailLine: "Location: 09:35 AM | Status Update",
-    linkText: "Link link",
-  },
-  {
-    id: "3",
-    status: "error",
-    title: "Incident & Event Stream",
-    location: "Bidhannagar Area, Kolkata | Kolkata",
-    timestamp: "Saturday, 11:00 PM",
-    detailLine: "Location: 09:06 AM | Status → Update",
-    linkText: "Continue event link",
-  },
-  {
-    id: "4",
-    status: "neutral",
-    title: "Status Description Summary",
-    location: "",
-    timestamp: "",
-    detailLine: "Location: 09:36 AM | Update",
-    linkText: "Crops one link",
-  },
-  {
-    id: "5",
-    status: "neutral",
-    title: "Status Description Summary",
-    location: "",
-    timestamp: "",
-    detailLine: "Location: 07:35 PM | Status Update",
-    linkText: "Links the link",
-  },
-  {
-    id: "6",
-    status: "warning",
-    title: "Incident & Event Stream",
-    location: "Bidhannagar Area, Kolkata | Kolkata",
-    timestamp: "Saturday, 09:35 PM",
-    detailLine: "Location: 09:36 AM | Where → Update",
-    linkText: "Starting cost link",
-  },
-  {
-    id: "7",
-    status: "success",
-    title: "Event Update: Access restored",
-    location: "Salt Lake, Kolkata | Video Monitoring",
-    timestamp: "Saturday, 08:45 PM",
-    detailLine: "Location: 08:40 PM | Status → Resolved",
-    linkText: "View resolution link",
-  },
-  {
-    id: "8",
-    status: "error",
-    title: "Incident Update: Signal failure",
-    location: "EM Bypass, Kolkata | Traffic Signals",
-    timestamp: "Saturday, 08:12 PM",
-    detailLine: "Location: 08:05 PM | Status → Escalated",
-    linkText: "Escalation link",
-  },
-  {
-    id: "9",
-    status: "neutral",
-    title: "Status Description Summary",
-    location: "",
-    timestamp: "Saturday, 07:58 PM",
-    detailLine: "Location: 07:50 PM | Update",
-    linkText: "Routine update link",
-  },
-  {
-    id: "10",
-    status: "warning",
-    title: "Incident & Event Stream",
-    location: "New Town, Kolkata | Kolkata",
-    timestamp: "Saturday, 07:30 PM",
-    detailLine: "Location: 07:25 PM | Where → Update",
-    linkText: "Follow-up link",
-  },
-  {
-    id: "11",
-    status: "success",
-    title: "Event Update: Lane reopened",
-    location: "Gariahat, Kolkata | Traffic Signals",
-    timestamp: "Saturday, 07:05 PM",
-    detailLine: "Location: 07:00 PM | Status → Resolved",
-    linkText: "Reopening link",
-  },
-  {
-    id: "12",
-    status: "warning",
-    title: "Incident Update: Delays expected",
-    location: "Howrah Bridge, Kolkata | Kolkata",
-    timestamp: "Saturday, 06:40 PM",
-    detailLine: "Location: 06:35 PM | Where → Update",
-    linkText: "Delay advisory link",
-  },
-  {
-    id: "13",
-    status: "neutral",
-    title: "Status Description Summary",
-    location: "",
-    timestamp: "Saturday, 06:15 PM",
-    detailLine: "Location: 06:10 PM | Update",
-    linkText: "Routine update link",
-  },
-  {
-    id: "14",
-    status: "error",
-    title: "Incident Update: Signal failure",
-    location: "Sealdah, Kolkata | Traffic Signals",
-    timestamp: "Saturday, 05:50 PM",
-    detailLine: "Location: 05:45 PM | Status → Escalated",
-    linkText: "Escalation link",
-  },
-  {
-    id: "15",
-    status: "success",
-    title: "Event Update: Access restored",
-    location: "Rajabazar, Kolkata | Video Monitoring",
-    timestamp: "Saturday, 05:20 PM",
-    detailLine: "Location: 05:10 PM | Status → Resolved",
-    linkText: "View resolution link",
-  },
-  {
-    id: "16",
-    status: "warning",
-    title: "Incident & Event Stream",
-    location: "Ballygunge, Kolkata | Kolkata",
-    timestamp: "Saturday, 04:50 PM",
-    detailLine: "Location: 04:40 PM | Where → Update",
-    linkText: "Follow-up link",
-  },
-];
+import { useAlerts } from "../../hooks/useAlerts";
+import {
+  alertToEventStream,
+  incidentStreamAlerts,
+} from "../../types/ui/adapters";
 
 const STATUS_ICON: Record<IncidentEventStatus, string> = {
   error: "✕",
@@ -166,16 +24,16 @@ const STATUS_STYLE: Record<IncidentEventStatus, string> = {
 };
 
 function IncidentQueue() {
+  const { items: alerts } = useAlerts();
+  const items: IncidentEvent[] =
+    incidentStreamAlerts(alerts).map(alertToEventStream);
   const [page, setPage] = useState(1);
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
     { min: 3, max: 12 },
-    INCIDENTS.length,
+    items.length,
   );
-  const totalPages = Math.max(1, Math.ceil(INCIDENTS.length / rowsPerPage));
-  const pageItems = INCIDENTS.slice(
-    (page - 1) * rowsPerPage,
-    page * rowsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
+  const pageItems = items.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   return (
     <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%] dark:border-slate-700 dark:bg-slate-900">

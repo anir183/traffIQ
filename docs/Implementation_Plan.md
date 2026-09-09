@@ -23,8 +23,7 @@
 # .env (default — demo mode, no backend)
 VITE_DATA_SOURCE=mock           # "mock" | "backend" (explicit, no auto)
 VITE_API_BASE_URL=/api
-VITE_AUTH_ENABLED=false
-VITE_TOMTOM_API_KEY=...         # tiles only — separate from data credits
+VITE_AUTH_ENABLED=false         # mock map viewer uses TomTom SDK: set VITE_TOMTOM_API_KEY (maplibre-gl OSM raster used only for backend/custom renderer)
 
 # .env.local (when backend is ready)
 VITE_DATA_SOURCE=backend
@@ -60,13 +59,12 @@ src/
 │       │   ├── anprEvents.ts
 │       │   ├── vehicles.ts
 │       │   ├── cameras.ts
-│       │   ├── trafficSummary.ts
-│       │   ├── alerts.ts
+│       │   ├── traffic.ts            (metrics, time_series, per_camera)
+│       │   ├── segments.ts           (congested + speed segment charts)
+│       │   ├── densityForecast.ts    (Overview density chart)
+│       │   ├── alerts.ts             (EVENT_STREAM + TRIAGE alert sets)
 │       │   ├── users.ts
-│       │   ├── settings.ts
-│       │   ├── logs.ts
-│       │   ├── notifications.ts
-│       │   └── blacklist.ts
+│       │   └── (settings/logs/notifications/blacklist.ts — Phase 2)
 │       ├── handlers.ts               mock endpoint implementations
 │       └── middleware.ts              simulated latency, auth mock
 │
@@ -132,8 +130,10 @@ src/
 │   │   ├── LoadingState.tsx          NEW
 │   │   └── ErrorBoundary.tsx         NEW
 │   ├── map/
-│   │   ├── helpers.ts                existing (TomTom tile helpers stay)
-│   │   └── (incidentsApi.ts + useViewportIncidents.ts deleted in Phase 1)
+│   │   ├── helpers.ts                maplibre-gl + TomTom helpers (baseStyle/applyMapTheme + ensureTomTomConfig/applyTomTomTheme/markers/fitBounds)
+│   │   ├── heatmap.ts                shared heatmap controller (HEATMAP_TOMTOM/HEATMAP_CUSTOM, ensure/update, alert geo points)
+│   │   ├── incidentsApi.ts           RESTORED for mock viewer (TomTom incidents by bbox)
+│   │   └── useViewportIncidents.ts   RESTORED for mock viewer (viewport incidents polling)
 │   ├── forms/
 │   │   ├── SearchBar.tsx             NEW: debounced header search
 │   │   └── SearchDropdown.tsx        NEW: grouped results dropdown
@@ -197,28 +197,29 @@ src/
 
 14 files mirroring handoff §1–§14:
 
-| File | Source | Key types |
-|---|---|---|
-| `anprEvent.ts` | §1 | `AnprEvent`, `Vehicle`, `Plate`, `Speed`, `AnprEventList` |
-| `vehicle.ts` | §2+§12.3 | `GlobalVehicle`, `CameraSequenceEntry` + optional `make`/`model` |
-| `trajectory.ts` | §3 | `TrajectoryResponse`, `TrajectoryPoint` |
-| `trafficSummary.ts` | §4+§12.4 | `TrafficSummary`, `TrafficMetrics` (incl. `trend`, `per_camera[]`, `time_series[]`) |
-| `alert.ts` | §5+§12.2 | `Alert`, `AlertType` (full enum), `AlertSeverity`, `AlertStatus`, `AlertList` |
-| `camera.ts` | §7+§12.6 | `CameraMeta` with `circuit`/`group` |
-| `apiEnvelope.ts` | §8 | `ApiEnvelope<T>`, `ApiSuccess<T>`, `ApiFailure` |
-| `errorCodes.ts` | §12.7 | `ErrorCode` union |
-| `pagination.ts` | §12.1 | `Paginated<T>`, `PaginatedParams` |
-| `auth.ts` | §14 | `LoginRequest`, `LoginResponse`, `RefreshRequest`, `RefreshResponse`, `LogoutRequest` |
-| `user.ts` | §14 | `User`, `UserRole`, `UserCreate`, `UserUpdate`, `UserList` |
-| `settings.ts` | §14 | `UserSettings` (theme/timezone/notification_prefs/layout_density) |
-| `auditLog.ts` | §14 | `AuditLogEntry`, `LogAction`, `LogEntityType`, `AuditLogList` |
-| `notification.ts` | §14 | `Notification`, `NotificationType`, `NotificationList`, `NotificationPrefs` |
+| File                | Source   | Key types                                                                             |
+| ------------------- | -------- | ------------------------------------------------------------------------------------- |
+| `anprEvent.ts`      | §1       | `AnprEvent`, `Vehicle`, `Plate`, `Speed`, `AnprEventList`                             |
+| `vehicle.ts`        | §2+§12.3 | `GlobalVehicle`, `CameraSequenceEntry` + optional `make`/`model`                      |
+| `trajectory.ts`     | §3       | `TrajectoryResponse`, `TrajectoryPoint`                                               |
+| `trafficSummary.ts` | §4+§12.4 | `TrafficSummary`, `TrafficMetrics` (incl. `trend`, `per_camera[]`, `time_series[]`)   |
+| `alert.ts`          | §5+§12.2 | `Alert`, `AlertType` (full enum), `AlertSeverity`, `AlertStatus`, `AlertList`         |
+| `camera.ts`         | §7+§12.6 | `CameraMeta` with `circuit`/`group`                                                   |
+| `apiEnvelope.ts`    | §8       | `ApiEnvelope<T>`, `ApiSuccess<T>`, `ApiFailure`                                       |
+| `errorCodes.ts`     | §12.7    | `ErrorCode` union                                                                     |
+| `pagination.ts`     | §12.1    | `Paginated<T>`, `PaginatedParams`                                                     |
+| `auth.ts`           | §14      | `LoginRequest`, `LoginResponse`, `RefreshRequest`, `RefreshResponse`, `LogoutRequest` |
+| `user.ts`           | §14      | `User`, `UserRole`, `UserCreate`, `UserUpdate`, `UserList`                            |
+| `settings.ts`       | §14      | `UserSettings` (theme/timezone/notification_prefs/layout_density)                     |
+| `auditLog.ts`       | §14      | `AuditLogEntry`, `LogAction`, `LogEntityType`, `AuditLogList`                         |
+| `notification.ts`   | §14      | `Notification`, `NotificationType`, `NotificationList`, `NotificationPrefs`           |
 
 **Rule:** These are read-only mirrors of the backend contract. Never contain UI-only fields.
 
 ### 0B. API Layer (`src/api/`)
 
 #### `api/env.ts`
+
 ```
 Exports: DATA_SOURCE ("mock"|"backend"), API_BASE_URL, AUTH_ENABLED
 Source: VITE_* env vars
@@ -226,6 +227,7 @@ Default: "mock", "/api", false
 ```
 
 #### `api/http.ts`
+
 ```
 Exports:
   class ApiError extends Error { code: ErrorCode; retryable: boolean }
@@ -242,6 +244,7 @@ Behavior:
 ```
 
 #### `api/sources.ts`
+
 ```
 Factory — single import point for all hooks:
   export const anprSource = createAnprSource();     // mock or live
@@ -251,20 +254,20 @@ Factory — single import point for all hooks:
 
 #### Endpoint Interfaces (`api/endpoints/`)
 
-| File | Interface methods |
-|---|---|
-| `anpr.ts` | `list(params, signal?): Promise<Paginated<AnprEvent>>` |
-| `vehicles.ts` | `getByPlate(plate, signal?): Promise<GlobalVehicle>`, `getTrajectory(plate, from?, to?, signal?): Promise<TrajectoryResponse>` |
-| `cameras.ts` | `list(signal?): Promise<CameraMeta[]>` |
-| `traffic.ts` | `summary(params, signal?): Promise<TrafficSummary>` |
-| `alerts.ts` | `list(params, signal?): Promise<Paginated<Alert>>`, `updateStatus(id, status): Promise<Alert>` |
-| `auth.ts` | `login(req): Promise<LoginResponse>`, `refresh(req): Promise<RefreshResponse>`, `logout(req): Promise<void>`, `me(signal?): Promise<User>` |
-| `users.ts` | `list(params?, signal?): Promise<Paginated<User>>`, `create(req): Promise<User>`, `update(id, req): Promise<User>`, `delete(id): Promise<void>` |
-| `blacklist.ts` | `list(signal?): Promise<string[]>`, `add(plate): Promise<void>`, `remove(plate): Promise<void>` |
-| `logs.ts` | `list(params, signal?): Promise<Paginated<AuditLogEntry>>` |
-| `notifications.ts` | `list(params, signal?): Promise<Paginated<Notification>>`, `markRead(id): Promise<void>`, `markAllRead(): Promise<void>` |
-| `settings.ts` | `get(signal?): Promise<UserSettings>`, `update(req): Promise<UserSettings>` |
-| `search.ts` | `global(q, types?, limit?, signal?): Promise<SearchResult[]>` |
+| File               | Interface methods                                                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `anpr.ts`          | `list(params, signal?): Promise<Paginated<AnprEvent>>`                                                                                          |
+| `vehicles.ts`      | `getByPlate(plate, signal?): Promise<GlobalVehicle>`, `getTrajectory(plate, from?, to?, signal?): Promise<TrajectoryResponse>`                  |
+| `cameras.ts`       | `list(signal?): Promise<CameraMeta[]>`                                                                                                          |
+| `traffic.ts`       | `summary(params, signal?): Promise<TrafficSummary>`                                                                                             |
+| `alerts.ts`        | `list(params, signal?): Promise<Paginated<Alert>>`, `updateStatus(id, status): Promise<Alert>`                                                  |
+| `auth.ts`          | `login(req): Promise<LoginResponse>`, `refresh(req): Promise<RefreshResponse>`, `logout(req): Promise<void>`, `me(signal?): Promise<User>`      |
+| `users.ts`         | `list(params?, signal?): Promise<Paginated<User>>`, `create(req): Promise<User>`, `update(id, req): Promise<User>`, `delete(id): Promise<void>` |
+| `blacklist.ts`     | `list(signal?): Promise<string[]>`, `add(plate): Promise<void>`, `remove(plate): Promise<void>`                                                 |
+| `logs.ts`          | `list(params, signal?): Promise<Paginated<AuditLogEntry>>`                                                                                      |
+| `notifications.ts` | `list(params, signal?): Promise<Paginated<Notification>>`, `markRead(id): Promise<void>`, `markAllRead(): Promise<void>`                        |
+| `settings.ts`      | `get(signal?): Promise<UserSettings>`, `update(req): Promise<UserSettings>`                                                                     |
+| `search.ts`        | `global(q, types?, limit?, signal?): Promise<SearchResult[]>`                                                                                   |
 
 Each exports a `create*Source()` factory that returns mock or live impl based on `DATA_SOURCE`.
 
@@ -272,22 +275,23 @@ Each exports a `create*Source()` factory that returns mock or live impl based on
 
 Move every hardcoded array verbatim. Same values, same shape. Add mock data for new entities:
 
-| File | Moved from | Mock additions |
-|---|---|---|
-| `anprEvents.ts` | `page2/updates.tsx` ENTRIES (28) | — |
-| `vehicles.ts` | `anpr/details.tsx` rows + `anpr/map.tsx` consts | — |
-| `cameras.ts` | `page2/feed.tsx` CAMERAS + `page2/select.tsx` NODES | add `circuit` field |
-| `trafficSummary.ts` | `useTrafficData.ts` MOCK_DATA + `stat.tsx` values + `stat/*.tsx` DATA | — |
-| `alerts.ts` | `analysis/incident-queue.tsx` INCIDENTS + `incident/incidents.tsx` HARDCODED_INCIDENTS | merge + add `status`/`location_name` |
-| `users.ts` | — | 3 users: admin ("Rudraneel"), operator, viewer |
-| `settings.ts` | — | default settings per user |
-| `logs.ts` | — | ~20 audit entries |
-| `notifications.ts` | — | ~10 notifications (mix read/unread) |
-| `blacklist.ts` | — | ~5 blacklisted plates |
+| File               | Moved from                                                                             | Mock additions                                           |
+| ------------------ | -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `anprEvents.ts`    | `page2/updates.tsx` ENTRIES (28)                                                       | —                                                        |
+| `vehicles.ts`      | `anpr/details.tsx` rows + `anpr/map.tsx` consts                                        | —                                                        |
+| `cameras.ts`       | `page2/feed.tsx` CAMERAS + `page2/select.tsx` NODES                                    | add `circuit` field                                      |
+| `traffic.ts`       | `stat.tsx` values + `stat/*.tsx` DATA (shelf `useTrafficData.ts` deleted)              | adds `time_series`, `per_camera`, `metrics.*_change_pct` |
+| `alerts.ts`        | `analysis/incident-queue.tsx` INCIDENTS + `incident/incidents.tsx` HARDCODED_INCIDENTS | merge + add `status`/`location_name`                     |
+| `users.ts`         | —                                                                                      | 3 users: admin ("Rudraneel"), operator, viewer           |
+| `settings.ts`      | —                                                                                      | default settings per user                                |
+| `logs.ts`          | —                                                                                      | ~20 audit entries                                        |
+| `notifications.ts` | —                                                                                      | ~10 notifications (mix read/unread)                      |
+| `blacklist.ts`     | —                                                                                      | ~5 blacklisted plates                                    |
 
 #### Mock Handlers (`api/mock/handlers.ts`)
 
 All mock endpoint implementations. Each implements same interface as live. Simulates:
+
 - Pagination (slices by limit/offset)
 - Filtering (by status, type, date range)
 - `DELAY_MS` (default 200ms) for realistic loading
@@ -295,22 +299,31 @@ All mock endpoint implementations. Each implements same interface as live. Simul
 
 ### 0C. Adapters (`types/ui/`)
 
-| File | Functions |
-|---|---|
-| `incidentStatus.ts` | `AlertStatus` → `IncidentStatus` ("Active"/"Investigating"/"Resolved") |
-| `severityRamp.ts` | `severityToColor(severity, theme)`, `severityToLabel(severity)`, `severityToRank(severity)` |
-| `adapters.ts` | `alertToTriageStatus()`, `alertToIncidentTitle()`, `metricsToStatCards()`, `typeBreakdownToPercentages()`, `cameraToFeed()`, `vehicleToDetails()`, `pointsToTrajectory()`, `alertToIncident()`, `alertToEventStream()`, `alertToGeoFeature()` |
+| File                | Functions                                                                                                                                                                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `incidentStatus.ts` | `AlertStatus` → `IncidentStatus` ("Active"/"Investigating"/"Resolved")                                                                                                                                                                        |
+| `severityRamp.ts`   | `severityToColor(severity, theme)`, `severityToLabel(severity)`, `severityToRank(severity)`                                                                                                                                                   |
+| `adapters.ts`       | `alertToTriageStatus()`, `alertToIncidentTitle()`, `metricsToStatCards()`, `typeBreakdownToPercentages()`, `cameraToFeed()`, `vehicleToDetails()`, `pointsToTrajectory()`, `alertToIncident()`, `alertToEventStream()`, `alertToGeoFeature()` |
 
 ### 0D. Auth Infrastructure (`src/auth/`)
 
 #### `auth/types.ts`
+
 ```ts
 type UserRole = "admin" | "operator" | "viewer";
-interface AuthTokens { accessToken: string; refreshToken: string }
-interface AuthState { user: User | null; tokens: AuthTokens | null; loading: boolean }
+interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+interface AuthState {
+  user: User | null;
+  tokens: AuthTokens | null;
+  loading: boolean;
+}
 ```
 
 #### `auth/AuthProvider.tsx`
+
 ```
 On mount:
   AUTH_ENABLED=false → loading=false, user=null (no gating)
@@ -329,9 +342,11 @@ hasPermission(action): role-based (future-proofed)
 ```
 
 #### `auth/useAuth.ts`
+
 Context consumer: `useContext(AuthContext)`
 
 #### `auth/ProtectedRoute.tsx`
+
 ```
 AUTH_ENABLED=false → render children
 AUTH_ENABLED=true + user=null → Navigate to /login
@@ -340,27 +355,28 @@ Otherwise → render children
 ```
 
 #### `auth/RequireRole.tsx`
+
 Same as ProtectedRoute but role is mandatory. Wraps admin routes.
 
 ### 0E. Data Hooks (`src/hooks/`)
 
 Each hook: accepts params → calls `*Source.method()` → returns `{ data, loading, error, refetch }` + AbortController lifecycle.
 
-| Hook | Source | Returns |
-|---|---|---|
-| `useAnprEvents(params)` | `anprSource.list()` | `{ data, total, loading, error, refetch }` |
-| `useVehicles(plate)` | `vehiclesSource.getByPlate()` | `{ data, loading, error }` |
-| `useTrajectory(plate, from?, to?)` | `vehiclesSource.getTrajectory()` | `{ data, loading, error }` |
-| `useCameras()` | `camerasSource.list()` | `{ data, loading, error }` |
-| `useTrafficSummary(params)` | `trafficSource.summary()` | `{ data, loading, error }` |
-| `useAlerts(params)` | `alertsSource.list()` | `{ data, total, loading, error, refetch }` |
-| `useUsers(params)` | `usersSource.list()` | `{ data, total, loading, error, refetch }` |
-| `useAuditLogs(params)` | `logsSource.list()` | `{ data, total, loading, error, refetch }` |
-| `useNotifications(params)` | `notificationsSource.list()` | `{ data, total, loading, error, refetch, markRead, markAllRead }` |
-| `useSettings()` | `settingsSource.get/update()` | `{ data, loading, error, update }` |
-| `useBlacklist()` | `blacklistSource.*` | `{ data, loading, error, add, remove }` |
-| `useSearch(q, types?)` | `searchSource.global()` | `{ data, loading }` (debounced 300ms) |
-| `useRealtimeStream()` | `EventSource` (Phase 3) | `{ connected, lastEvent }` |
+| Hook                               | Source                           | Returns                                                           |
+| ---------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| `useAnprEvents(params)`            | `anprSource.list()`              | `{ data, total, loading, error, refetch }`                        |
+| `useVehicles(plate)`               | `vehiclesSource.getByPlate()`    | `{ data, loading, error }`                                        |
+| `useTrajectory(plate, from?, to?)` | `vehiclesSource.getTrajectory()` | `{ data, loading, error }`                                        |
+| `useCameras()`                     | `camerasSource.list()`           | `{ data, loading, error }`                                        |
+| `useTrafficSummary(params)`        | `trafficSource.summary()`        | `{ data, loading, error }`                                        |
+| `useAlerts(params)`                | `alertsSource.list()`            | `{ data, total, loading, error, refetch }`                        |
+| `useUsers(params)`                 | `usersSource.list()`             | `{ data, total, loading, error, refetch }`                        |
+| `useAuditLogs(params)`             | `logsSource.list()`              | `{ data, total, loading, error, refetch }`                        |
+| `useNotifications(params)`         | `notificationsSource.list()`     | `{ data, total, loading, error, refetch, markRead, markAllRead }` |
+| `useSettings()`                    | `settingsSource.get/update()`    | `{ data, loading, error, update }`                                |
+| `useBlacklist()`                   | `blacklistSource.*`              | `{ data, loading, error, add, remove }`                           |
+| `useSearch(q, types?)`             | `searchSource.global()`          | `{ data, loading }` (debounced 300ms)                             |
+| `useRealtimeStream()`              | `EventSource` (Phase 3)          | `{ connected, lastEvent }`                                        |
 
 ### 0F. Login Page (`pages/auth/LoginPage.tsx`)
 
@@ -376,7 +392,9 @@ AUTH_ENABLED=false → redirect to / immediately
 ### 0G. Shell Refactor (`components/layout/`)
 
 #### `ProtectedLayout.tsx`
+
 Replaces `body.tsx` + `header.tsx` composition:
+
 ```
 <Header />
 <div>
@@ -386,14 +404,17 @@ Replaces `body.tsx` + `header.tsx` composition:
 ```
 
 #### `Header.tsx` (refactored)
+
 ```
 Name (logo) + SearchBar + ThemeToggle + NotificationBell + ProfileMenu
 ```
 
 #### `NavSidebar.tsx` (refactored)
+
 Admin section visible only if `user.role === "admin"`. Remove hardcoded circuit footer.
 
 #### `ContentWindow.tsx` (refactored)
+
 Add `<Route path="*" element={<NotFound />} />`.
 
 ### 0H. 404 Page (`pages/NotFound.tsx`)
@@ -403,8 +424,8 @@ Centered: "404 — Page not found" + link to `/`.
 ### 0I. File Changes Summary (Phase 0)
 
 **Create:** ~80 files (types, api, auth, hooks, layout components, login, 404, services)
-**Modify:** `main.tsx` (AuthProvider), `App.tsx` (route restructure), `navigation.tsx` (role-aware), `header.tsx` (new shell), `.env.example`
-**Delete:** `useTrafficData.ts`
+**Modify:** `main.tsx` (AuthProvider), `App.tsx` (route restructure), `navigation.tsx` (circuits → cameras), `header.tsx` (search + bell), `.env.example`
+**Delete:** ✓ `useTrafficData.ts` (done in Phase 1)
 **Keep:** All existing page components (rewired in Phase 1)
 
 ---
@@ -419,91 +440,98 @@ Centered: "404 — Page not found" + link to `/`.
 
 ### 1A. Overview Page
 
-| Component | Old source | New hook | Adapter |
-|---|---|---|---|
-| `CriticalIncidents` | hardcoded counts | `useAlerts({ alertType })` | `group by alertType → count` |
-| `Charts` | `useTrafficData().congestedSegments` | `useTrafficSummary({ from, to })` | bars from `segments` or `time_series` |
-| `DensityForecastChart` | `useTrafficData().densityForecast` | `useTrafficSummary({ from, to })` | `time_series` bucketed |
-| `OverviewMap` (heatmap) | TomTom `useViewportIncidents` | `useAlerts({ from, to })` | `alertToGeoFeature()` |
-| `EventStream` | hardcoded INCIDENTS | `useAlerts({ limit, offset })` | `alertToEventStream()` |
+| Component               | Old source                           | New hook                      | Adapter                                           |
+| ----------------------- | ------------------------------------ | ----------------------------- | ------------------------------------------------- |
+| `CriticalIncidents`     | hardcoded counts                     | `useAlerts({ alertType })`    | `group by alertType → count`                      |
+| `Charts`                | `useTrafficData().congestedSegments` | `useTrafficSegments()`        | `segmentCongestionData()`                         |
+| `DensityForecastChart`  | `useTrafficData().densityForecast`   | `useTrafficDensityForecast()` | `forecastToDensityPoints()`                       |
+| `OverviewMap` (heatmap) | TomTom `useViewportIncidents`        | `useAlerts()`                 | `alertGeoPoints()` / `geoPointsToFeatures()`      |
+| `EventStream`           | hardcoded INCIDENTS                  | `useAlerts()`                 | `incidentStreamAlerts()` → `alertToEventStream()` |
 
-**Heatmap:** Delete `incidentsApi.ts` + `useViewportIncidents.ts`. Replace with alert geo points. Base map tiles stay (free tier). `ensureHeatmapSource` + `updateHeatmapData` pattern stays — only data source changes.
+**Heatmap:** ✓ DONE — renderer is data-source driven (`mapRenderMode` in `src/api/sources.ts`): `mock` → **`tomtom`** (real TomTom SDK: `TomTomMap` + `TrafficFlowModule` + `useViewportIncidents` incidents heatmap fed via `heatmap.ts` (`HEATMAP_TOMTOM`) + severity markers w/ popups; needs `VITE_TOMTOM_API_KEY`), `backend` → **`custom`** (maplibre OSM raster + red heatmap (`HEATMAP_CUSTOM`) from `useAlerts()` → `alertGeoPoints()` / `geoPointsToFeatures()`). Shared `src/components/map/heatmap.ts` ensures the source/layer only after the map `load` event.
 
 ### 1B. Live Feed
 
-| Component | Old source | New hook |
-|---|---|---|
-| `CameraGrid` | hardcoded CAMERAS | `useCameras()` |
-| `NodeSelector` | hardcoded NODES | `useCameras()` → group by `circuit` |
-| `AnprLog` | hardcoded ENTRIES (28) | `useAnprEvents({ limit, offset })` |
+| Component      | Old source             | New hook                            |
+| -------------- | ---------------------- | ----------------------------------- |
+| `CameraGrid`   | hardcoded CAMERAS      | `useCameras()`                      |
+| `NodeSelector` | hardcoded NODES        | `useCameras()` → group by `circuit` |
+| `AnprLog`      | hardcoded ENTRIES (28) | `useAnprEvents({ limit, offset })`  |
 
 ### 1C. Trajectory Recognition
 
-| Component | Old source | New hook | Adapter |
-|---|---|---|---|
-| `PlateSearch` | console.log | `useTrajectory(plate)` on submit | — |
-| `VehicleInformation` | hardcoded rows | `useVehicles(plate)` | `vehicleToDetails()` |
-| `TrajectoryMap` | hardcoded consts | `useTrajectory(plate)` | `pointsToTrajectory()` |
+| Component            | Old source       | New hook                         | Adapter                |
+| -------------------- | ---------------- | -------------------------------- | ---------------------- |
+| `PlateSearch`        | console.log      | `useTrajectory(plate)` on submit | —                      |
+| `VehicleInformation` | hardcoded rows   | `useVehicles(plate)`             | `vehicleToDetails()`   |
+| `TrajectoryMap`      | hardcoded consts | `useTrajectory(plate)`           | `pointsToTrajectory()` |
 
 ### 1D. Incident Management
 
-| Component | Old source | New hook | Adapter |
-|---|---|---|---|
-| `RecentIncidents` | HARDCODED_INCIDENTS (15) | `useAlerts({ status, limit, offset })` | `alertToIncident()` |
-| `IncidentMap` | 2 hardcoded markers | `useAlerts({ status })` | alert `location` → pulse markers |
+| Component         | Old source               | New hook                               | Adapter                          |
+| ----------------- | ------------------------ | -------------------------------------- | -------------------------------- |
+| `RecentIncidents` | HARDCODED_INCIDENTS (15) | `useAlerts({ status, limit, offset })` | `alertToIncident()`              |
+| `IncidentMap`     | 2 hardcoded markers      | `useAlerts({ status })`                | alert `location` → pulse markers |
 
 ### 1E. Traffic Analysis
 
-| Component | Old source | New hook | Adapter |
-|---|---|---|---|
-| `StatCard` ×4 | hardcoded values | `useTrafficSummary({ from, to })` | `metricsToStatCards()` |
-| `CameraVehicleCount` | 5 hardcoded counts | `useTrafficSummary()` | `per_camera[]` |
-| `TrafficVolumeChart` | hourly mock | `useTrafficSummary()` | `time_series[].total_vehicles` |
-| `AverageSpeedChart` | hourly mock | `useTrafficSummary()` | `time_series[].avg_speed_kmh` |
-| `VehicleTypeBreakdown` | hardcoded % | `useTrafficSummary()` | `typeBreakdownToPercentages()` |
-| Date/range pickers | local state | → `from`/`to` params | drive `useTrafficSummary` |
+| Component              | Old source         | New hook                          | Adapter                        |
+| ---------------------- | ------------------ | --------------------------------- | ------------------------------ |
+| `StatCard` ×4          | hardcoded values   | `useTrafficSummary({ from, to })` | `metricsToStatCards()`         |
+| `CameraVehicleCount`   | 5 hardcoded counts | `useTrafficSummary()`             | `per_camera[]`                 |
+| `TrafficVolumeChart`   | hourly mock        | `useTrafficSummary()`             | `time_series[].total_vehicles` |
+| `AverageSpeedChart`    | hourly mock        | `useTrafficSummary()`             | `time_series[].avg_speed_kmh`  |
+| `VehicleTypeBreakdown` | hardcoded %        | `useTrafficSummary()`             | `typeBreakdownToPercentages()` |
+| Date/range pickers     | local state        | → `from`/`to` params              | drive `useTrafficSummary`      |
 
 ### 1F. Header Search
 
-| File | Purpose |
-|---|---|
-| `components/forms/SearchBar.tsx` | debounced input (300ms) → `useSearch(q)` |
-| `components/forms/SearchDropdown.tsx` | grouped results (Plates/Cameras/Incidents) with links |
+| File                | Purpose                                                                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `header/search.tsx` | debounced input (`useSearch(q)`, min 2 chars, `/` shortcut) + grouped results dropdown (Plates/Cameras/Incidents) with `href` links. Wired into `header.tsx`. |
+
+> Locked decision: implemented as `header/search.tsx` (not `components/forms/SearchBar.tsx`); grouped results navigate via each `SearchResult.href`.
 
 ### 1G. Notifications Bell
 
-| File | Purpose |
-|---|---|
-| `components/layout/NotificationBell.tsx` | bell icon + badge count + dropdown |
+| File                          | Purpose                                                                                                    |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `header/NotificationBell.tsx` | bell icon + active-alert badge + dropdown (`useAlerts` → `activeAlertCount` + newest 6 via `activeAlerts`) |
 
-Badge: `useNotifications({ unreadOnly: true })` → count. Click → dropdown with recent 10. "Mark all read". Polls 30s (visibility-aware).
+> Locked decision: bell derives from active alerts (triage), not a separate notifications source; mark-read is Phase 2.
 
-### 1H. Profile Dropdown
+### 1H. Profile Identity
 
-| File | Purpose |
-|---|---|
-| `components/layout/ProfileMenu.tsx` | avatar + dropdown (Settings, Logout) |
+| File                 | Purpose                                        |
+| -------------------- | ---------------------------------------------- |
+| `header/profile.tsx` | avatar + name/department from `useAuth().user` |
 
-Shows user name + role badge from `useAuth().user`.
+> Locked decision: identity-only for Phase 1; dropdown (Settings, Logout) deferred to Phase 2.
 
 ### 1I. Files to Delete (Phase 1)
 
-| File | Reason |
-|---|---|
-| `components/map/incidentsApi.ts` | TomTom data API replaced by alerts |
-| `components/map/useViewportIncidents.ts` | viewport fetching replaced by alerts hook |
+| File                                     | Reason                                               | Status  |
+| ---------------------------------------- | ---------------------------------------------------- | ------- |
+| `components/map/incidentsApi.ts`         | TomTom data API replaced by alerts                   | RESTORED for mock map viewer (`mapRenderMode === "tomtom"`) |
+| `components/map/useViewportIncidents.ts` | viewport fetching replaced by alerts hook            | RESTORED for mock map viewer |
+| `pages/analysis/useTrafficData.ts`       | replaced by `useTrafficSummary`/`useTrafficSegments` | DELETED |
+| `pages/incident/incidentData.ts`         | static incidents shelf                               | DELETED |
+| `pages/stat/analysisData.ts`             | static analysis shelf                                | DELETED |
+| `pages/page2/cameraData.ts`              | static cameras shelf                                 | DELETED |
+| `src/config.ts`                          | `VITE_TOMTOM_API_KEY` unused after TomTom removal    | RESTORED (mock viewer needs the key) |
+| dependency `@tomtom-org/maps-sdk`        | replaced by `maplibre-gl` (OSM raster)               | RESTORED for mock map viewer |
 
 ### Phase 1 Verification
 
-- [ ] All pages render with identical data
-- [ ] No component imports from `api/mock/` directly
-- [ ] TomTom data files deleted
-- [ ] Heatmap renders alert geo points
-- [ ] ANPR search → vehicle info → trajectory map
-- [ ] Date/time-range drives Traffic Analysis charts
-- [ ] Header search shows results
-- [ ] Notification bell shows badge + dropdown
-- [ ] Profile dropdown shows user + logout
+- [x] All pages render with identical data (mock parity; insights re-derived from `time_series`, see Decisions)
+- [x] No component imports from `api/mock/` directly
+- [x] Heatmap renders alert geo points (custom/backend renderer)
+- [x] Mock viewer renders real TomTom map (TrafficFlowModule + incidents heatmap + severity markers) when `VITE_DATA_SOURCE=mock` + `VITE_TOMTOM_API_KEY` set
+- [x] ANPR search → vehicle info → trajectory map
+- [ ] Date/time-range drives Traffic Analysis charts (header + range UI kept; charts not yet range-parameterized)
+- [x] Header search shows results
+- [x] Notification bell shows badge + dropdown
+- [ ] Profile dropdown shows user + logout (identity shown; dropdown deferred to Phase 2)
 
 ---
 
@@ -523,22 +551,27 @@ Shows user name + role badge from `useAuth().user`.
 ### 2B. Admin Panel (`pages/admin/`)
 
 #### `admin/index.tsx` — Dashboard
+
 Grid of stat cards (total users, cameras online, active alerts, blacklisted plates) + quick links to sub-pages.
 
 #### `admin/UserManagement.tsx`
+
 `DataTable<User>`: Name, Email, Role (badge), Created At, Actions (edit/delete).
 "Add User" → modal: name, email, role select, password.
 Password validation: ≥8 chars, 1 uppercase, 1 lowercase, 1 number.
 
 #### `admin/BlacklistManagement.tsx`
+
 `DataTable<string>`: Plate Number, Actions (remove).
 "Add Plate" → input with Indian plate regex validation.
 
 #### `admin/CameraManagement.tsx`
+
 `DataTable<CameraMeta>`: Camera ID, Name, Circuit, Status (badge), Stream URL.
 Read-only for now.
 
 #### `components/ui/DataTable.tsx` — Reusable
+
 Generic `<T>` paginated table. Props: `data`, `columns`, `total`, `page`, `rowsPerPage`, `onPageChange`, `actions`, `emptyMessage`. Uses `useListPageSize`.
 
 ### 2C. System Logs (`pages/logs/`)
@@ -557,6 +590,7 @@ Tabs: Display | Notifications (Profile deferred).
 ### 2E. Toast/Snackbar System
 
 Add `react-hot-toast`. Integration:
+
 - Critical alerts → toast (top-right, auto-dismiss 5s)
 - System notifications → toast
 - Mutation success/error → toast
@@ -600,6 +634,7 @@ Password validation (frontend): ≥8 chars, 1 uppercase, 1 lowercase, 1 number.
 ### 3A. SSE Realtime
 
 `useRealtimeStream.ts`: opens `EventSource` to `/api/events/stream?types=alert,notification`.
+
 - New alerts → prepend to alert list + toast (if critical)
 - New notifications → update bell badge + toast
 - Auto-reconnect (exponential backoff)
@@ -629,10 +664,10 @@ Backend search endpoint → results across all entity types + keyboard navigatio
 
 ## Dependencies to Add
 
-| Package | Phase | Purpose |
-|---|---|---|
+| Package           | Phase   | Purpose             |
+| ----------------- | ------- | ------------------- |
 | `react-hot-toast` | Phase 2 | Toast notifications |
-| `hls.js` | Phase 3 | Camera HLS playback |
+| `hls.js`          | Phase 3 | Camera HLS playback |
 
 No other new dependencies. Everything built with existing stack.
 
@@ -640,25 +675,25 @@ No other new dependencies. Everything built with existing stack.
 
 ## Files to DELETE (across all phases)
 
-| File | Phase | Reason |
-|---|---|---|
-| `pages/analysis/useTrafficData.ts` | 0 | Replaced by `useTrafficSummary` |
-| `components/map/incidentsApi.ts` | 1 | TomTom data API replaced |
-| `components/map/useViewportIncidents.ts` | 1 | Viewport fetching replaced |
+| File                                     | Phase | Reason                          |
+| ---------------------------------------- | ----- | ------------------------------- |
+| `pages/analysis/useTrafficData.ts`       | 0     | Replaced by `useTrafficSummary` |
+| ~~`components/map/incidentsApi.ts`~~     | 1     | ~~TomTom data API replaced~~ — RESTORED for mock map viewer |
+| ~~`components/map/useViewportIncidents.ts`~~ | 1 | ~~Viewport fetching replaced~~ — RESTORED for mock map viewer |
 
 ---
 
 ## Questions Resolved
 
-| Question | Decision |
-|---|---|
-| Query/data layer | Custom hooks (no react-query) — keeps deps minimal |
-| Data-source mode | Explicit: `VITE_DATA_SOURCE=mock\|backend` (no auto) |
-| Alert triage | Backend owns `status` field |
-| Auth flow | JWT with refresh rotation, httpOnly cookie for refresh token |
-| Roles | admin, operator, viewer |
-| Registration | Admin-only (no self-registration) |
-| Password policy | ≥8 chars, 1 uppercase, 1 lowercase, 1 number |
-| Settings profile | Read-only, deferred to later |
-| Notifications | Toast + bell + dropdown (all) |
-| Header search | Debounced, keyboard-navigable, grouped results |
+| Question         | Decision                                                     |
+| ---------------- | ------------------------------------------------------------ |
+| Query/data layer | Custom hooks (no react-query) — keeps deps minimal           |
+| Data-source mode | Explicit: `VITE_DATA_SOURCE=mock\|backend` (no auto)         |
+| Alert triage     | Backend owns `status` field                                  |
+| Auth flow        | JWT with refresh rotation, httpOnly cookie for refresh token |
+| Roles            | admin, operator, viewer                                      |
+| Registration     | Admin-only (no self-registration)                            |
+| Password policy  | ≥8 chars, 1 uppercase, 1 lowercase, 1 number                 |
+| Settings profile | Read-only, deferred to later                                 |
+| Notifications    | Toast + bell + dropdown (all)                                |
+| Header search    | Debounced, keyboard-navigable, grouped results               |

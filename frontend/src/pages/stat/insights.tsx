@@ -1,93 +1,110 @@
-import type { LucideIcon } from "lucide-react";
-import { Activity, Car, Clock, Gauge } from "lucide-react";
-import {
-  getFastestPeriod,
-  getPeakVolume,
-  getSlowestPeriod,
-  VEHICLE_TYPE_MIX,
-} from "./analysisData";
+import { useTrafficSummary } from "../../hooks/useTrafficSummary";
+import { overviewInsights } from "../../types/ui/adapters";
 
-interface Insight {
-  label: string;
+interface InsightCard {
+  title: string;
   value: string;
-  sub: string;
-  Icon: LucideIcon;
-  tint: string;
+  detail: string;
+  icon: string;
 }
 
-function buildInsights(): Insight[] {
-  const peak = getPeakVolume();
-  const slowest = getSlowestPeriod();
-  const fastest = getFastestPeriod();
-  const dominantType = VEHICLE_TYPE_MIX.reduce((top, mix) =>
-    mix.percent > top.percent ? mix : top,
-  );
+function to12h(time: string): string {
+  const [hour] = time.split(":").map(Number);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const display = hour % 12 === 0 ? 12 : hour % 12;
+  return `${display}:00 ${suffix}`;
+}
 
+function buildInsightCards(
+  insights: ReturnType<typeof overviewInsights>,
+): InsightCard[] {
   return [
     {
-      label: "Peak Hour",
-      value: peak.time,
-      sub: `${peak.volume.toLocaleString()} vehicles`,
-      Icon: Clock,
-      tint: "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
+      title: "Peak Traffic Time",
+      value: `${to12h(insights.peakTime)}`,
+      detail: `Heaviest traffic in the last 24 hours (${insights.peakVolume.toLocaleString()} vehicles)`,
+      icon: "🚦",
     },
     {
-      label: "Slowest Period",
-      value: slowest.time,
-      sub: `${slowest.speed} km/h avg`,
-      Icon: Gauge,
-      tint: "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400",
+      title: "Slowest Road Segment",
+      value: to12h(insights.slowestTime),
+      detail: `${insights.slowestSpeed} km/h average speed`,
+      icon: "🐢",
     },
     {
-      label: "Fastest Period",
-      value: fastest.time,
-      sub: `${fastest.speed} km/h avg`,
-      Icon: Activity,
-      tint: "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
+      title: "Fastest Road Segment",
+      value: to12h(insights.fastestTime),
+      detail: `${insights.fastestSpeed} km/h average speed`,
+      icon: "🚀",
     },
     {
-      label: "Week-over-Week",
-      value: "+14%",
-      sub: `vehicle count · ${dominantType.label} heavy mix`,
-      Icon: Car,
-      tint: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+      title: "Vehicle Type Charge",
+      value: insights.dominantLabel,
+      detail: `Largest share of vehicles on the road (week over week ${insights.weekOverWeek})`,
+      icon: "🚗",
     },
   ];
 }
 
-export default function Insights() {
-  const insights = buildInsights();
+function Insights() {
+  const { data } = useTrafficSummary();
+  const insights = data
+    ? buildInsightCards(
+        overviewInsights(
+          data.time_series,
+          data.metrics.vehicle_type_breakdown,
+          data.metrics.total_vehicles_change_pct,
+        ),
+      )
+    : [];
 
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-        Insights
-      </h3>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {insights.map(({ label, value, sub, Icon, tint }) => (
-          <div
-            key={label}
-            className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
-          >
-            <span
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tint}`}
-            >
-              <Icon className="h-4.5 w-4.5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                {label}
-              </p>
-              <p className="mt-0.5 text-lg font-semibold leading-tight text-slate-900 dark:text-slate-100">
-                {value}
-              </p>
-              <p className="mt-0.5 truncate text-xs text-slate-400 dark:text-slate-500">
-                {sub}
-              </p>
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+          LIVE Insights
+        </h3>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            LIVE
+          </span>
+        </span>
+      </div>
+
+      {insights.length === 0 ? (
+        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+          No insights available.
+        </p>
+      ) : (
+        <div className="grid gap-4">
+          <div className="grid gap-4">
+            <div className="grid gap-4">
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                {insights.map((i) => (
+                  <div
+                    key={i.title}
+                    className="flex flex-col rounded-lg border border-slate-100 p-4 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/50"
+                  >
+                    <span className="text-xl">{i.icon}</span>
+                    <span className="mt-1 text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {i.title}
+                    </span>
+                    <span className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
+                      {i.value}
+                    </span>
+                    <span className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      {i.detail}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default Insights;

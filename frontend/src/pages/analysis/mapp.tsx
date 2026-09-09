@@ -1,19 +1,34 @@
 import { useEffect, useRef, useState } from "react";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { TomTomMap, TrafficFlowModule } from "@tomtom-org/maps-sdk/map";
 import { Marker, Popup } from "maplibre-gl";
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import type { Feature, Geometry } from "geojson";
 import {
-  ensureTomTomConfig,
+  applyMapTheme,
   applyTomTomTheme,
+  baseStyle,
+  ensureTomTomConfig,
+  fitBoundsToCoordinates,
   KOLKATA_CENTER,
 } from "../../components/map/helpers";
+import {
+  HEATMAP_CUSTOM,
+  HEATMAP_TOMTOM,
+  alertGeoPoints,
+  ensureHeatmapSource,
+  geoPointsToCoordinates,
+  geoPointsToFeatures,
+  updateHeatmapData,
+} from "../../components/map/heatmap";
 import {
   type TomTomIncident,
   incidentAnchor,
 } from "../../components/map/incidentsApi";
 import { useViewportIncidents } from "../../components/map/useViewportIncidents";
+import { mapRenderMode } from "../../api/sources";
+import { useAlerts } from "../../hooks/useAlerts";
 import { useTheme } from "../../theme/useTheme";
 
 const MAX_SEVERITY_MARKERS = 12;
@@ -34,63 +49,6 @@ function getFeatures(incidents: TomTomIncident[]): Feature[] {
       },
       geometry: incident.geometry as Geometry,
     }));
-}
-
-function setupHeatmap(map: MapLibreMap): void {
-  map.addSource("traffic-heatmap-source", {
-    type: "geojson",
-    data: { type: "FeatureCollection", features: [] },
-  });
-
-  map.addLayer({
-    id: "live-traffic-heatmap",
-    type: "heatmap",
-    source: "traffic-heatmap-source",
-    paint: {
-      "heatmap-weight": ["get", "severity"],
-      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
-      "heatmap-color": [
-        "interpolate",
-        ["linear"],
-        ["heatmap-density"],
-        0,
-        "rgba(0, 0, 255, 0)",
-        0.2,
-        "rgb(0, 128, 255)",
-        0.4,
-        "rgb(0, 255, 0)",
-        0.6,
-        "rgb(255, 255, 0)",
-        0.8,
-        "rgb(255, 128, 0)",
-        1.0,
-        "rgb(255, 0, 0)",
-      ],
-      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 15, 18, 40],
-      "heatmap-opacity": 0.85,
-    },
-  });
-}
-
-function ensureHeatmapSource(map: MapLibreMap): void {
-  if (map.getSource("traffic-heatmap-source")) return;
-  if (map.getLayer("live-traffic-heatmap")) {
-    map.removeLayer("live-traffic-heatmap");
-  }
-  setupHeatmap(map);
-}
-
-function updateHeatmapData(
-  map: MapLibreMap,
-  incidents: TomTomIncident[],
-): void {
-  const source = map.getSource("traffic-heatmap-source") as
-    GeoJSONSource | undefined;
-  if (!source) return;
-  source.setData({
-    type: "FeatureCollection",
-    features: getFeatures(incidents),
-  });
 }
 
 function severityRank(incident: TomTomIncident): number {
@@ -216,7 +174,19 @@ function formatRelativeTime(timestamp: number, now: number): string {
   return `${minutes}m ago`;
 }
 
-const Mapp = () => {
+function statusPillText(
+  loading: boolean,
+  empty: boolean,
+  hasError: boolean,
+  liveCount: number,
+  since: number,
+): string {
+  if (loading && empty) return "Updating\u2026";
+  if (hasError && empty) return "Update failed";
+  return `${liveCount} incident${liveCount === 1 ? "" : "s"} \u00b7 updated ${formatRelativeTime(since, Date.now())}`;
+}
+
+function TomTomTrafficView() {
   const mapInstance = useRef<TomTomMap | null>(null);
   const severityMarkers = useRef<Map<string, Marker>>(new Map());
   const { resolvedTheme } = useTheme();
@@ -275,9 +245,16 @@ const Mapp = () => {
     onUpdate: (incidents) => {
       const map = mapInstance.current?.mapLibreMap;
       if (!map) return;
-      ensureHeatmapSource(map);
-      updateHeatmapData(map, incidents);
-      syncSeverityMarkers(map, incidents, severityMarkers.current);
+      const apply = () => {
+        ensureHeatmapSource(map, HEATMAP_TOMTOM);
+        updateHeatmapData(map, getFeatures(incidents));
+        syncSeverityMarkers(map, incidents, severityMarkers.current);
+      };
+      if (map.loaded()) {
+        apply();
+      } else {
+        map.once("load", apply);
+      }
     },
   });
 
@@ -320,6 +297,104 @@ const Mapp = () => {
       <div id="sdk-map" className="h-full min-h-[300px] w-full" />
     </div>
   );
-};
+}
+
+function CustomTrafficView() {
+  const mapInstance = useRef<MapLibreMap | null>(null);
+  const markersFitted = useRef(false);
+  const lastSync = useRef(0);
+  const { resolvedTheme } = useTheme();
+  const { items, loading, error } = useAlerts();
+  const [pillText, setPillText] = useState("Updating\u2026");
+
+  useEffect(() => {
+    const map = new maplibregl.Map({
+      container: "sdk-map",
+      style: baseStyle(),
+      center: KOLKATA_CENTER,
+      zoom: 11,
+    });
+    mapInstance.current = map;
+    lastSync.current = Date.now();
+
+    return () => {
+      map.remove();
+      mapInstance.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mapInstance.current) {
+      applyMapTheme(mapInstance.current, resolvedTheme === "dark");
+    }
+  }, [resolvedTheme]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    const points = alertGeoPoints(items);
+    const applyMarkers = () => {
+      ensureHeatmapSource(map, HEATMAP_CUSTOM);
+      updateHeatmapData(map, geoPointsToFeatures(points));
+      if (!markersFitted.current && points.length > 0) {
+        markersFitted.current = true;
+        fitBoundsToCoordinates(map, geoPointsToCoordinates(points), 90);
+      }
+      lastSync.current = Date.now();
+    };
+
+    if (map.loaded()) {
+      applyMarkers();
+    } else {
+      map.once("load", applyMarkers);
+    }
+  }, [items]);
+
+  const liveCount = alertGeoPoints(items).length;
+  const empty = items.length === 0;
+
+  useEffect(() => {
+    const update = () =>
+      setPillText(
+        statusPillText(
+          loading,
+          empty,
+          Boolean(error),
+          liveCount,
+          lastSync.current,
+        ),
+      );
+    queueMicrotask(update);
+    const id = setInterval(update, 15000);
+    return () => clearInterval(id);
+  }, [loading, empty, error, liveCount]);
+
+  return (
+    <div className="relative flex-1 min-w-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700">
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
+        <span className="relative flex h-2 w-2">
+          {loading && empty && (
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+          )}
+          <span
+            className={`relative inline-flex h-2 w-2 rounded-full ${
+              error && empty
+                ? "bg-red-500"
+                : loading && empty
+                  ? "bg-slate-400"
+                  : "bg-emerald-500"
+            }`}
+          />
+        </span>
+        {pillText}
+      </div>
+      <div id="sdk-map" className="h-full min-h-[300px] w-full" />
+    </div>
+  );
+}
+
+const Mapp = () =>
+  mapRenderMode === "tomtom" ? <TomTomTrafficView /> : <CustomTrafficView />;
 
 export default Mapp;

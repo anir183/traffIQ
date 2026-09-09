@@ -1,73 +1,44 @@
-# React + TypeScript + Vite
+# TraffIQ Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Traffic-intelligence operations console: live camera feed, ANPR (trajectory recognition), incident management, and traffic analysis over a pluggable data layer.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite 8, react-router-dom v7 (lazy routes), TypeScript (strict)
+- Tailwind CSS v4 (class-based dark variant), Recharts + hand-rolled SVG charts
+- MapLibre GL (`maplibre-gl`) with OSM raster tiles (dark theme via canvas filter)
+- lucide-react icons
 
-## React Compiler
+## Run
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+```bash
+npm install
+npm run dev       # dev server
+npm run build     # type-check (tsc -b) + vite build
+npm run lint      # prettier --check + eslint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Env (`.env`):
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+- `VITE_DATA_SOURCE=mock|backend` — swap transport with no code changes (default `mock`)
+- `VITE_API_BASE_URL=/api` — live API base (default `/api`, proxied to `http://localhost:8080` in dev)
+- `VITE_AUTH_ENABLED=false` — when `true`, unauthenticated users are redirected to `/login` (mock: `admin@traffiq.in` / `admin123`)
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+## Architecture
+
 ```
+src/api/        env, http wrapper (envelope unwrap, retry, 401 auto-refresh), sources factory,
+                endpoint modules, mock handlers + data
+src/types/      contract/ (API payloads) + ui/ (display adapters, severity ramp)
+src/hooks/      data hooks (fetch + abort lifecycle); pages never touch api/ directly
+src/auth/       AuthProvider, tokens (storage), ProtectedRoute, useAuth
+src/header/     search, notification bell, profile, theme toggle
+src/body/       sidebar navigation (circuits from live cameras), routed content window
+src/pages/      overview, feed, anpr, incident, analysis (stat), auth/login, 404
+```
+
+Pure adapters live in `src/types/ui/` (no React); hooks own fetching. With `VITE_DATA_SOURCE=mock`, all pages are demo-ready with identical payload shapes.
+
+## Docs
+
+Full spec / handoff / tracker: `docs/README.md` (at repo root), `frontend/PLAN.md` for the Phase 0+1 execution tracker.
