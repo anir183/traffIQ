@@ -6,6 +6,7 @@ import { request, requestPaginated, toPaginatedResult } from "../http";
 import type { PaginatedResult, RequestOptions } from "../http";
 import type { VehicleQuery } from "../mock/handlers";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export interface VehicleFilter {
   plate_text?: string;
@@ -23,7 +24,9 @@ export async function getVehicles(
       limit: filter.limit,
       offset: filter.offset,
     };
-    return toPaginatedResult(await mock.getVehicles(query));
+    return toPaginatedResult(
+      await abortable(mock.getVehicles(query), options.signal),
+    );
   }
   return requestPaginated<GlobalVehicle>("/vehicles", { ...filter }, options);
 }
@@ -33,7 +36,7 @@ export async function getVehicleByPlate(
   options: RequestOptions = {},
 ): Promise<VehicleDetailResponse> {
   if (env.dataSource === "mock") {
-    return mock.getVehicleByPlate(plateText);
+    return abortable(mock.getVehicleByPlate(plateText), options.signal);
   }
   return request<VehicleDetailResponse>(
     `/vehicles/${encodeURIComponent(plateText)}`,
@@ -46,7 +49,7 @@ export async function getVehicleTrajectory(
   options: RequestOptions = {},
 ): Promise<TrajectoryResponse> {
   if (env.dataSource === "mock") {
-    return mock.getTrajectory(plateText);
+    return abortable(mock.getTrajectory(plateText), options.signal);
   }
   return request<TrajectoryResponse>(
     `/vehicles/${encodeURIComponent(plateText)}/trajectory`,

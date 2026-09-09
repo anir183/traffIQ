@@ -218,30 +218,36 @@ export async function login(req: LoginRequest): Promise<LoginResponse> {
   if (!validEmail || !validPassword) {
     throw new ApiError("Invalid email or password", "INVALID_CREDENTIALS", 401);
   }
-  return mockDelay({
-    access_token: "mock-access-token",
-    refresh_token: "mock-refresh-token",
-    token_type: "Bearer",
-    expires_in: 3600,
-    user: MOCK_USER,
-  });
+  return mockDelay(
+    {
+      access_token: "mock-access-token",
+      refresh_token: "mock-refresh-token",
+      token_type: "Bearer",
+      expires_in: 3600,
+      user: MOCK_USER,
+    },
+    { failure: false },
+  );
 }
 
 export async function refresh(): Promise<RefreshResponse> {
-  return mockDelay({
-    access_token: "mock-access-token",
-    refresh_token: "mock-refresh-token",
-    token_type: "Bearer",
-    expires_in: 3600,
-  });
+  return mockDelay(
+    {
+      access_token: "mock-access-token",
+      refresh_token: "mock-refresh-token",
+      token_type: "Bearer",
+      expires_in: 3600,
+    },
+    { failure: false },
+  );
 }
 
 export async function logout(): Promise<void> {
-  await mockDelay(void 0);
+  await mockDelay(void 0, { failure: false });
 }
 
 export async function getMe(): Promise<User> {
-  return mockDelay(MOCK_USER);
+  return mockDelay(MOCK_USER, { failure: false });
 }
 
 export async function search(

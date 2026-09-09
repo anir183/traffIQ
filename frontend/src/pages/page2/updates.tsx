@@ -3,6 +3,7 @@ import { useAnprEvents } from "../../hooks/useAnprEvents";
 import { anprEventToEntry } from "../../types/ui/adapters";
 import type { VehicleType } from "../../types/traffic";
 import { useListPageSize } from "../../hooks/useListPageSize";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 const TYPE_STYLE: Record<
   VehicleType,
@@ -31,7 +32,7 @@ const TYPE_STYLE: Record<
 };
 
 function AnprLog() {
-  const { items } = useAnprEvents();
+  const { items, loading, error, refetch } = useAnprEvents();
   const entries = items.map(anprEventToEntry);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -118,9 +119,13 @@ function AnprLog() {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-            No vehicles found.
-          </p>
+          <InlineFetchStatus
+            loading={loading}
+            hasData={filtered.length > 0}
+            error={error}
+            onRetry={refetch}
+            emptyNote="No vehicles found."
+          />
         )}
       </div>
 

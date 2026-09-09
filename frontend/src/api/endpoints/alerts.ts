@@ -4,6 +4,7 @@ import { requestPaginated, toPaginatedResult } from "../http";
 import type { PaginatedResult, RequestOptions } from "../http";
 import type { AlertQuery } from "../mock/handlers";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export type AlertStatusFilter = "active" | "investigating" | "resolved";
 
@@ -31,7 +32,9 @@ export async function getAlerts(
       limit: filter.limit,
       offset: filter.offset,
     };
-    return toPaginatedResult(await mock.getAlerts(query));
+    return toPaginatedResult(
+      await abortable(mock.getAlerts(query), options.signal),
+    );
   }
   return requestPaginated<Alert>(
     "/alerts",

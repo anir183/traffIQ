@@ -7,9 +7,10 @@ import {
   vehicleToDetails,
   vehicleToDetections,
 } from "../../types/ui/adapters";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 export default function VehicleInformation({ plate }: { plate: string }) {
-  const { data, loading } = useVehicleDetail(plate);
+  const { data, loading, error, refetch } = useVehicleDetail(plate);
   const { items: cameras } = useCameras();
   const [page, setPage] = useState(1);
 
@@ -44,9 +45,13 @@ export default function VehicleInformation({ plate }: { plate: string }) {
           Loading&hellip;
         </p>
       ) : !data ? (
-        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-          No vehicle found.
-        </p>
+        <InlineFetchStatus
+          loading={loading}
+          hasData={false}
+          error={error}
+          onRetry={refetch}
+          emptyNote="No vehicle found."
+        />
       ) : (
         <>
           <div className="grid shrink-0 grid-cols-2 gap-x-8 gap-y-4">

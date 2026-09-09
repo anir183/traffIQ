@@ -39,6 +39,7 @@ export function useAsyncResource<T>(
   useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
+    let latestRun = 0;
     const painting = enabledRef.current ?? true;
 
     if (!painting) {
@@ -55,17 +56,18 @@ export function useAsyncResource<T>(
     }
 
     const run = async () => {
+      const runId = ++latestRun;
       queueMicrotask(() => {
         if (!cancelled) setLoading(true);
       });
       try {
         const result = await fetcherRef.current(controller.signal);
-        if (cancelled) return;
+        if (cancelled || runId !== latestRun) return;
         setData(result);
         setError(null);
         setLoading(false);
       } catch (err) {
-        if (cancelled) return;
+        if (cancelled || runId !== latestRun) return;
         setError(err);
         setLoading(false);
       }

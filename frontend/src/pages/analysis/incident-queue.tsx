@@ -6,6 +6,7 @@ import {
   alertToEventStream,
   incidentStreamAlerts,
 } from "../../types/ui/adapters";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 const STATUS_ICON: Record<IncidentEventStatus, string> = {
   error: "✕",
@@ -24,7 +25,7 @@ const STATUS_STYLE: Record<IncidentEventStatus, string> = {
 };
 
 function IncidentQueue() {
-  const { items: alerts } = useAlerts();
+  const { items: alerts, loading, error, refetch } = useAlerts();
   const items: IncidentEvent[] =
     incidentStreamAlerts(alerts).map(alertToEventStream);
   const [page, setPage] = useState(1);
@@ -86,6 +87,15 @@ function IncidentQueue() {
             </div>
           </div>
         ))}
+        {items.length === 0 && (
+          <InlineFetchStatus
+            loading={loading}
+            hasData={items.length > 0}
+            error={error}
+            onRetry={refetch}
+            emptyNote="No incidents to show."
+          />
+        )}
       </div>
 
       {totalPages > 1 && (

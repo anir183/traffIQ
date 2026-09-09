@@ -4,6 +4,7 @@ import { requestPaginated, toPaginatedResult } from "../http";
 import type { PaginatedResult, RequestOptions } from "../http";
 import type { AnprQuery } from "../mock/handlers";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export interface AnprEventFilter {
   camera_id?: string;
@@ -28,7 +29,9 @@ export async function getAnprEvents(
       limit: filter.limit,
       offset: filter.offset,
     };
-    return toPaginatedResult(await mock.getAnprEvents(query));
+    return toPaginatedResult(
+      await abortable(mock.getAnprEvents(query), options.signal),
+    );
   }
   return requestPaginated<AnprEvent>(
     "/anpr/events",

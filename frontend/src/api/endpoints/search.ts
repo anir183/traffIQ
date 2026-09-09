@@ -4,6 +4,7 @@ import { requestPaginated, toPaginatedResult } from "../http";
 import type { PaginatedResult, RequestOptions } from "../http";
 import type { SearchQuery } from "../mock/handlers";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export interface SearchFilter {
   q: string;
@@ -21,7 +22,9 @@ export async function search(
       types: filter.types,
       limit: filter.limit,
     };
-    return toPaginatedResult(await mock.search(query));
+    return toPaginatedResult(
+      await abortable(mock.search(query), options.signal),
+    );
   }
   return requestPaginated<SearchResult>(
     "/search",

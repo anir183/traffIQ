@@ -39,7 +39,7 @@ export default function HeaderSearch() {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { items: results, loading } = useSearch(query.trim());
+  const { items: results, loading, error } = useSearch(query.trim());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -100,12 +100,18 @@ export default function HeaderSearch() {
                 Searching&hellip;
               </p>
             )}
-            {!loading && results.length === 0 && (
+            {!loading && Boolean(error) && (
+              <p className="px-2 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
+                Search failed. Try again.
+              </p>
+            )}
+            {!loading && !error && results.length === 0 && (
               <p className="px-2 py-4 text-center text-sm text-slate-400 dark:text-slate-500">
                 No matches for &ldquo;{query}&rdquo;
               </p>
             )}
             {!loading &&
+              !error &&
               results.map((result) => (
                 <ResultItem
                   key={`${result.type}-${result.href}`}

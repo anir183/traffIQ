@@ -62,6 +62,8 @@ Updated live as work lands. Toggle from mock → live is a single env var: `VITE
 
 **Map render modes:** [`x`] `mapRenderMode` in `api/sources.ts` = `isMock ? "tomtom" : "custom"`. `mock` → real TomTom SDK viewer (`TomTomMap` + `TrafficFlowModule` + `useViewportIncidents` incidents heatmap via `HEATMAP_TOMTOM` + severity markers w/ popups; needs `VITE_TOMTOM_API_KEY`); `backend` → custom maplibre renderer (OSM raster + `HEATMAP_CUSTOM` red heatmap from `useAlerts()`). Shared `components/map/heatmap.ts` gates all source/layer mutations behind the map `load` event.
 
+**Mock API simulation:** [`x`] `mockDelay()` in `api/mock/middleware.ts` is the single choke point all mock handlers funnel through. It applies random latency (`VITE_MOCK_LATENCY_MIN_MS`/`MAX_MS`, default 300–700; `MAX=0` disables) and a random failure rate (`VITE_MOCK_FAILURE_RATE`, default 5, percent; `0` disables). Auth handlers (`login`/`refresh`/`logout`/`getMe`) opt out of failure injection (`{ failure: false }`) so boot/login is deterministic; latency still applies. Endpoint files wrap mock branches with `abortable(mock…, signal)` so aborted in-flight calls settle immediately (parity with real `fetch`). `useAsyncResource` got a per-run "latest wins" id guard so stale resolutions (search-as-you-type, refetch, future polling) never overwrite newer data. Pages surface loading/error via `components/ui/fetch-status.tsx` (`InlineFetchStatus`) instead of misleading empty states.
+
 ---
 
 ## Cross-cutting rules

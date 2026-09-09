@@ -25,11 +25,29 @@ VITE_DATA_SOURCE=mock           # "mock" | "backend" (explicit, no auto)
 VITE_API_BASE_URL=/api
 VITE_AUTH_ENABLED=false         # mock map viewer uses TomTom SDK: set VITE_TOMTOM_API_KEY (maplibre-gl OSM raster used only for backend/custom renderer)
 
+# Mock API simulation (mock source only)
+VITE_MOCK_LATENCY_MIN_MS=300    # random latency range; MAX=0 disables
+VITE_MOCK_LATENCY_MAX_MS=700
+VITE_MOCK_FAILURE_RATE=5        # percent 0-100; failures skipped for auth calls
+
 # .env.local (when backend is ready)
 VITE_DATA_SOURCE=backend
 VITE_API_BASE_URL=http://localhost:8000/api
 VITE_AUTH_ENABLED=true
 ```
+
+---
+
+## Mock API Simulation
+
+✓ DONE — the mock data layer simulates a real network so loading/error states are visible in demos.
+
+- **Single choke point:** every mock handler wraps its result in `mockDelay()` (`api/mock/middleware.ts`). It applies a random latency in `[VITE_MOCK_LATENCY_MIN_MS, VITE_MOCK_LATENCY_MAX_MS]` (default 300–700ms, `MAX=0` disables) and — with probability `VITE_MOCK_FAILURE_RATE` (default 5%, percent; `0` disables) — throws `ApiError("Simulated server failure", INTERNAL, 500)`.
+- **No component imports `api/mock/data` directly**, so the choke point covers all mock reads/writes.
+- **Auth is deterministic:** `login`/`refresh`/`logout`/`getMe` call `mockDelay(…, { failure: false })` — latency still applies (good for the "Signing in…" UX), but no random failures on boot/login.
+- **Abort parity:** all endpoint mock branches wrap the handler call with `abortable(mock…, options.signal)` (`api/mock/middleware.ts`), so an aborted request (unmount, deps change, disabled toggle, search-as-you-type) settles immediately with an `ApiError("Request aborted", INTERNAL, 0)` — mirroring real `fetch` semantics.
+- **Latest-wins guard:** `useAsyncResource` tags each run with a sequence id and ignores any resolution that is no longer the latest (or arrived after cleanup) — prevents stale results under latency, fast keystrokes, refetch, and any future polling overlap.
+- **UI states:** new `components/ui/fetch-status.tsx` (`InlineFetchStatus`) renders Loading… / Failed to load + Retry / empty-note, and returns `null` when data exists. Adopted by incident list, event stream, camera feed, ANPR log, insights, header search (error vs "No matches"), and vehicle details. Chart pages intentionally keep "—" placeholders / fill-in behavior.
 
 ---
 

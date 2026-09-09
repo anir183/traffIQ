@@ -6,6 +6,7 @@ import StatusBadge from "../../components/ui/badge";
 import { useListPageSize } from "../../hooks/useListPageSize";
 import { useAlerts } from "../../hooks/useAlerts";
 import { alertToIncident, triageAlerts } from "../../types/ui/adapters";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 export type FilterKey = "all" | "active" | "investigating" | "resolved";
 
@@ -63,7 +64,7 @@ export default function RecentIncidents({
 }: {
   filter?: FilterKey;
 }) {
-  const { items: alerts } = useAlerts();
+  const { items: alerts, loading, error, refetch } = useAlerts();
   const [page, setPage] = useState(1);
   const [prevFilter, setPrevFilter] = useState(filter);
 
@@ -104,9 +105,13 @@ export default function RecentIncidents({
         ))}
       </div>
       {incidents.length === 0 && (
-        <p className="flex-1 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-          No incidents match this filter.
-        </p>
+        <InlineFetchStatus
+          loading={loading}
+          hasData={incidents.length > 0}
+          error={error}
+          onRetry={refetch}
+          emptyNote="No incidents match this filter."
+        />
       )}
 
       {incidents.length > 0 && (

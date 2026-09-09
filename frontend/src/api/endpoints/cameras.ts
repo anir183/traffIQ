@@ -4,6 +4,7 @@ import { request, requestPaginated, toPaginatedResult } from "../http";
 import type { PaginatedResult, RequestOptions } from "../http";
 import type { CameraQuery } from "../mock/handlers";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export interface CameraFilter {
   circuit?: string;
@@ -23,7 +24,9 @@ export async function getCameras(
       limit: filter.limit,
       offset: filter.offset,
     };
-    return toPaginatedResult(await mock.getCameras(query));
+    return toPaginatedResult(
+      await abortable(mock.getCameras(query), options.signal),
+    );
   }
   return requestPaginated<CameraMeta>("/cameras", { ...filter }, options);
 }
@@ -33,7 +36,7 @@ export async function getCameraById(
   options: RequestOptions = {},
 ): Promise<CameraMeta> {
   if (env.dataSource === "mock") {
-    return mock.getCameraById(cameraId);
+    return abortable(mock.getCameraById(cameraId), options.signal);
   }
   return request<CameraMeta>(
     `/cameras/${encodeURIComponent(cameraId)}`,

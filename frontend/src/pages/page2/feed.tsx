@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import { Maximize2, Video } from "lucide-react";
 import { useListPageSize } from "../../hooks/useListPageSize";
 import { useCameras } from "../../hooks/useCameras";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 const COLS = 2;
 
@@ -40,7 +41,7 @@ function CameraView({
 }
 
 export default function Feed() {
-  const { items: cameras } = useCameras();
+  const { items: cameras, loading, error, refetch } = useCameras();
   const [page, setPage] = useState(1);
 
   const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
@@ -62,7 +63,9 @@ export default function Feed() {
         </h3>
         <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          {cameras.length} cameras
+          {loading && cameras.length === 0
+            ? "Loading\u2026"
+            : `${cameras.length} cameras`}
         </span>
       </div>
 
@@ -79,6 +82,16 @@ export default function Feed() {
           />
         ))}
       </div>
+
+      {cameras.length === 0 && (
+        <InlineFetchStatus
+          loading={loading}
+          hasData={cameras.length > 0}
+          error={error}
+          onRetry={refetch}
+          emptyNote="No cameras configured."
+        />
+      )}
 
       {cameras.length > 0 && (
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">

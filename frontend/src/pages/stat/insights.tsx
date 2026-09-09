@@ -1,5 +1,6 @@
 import { useTrafficSummary } from "../../hooks/useTrafficSummary";
 import { overviewInsights } from "../../types/ui/adapters";
+import InlineFetchStatus from "../../components/ui/fetch-status";
 
 interface InsightCard {
   title: string;
@@ -47,7 +48,7 @@ function buildInsightCards(
 }
 
 function Insights() {
-  const { data } = useTrafficSummary();
+  const { data, loading, error, refetch } = useTrafficSummary();
   const insights = data
     ? buildInsightCards(
         overviewInsights(
@@ -73,9 +74,13 @@ function Insights() {
       </div>
 
       {insights.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-          No insights available.
-        </p>
+        <InlineFetchStatus
+          loading={loading}
+          hasData={insights.length > 0}
+          error={error}
+          onRetry={refetch}
+          emptyNote="No insights available."
+        />
       ) : (
         <div className="grid gap-4">
           <div className="grid gap-4">

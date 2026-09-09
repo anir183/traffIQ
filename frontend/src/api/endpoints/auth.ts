@@ -10,13 +10,14 @@ import { env } from "../env";
 import { request } from "../http";
 import type { RequestOptions } from "../http";
 import * as mock from "../mock/handlers";
+import { abortable } from "../mock/middleware";
 
 export async function login(
   req: LoginRequest,
   options: RequestOptions = {},
 ): Promise<LoginResponse> {
   if (env.dataSource === "mock") {
-    return mock.login(req);
+    return abortable(mock.login(req), options.signal);
   }
   return request<LoginResponse>("/auth/login", {
     ...options,
@@ -30,7 +31,7 @@ export async function refresh(
   options: RequestOptions = {},
 ): Promise<RefreshResponse> {
   if (env.dataSource === "mock") {
-    return mock.refresh();
+    return abortable(mock.refresh(), options.signal);
   }
   return request<RefreshResponse>("/auth/refresh", {
     ...options,
@@ -44,7 +45,7 @@ export async function logout(
   options: RequestOptions = {},
 ): Promise<void> {
   if (env.dataSource === "mock") {
-    return mock.logout();
+    return abortable(mock.logout(), options.signal);
   }
   await request<null>("/auth/logout", {
     ...options,
@@ -55,7 +56,7 @@ export async function logout(
 
 export async function getMe(options: RequestOptions = {}): Promise<User> {
   if (env.dataSource === "mock") {
-    return mock.getMe();
+    return abortable(mock.getMe(), options.signal);
   }
   return request<User>("/auth/me", options);
 }
