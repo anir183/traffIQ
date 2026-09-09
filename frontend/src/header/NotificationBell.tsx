@@ -93,7 +93,7 @@ function NotificationBell() {
         aria-label="Notifications"
         className="relative flex cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-400 dark:hover:text-slate-100"
       >
-        <span className="relative block h-6 w-6">
+        <span className="relative mt-0.5 block h-6 w-6">
           <Bell size={24} />
           {activeCount > 0 && (
             <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
