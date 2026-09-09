@@ -1,7 +1,7 @@
 package com.trafficiq.trafficiq_backend.repository;
 
-
 import com.trafficiq.trafficiq_backend.entity.Alert;
+import com.trafficiq.trafficiq_backend.entity.Detection;
 import com.trafficiq.trafficiq_backend.enums.AlertStatus;
 import com.trafficiq.trafficiq_backend.enums.AlertType;
 
@@ -14,16 +14,20 @@ public interface AlertRepository
 
     List<Alert> findTop10ByOrderByCreatedAtDesc();
 
-
     List<Alert> findByStatusOrderByCreatedAtDesc(
             AlertStatus status
     );
-
 
     List<Alert> findByTypeOrderByCreatedAtDesc(
             AlertType type
     );
 
+    boolean existsByDetectionAndType(
+            Detection detection,
+            AlertType type
+    );
 
-    long countByStatus(AlertStatus status);
+    long countByStatus(
+            AlertStatus status
+    );
 }

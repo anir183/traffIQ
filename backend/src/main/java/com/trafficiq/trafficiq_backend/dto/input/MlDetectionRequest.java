@@ -8,9 +8,9 @@ import jakarta.validation.constraints.NotNull;
 
 public class MlDetectionRequest {
 
-    // ==========================================
+
     // TOP LEVEL ML EVENT DATA
-    // ==========================================
+
 
     @NotBlank
     @JsonProperty("event_id")
