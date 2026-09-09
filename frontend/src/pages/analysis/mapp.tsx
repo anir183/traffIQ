@@ -33,6 +33,38 @@ import { useTheme } from "../../theme/useTheme";
 
 const MAX_SEVERITY_MARKERS = 12;
 
+export type MapMode = "traffic" | "speed" | "incidents" | "nodes";
+
+const MAP_MODES: { id: MapMode; label: string }[] = [
+  { id: "traffic", label: "Traffic" },
+  { id: "speed", label: "Avg Speed" },
+  { id: "incidents", label: "Incidents" },
+  { id: "nodes", label: "Nodes" },
+];
+
+function MapModeSwitcher() {
+  const [mode, setMode] = useState<MapMode>("traffic");
+  return (
+    <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white/95 p-1 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95">
+      {MAP_MODES.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => setMode(item.id)}
+          aria-pressed={mode === item.id}
+          className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            mode === item.id
+              ? "bg-blue-500 text-white shadow-sm"
+              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          }`}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function getFeatures(incidents: TomTomIncident[]): Feature[] {
   return incidents
     .filter(
@@ -271,6 +303,7 @@ function TomTomTrafficView() {
 
   return (
     <div className="relative flex-1 min-w-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700">
+      <MapModeSwitcher />
       <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
         <span className="relative flex h-2 w-2">
           {state.status === "loading" && (
@@ -372,6 +405,7 @@ function CustomTrafficView() {
 
   return (
     <div className="relative flex-1 min-w-0 overflow-hidden rounded-xl border border-slate-200 shadow-sm dark:border-slate-700">
+      <MapModeSwitcher />
       <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
         <span className="relative flex h-2 w-2">
           {loading && empty && (
