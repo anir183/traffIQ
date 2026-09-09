@@ -47,7 +47,8 @@ VITE_AUTH_ENABLED=true
 - **Auth is deterministic:** `login`/`refresh`/`logout`/`getMe` call `mockDelay(…, { failure: false })` — latency still applies (good for the "Signing in…" UX), but no random failures on boot/login.
 - **Abort parity:** all endpoint mock branches wrap the handler call with `abortable(mock…, options.signal)` (`api/mock/middleware.ts`), so an aborted request (unmount, deps change, disabled toggle, search-as-you-type) settles immediately with an `ApiError("Request aborted", INTERNAL, 0)` — mirroring real `fetch` semantics.
 - **Latest-wins guard:** `useAsyncResource` tags each run with a sequence id and ignores any resolution that is no longer the latest (or arrived after cleanup) — prevents stale results under latency, fast keystrokes, refetch, and any future polling overlap.
-- **UI states:** new `components/ui/fetch-status.tsx` (`InlineFetchStatus`) renders Loading… / Failed to load + Retry / empty-note, and returns `null` when data exists. Adopted by incident list, event stream, camera feed, ANPR log, insights, header search (error vs "No matches"), and vehicle details. Chart pages intentionally keep "—" placeholders / fill-in behavior.
+- **UI states:** new `components/ui/fetch-status.tsx` (`InlineFetchStatus`) renders Loading… / Failed to load + Retry / empty-note, and returns `null` when data exists. Adopted by incident list, event stream, camera feed, ANPR log, insights, header search (error vs "No matches"), vehicle details, and the fullscreen camera viewer (`page2/camera-view.tsx`, whose "not found" overlay now also shows load/error states). Chart pages intentionally keep "—" placeholders / fill-in behavior.
+- The camera viewer overlay (`/feed/cam/:id`) is now theme-aware (light defaults + `dark:` variants) instead of dark-only.
 
 ---
 
