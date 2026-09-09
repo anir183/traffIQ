@@ -64,7 +64,7 @@ export interface SegmentResponse {
 }
 
 export interface DensityForecastPoint {
-  day: string;
+  time: string;
   density: number;
 }
 

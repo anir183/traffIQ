@@ -256,9 +256,9 @@ export function segmentSpeedData(
 }
 
 export function forecastToDensityPoints(
-  points: Array<{ day: string; density: number }>,
+  points: Array<{ time: string; density: number }>,
 ): DensityPoint[] {
-  return points.map((point) => ({ day: point.day, density: point.density }));
+  return points.map((point) => ({ time: point.time, density: point.density }));
 }
 
 export interface VehicleDetailRow {

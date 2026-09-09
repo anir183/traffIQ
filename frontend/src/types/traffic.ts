@@ -4,7 +4,7 @@ export interface SegmentDatum {
 }
 
 export interface DensityPoint {
-  day: string;
+  time: string;
   density: number;
 }
 
