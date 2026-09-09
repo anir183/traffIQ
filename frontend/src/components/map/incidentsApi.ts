@@ -89,7 +89,7 @@ export function incidentAnchor(incident: TomTomIncident): [number, number] {
 }
 
 const FIELDS = encodeURIComponent(
-  "{ incidents { type, geometry { type, coordinates }, properties { id, iconCategory, magnitudeOfDelay, events { description, code, iconCategory }, from, to, timeValidity, startTime, endTime } } }",
+  "{incidents{type,geometry{type,coordinates},properties{id,iconCategory,magnitudeOfDelay,events{description,code,iconCategory},from,to,timeValidity,startTime,endTime}}}",
 );
 
 export function fetchIncidents(
@@ -105,8 +105,14 @@ export function fetchIncidents(
     .then(async (response) => {
       if (!response.ok) {
         const retryable = response.status === 429 || response.status >= 500;
+        const detail = await response
+          .json()
+          .then((body: unknown) => JSON.stringify(body))
+          .catch(() => null);
         throw new IncidentApiError(
-          `IncidentDetails request failed (${response.status})`,
+          `IncidentDetails request failed (${response.status})${
+            detail ? `: ${detail}` : ""
+          }`,
           retryable,
         );
       }
