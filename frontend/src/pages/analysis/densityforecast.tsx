@@ -31,7 +31,10 @@ function DensityForecastChart() {
       </span>
       <div className="min-h-0 flex-1">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points}>
+          <LineChart
+            data={points}
+            margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+          >
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}

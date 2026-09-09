@@ -48,7 +48,10 @@ function Charts() {
         </span>
         <div className="min-h-0 flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={congestedSegments}>
+            <BarChart
+              data={congestedSegments}
+              margin={{ top: 8, right: 8, bottom: 28, left: 8 }}
+            >
               <XAxis
                 dataKey="name"
                 tick={axisTick}
@@ -76,7 +79,10 @@ function Charts() {
         </span>
         <div className="min-h-0 flex-1">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={avgSpeed}>
+            <BarChart
+              data={avgSpeed}
+              margin={{ top: 8, right: 8, bottom: 8, left: 8 }}
+            >
               <XAxis dataKey="name" tick={axisTick} />
               <YAxis tick={axisTick} />
               <Bar dataKey="value" fill={SPEED_COLOR} radius={[4, 4, 0, 0]} />
