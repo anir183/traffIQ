@@ -531,16 +531,16 @@ Centered: "404 — Page not found" + link to `/`.
 
 ### 1I. Files to Delete (Phase 1)
 
-| File                                     | Reason                                               | Status  |
-| ---------------------------------------- | ---------------------------------------------------- | ------- |
+| File                                     | Reason                                               | Status                                                      |
+| ---------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
 | `components/map/incidentsApi.ts`         | TomTom data API replaced by alerts                   | RESTORED for mock map viewer (`mapRenderMode === "tomtom"`) |
-| `components/map/useViewportIncidents.ts` | viewport fetching replaced by alerts hook            | RESTORED for mock map viewer |
-| `pages/analysis/useTrafficData.ts`       | replaced by `useTrafficSummary`/`useTrafficSegments` | DELETED |
-| `pages/incident/incidentData.ts`         | static incidents shelf                               | DELETED |
-| `pages/stat/analysisData.ts`             | static analysis shelf                                | DELETED |
-| `pages/page2/cameraData.ts`              | static cameras shelf                                 | DELETED |
-| `src/config.ts`                          | `VITE_TOMTOM_API_KEY` unused after TomTom removal    | RESTORED (mock viewer needs the key) |
-| dependency `@tomtom-org/maps-sdk`        | replaced by `maplibre-gl` (OSM raster)               | RESTORED for mock map viewer |
+| `components/map/useViewportIncidents.ts` | viewport fetching replaced by alerts hook            | RESTORED for mock map viewer                                |
+| `pages/analysis/useTrafficData.ts`       | replaced by `useTrafficSummary`/`useTrafficSegments` | DELETED                                                     |
+| `pages/incident/incidentData.ts`         | static incidents shelf                               | DELETED                                                     |
+| `pages/stat/analysisData.ts`             | static analysis shelf                                | DELETED                                                     |
+| `pages/page2/cameraData.ts`              | static cameras shelf                                 | DELETED                                                     |
+| `src/config.ts`                          | `VITE_TOMTOM_API_KEY` unused after TomTom removal    | RESTORED (mock viewer needs the key)                        |
+| dependency `@tomtom-org/maps-sdk`        | replaced by `maplibre-gl` (OSM raster)               | RESTORED for mock map viewer                                |
 
 ### Phase 1 Verification
 
@@ -562,10 +562,10 @@ Centered: "404 — Page not found" + link to `/`.
 
 ### Data sources
 
-| Surface | TomTom API | Endpoint | Notes |
-| --- | --- | --- | --- |
-| Incident listings (management list + incident map + event stream + bell) | Traffic Incident Details v5 | `GET https://api.tomtom.com/traffic/services/5/incidentDetails?key=&bbox=&timeValidityFilter=present&fields={incidents{type,geometry{type,coordinates},properties{...}}}&language=en-GB` | bbox ≤ 10,000 km² (city bbox ≈ 700 km²). `fields` is strict — **no whitespace** inside braces (spaces cause `Parameter 'fields' has incorrect syntax.`). Query cached 90 s. |
-| Congestion + average speed (segments cards, summary metrics) | Traffic Flow — flow segment data | `GET https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?point={lat},{lon}&unit=KMPH&key=` | One call per road in a fixed ~24-point Kolkata **geometry catalog** (`src/api/tomtom/flow.ts` `ROADS`). Runs at concurrency 5, timeout 8 s, per-request failures skipped; cached 90 s. Returns `currentSpeed`, `freeFlowSpeed`, `confidence`, `roadClosure`. |
+| Surface                                                                  | TomTom API                       | Endpoint                                                                                                                                                                                 | Notes                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------ | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Incident listings (management list + incident map + event stream + bell) | Traffic Incident Details v5      | `GET https://api.tomtom.com/traffic/services/5/incidentDetails?key=&bbox=&timeValidityFilter=present&fields={incidents{type,geometry{type,coordinates},properties{...}}}&language=en-GB` | bbox ≤ 10,000 km² (city bbox ≈ 700 km²). `fields` is strict — **no whitespace** inside braces (spaces cause `Parameter 'fields' has incorrect syntax.`). Query cached 90 s.                                                                                  |
+| Congestion + average speed (segments cards, summary metrics)             | Traffic Flow — flow segment data | `GET https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?point={lat},{lon}&unit=KMPH&key=`                                                                        | One call per road in a fixed ~24-point Kolkata **geometry catalog** (`src/api/tomtom/flow.ts` `ROADS`). Runs at concurrency 5, timeout 8 s, per-request failures skipped; cached 90 s. Returns `currentSpeed`, `freeFlowSpeed`, `confidence`, `roadClosure`. |
 
 ### Mapping rules (TomTom → app contracts)
 
@@ -575,13 +575,13 @@ Centered: "404 — Page not found" + link to `/`.
 
 ### Files
 
-| File | Purpose | Status |
-| --- | --- | --- |
-| `src/api/tomtom/keys.ts` | `tomtomKeyIsSet()` guard (empty/`undefined` key detection) | [x] |
-| `src/api/tomtom/flow.ts` | flow segment fetch (catalog + concurrency + cache) + flow→segments/summary derivations | [x] |
-| `src/api/tomtom/incidents.ts` | city incident fetch (bbox + cache + timeout) + TomTom→`Alert` mapping | [x] |
-| `src/api/mock/handlers.ts` | `getAlerts`/`getSegments`/`getTrafficSummary` call TomTom first, static as fallback | [x] |
-| `src/components/map/incidentsApi.ts` | reused for the city incident fetch (existing `fetchIncidents`/`incidentAnchor`) | unchanged |
+| File                                 | Purpose                                                                                | Status    |
+| ------------------------------------ | -------------------------------------------------------------------------------------- | --------- |
+| `src/api/tomtom/keys.ts`             | `tomtomKeyIsSet()` guard (empty/`undefined` key detection)                             | [x]       |
+| `src/api/tomtom/flow.ts`             | flow segment fetch (catalog + concurrency + cache) + flow→segments/summary derivations | [x]       |
+| `src/api/tomtom/incidents.ts`        | city incident fetch (bbox + cache + timeout) + TomTom→`Alert` mapping                  | [x]       |
+| `src/api/mock/handlers.ts`           | `getAlerts`/`getSegments`/`getTrafficSummary` call TomTom first, static as fallback    | [x]       |
+| `src/components/map/incidentsApi.ts` | reused for the city incident fetch (existing `fetchIncidents`/`incidentAnchor`)        | unchanged |
 
 **Phase 1.5 verification:** `npm run lint && npm run build` clean · no key / offline → identical to previous static-mock rendering · key set → incident list + map show real Kolkata incidents and segments/metrics show live speeds.
 
@@ -593,12 +593,12 @@ Centered: "404 — Page not found" + link to `/`.
 
 ### View modes
 
-| Mode | Layer shown | Interaction |
-| --- | --- | --- |
-| `traffic` | TomTom raster `flow/relative` tiles (`/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=&tileSize=256`) | hover/click road-sample point → speed popup |
-| `speed` | TomTom raster `flow/absolute` tiles (`/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=&tileSize=256`) | same |
-| `incidents` | incident heatmap (`HEATMAP_TOMTOM`) + severity markers w/ popups | marker hover/click → incident popup |
-| `nodes` | `flow-sample-points` circle layer over the fixed ~24-road geometry catalog | hover/click point → name (+ live speed when key set) |
+| Mode        | Layer shown                                                                                                 | Interaction                                          |
+| ----------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `traffic`   | TomTom raster `flow/relative` tiles (`/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=&tileSize=256`) | hover/click road-sample point → speed popup          |
+| `speed`     | TomTom raster `flow/absolute` tiles (`/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=&tileSize=256`) | same                                                 |
+| `incidents` | incident heatmap (`HEATMAP_TOMTOM`) + severity markers w/ popups                                            | marker hover/click → incident popup                  |
+| `nodes`     | `flow-sample-points` circle layer over the fixed ~24-road geometry catalog                                  | hover/click point → name (+ live speed when key set) |
 
 Raster overlay helpers: `components/map/overlays.ts` (`ensureTrafficTiles`, `setLayerVisibility`, `FLOW_LAYER_RELATIVE/ABSOLUTE`). Modes applied on map `load` and on change (`applyMode` in `pages/analysis/mapp.tsx`); `TrafficFlowModule` from the SDK is no longer used — one raster mechanism for Traffic + Avg Speed.
 
@@ -623,15 +623,15 @@ No key or flow fetch failure → `ensureTrafficTiles` no-ops, roads render as gr
 
 ### Files
 
-| File | Purpose | Status |
-| --- | --- | --- |
-| `src/components/map/overlays.ts` | raster flow tile layers + `syncFlowSamples` (interactive road lines + sample points) | [x] |
-| `src/components/map/interaction.ts` | `bindFeatureHoverPopup` (hover/click feature popups) | new |
-| `src/components/map/alertPopup.ts` | `buildAlertPopup` shared popup content | new |
-| `src/components/map/helpers.ts` | `bindMarkerDetails` (marker hover w/ popup) | [x] |
-| `src/types/ui/adapters.ts` | `mapIncidentPoints` (all severities + `alert`), `alertTypeLabel` | [x] |
-| `src/pages/analysis/mapp.tsx` | functional 4-mode switcher + flow-point hover + marker hover + loading pill | [x] |
-| `src/pages/incident/map.tsx` | all-incident markers + popups + loading/empty state | [x] |
+| File                                | Purpose                                                                              | Status |
+| ----------------------------------- | ------------------------------------------------------------------------------------ | ------ |
+| `src/components/map/overlays.ts`    | raster flow tile layers + `syncFlowSamples` (interactive road lines + sample points) | [x]    |
+| `src/components/map/interaction.ts` | `bindFeatureHoverPopup` (hover/click feature popups)                                 | new    |
+| `src/components/map/alertPopup.ts`  | `buildAlertPopup` shared popup content                                               | new    |
+| `src/components/map/helpers.ts`     | `bindMarkerDetails` (marker hover w/ popup)                                          | [x]    |
+| `src/types/ui/adapters.ts`          | `mapIncidentPoints` (all severities + `alert`), `alertTypeLabel`                     | [x]    |
+| `src/pages/analysis/mapp.tsx`       | functional 4-mode switcher + flow-point hover + marker hover + loading pill          | [x]    |
+| `src/pages/incident/map.tsx`        | all-incident markers + popups + loading/empty state                                  | [x]    |
 
 **Phase 1.7 verification:** `npm run lint && npm run build` clean · hovering/clicking an incident marker or a road point opens a detail popup · mode buttons visibly switch layers · initial load shows "Loading incidents…" until data arrives.
 
@@ -639,15 +639,15 @@ No key or flow fetch failure → `ensureTrafficTiles` no-ops, roads render as gr
 
 ## PHASE 1.8 — Road-level flow lines + legible overlays
 
-**Goal:** Let the user hover/click *any part of a road* (not just the fixed sample points) for live flow info, and keep the incident heatmap compact enough to read when zoomed out.
+**Goal:** Let the user hover/click _any part of a road_ (not just the fixed sample points) for live flow info, and keep the incident heatmap compact enough to read when zoomed out.
 
 ### Overview map layers
 
-| Layer | Id | Source | Where visible | Interaction |
-| --- | --- | --- | --- | --- |
-| road backing | `flow-roads-casing` | `flow-samples-source` | traffic / speed / nodes | none |
-| road flow line | `flow-roads` | `flow-samples-source` | traffic / speed / nodes | hover/click → flow popup |
-| sample points | `flow-sample-points` | `flow-samples-source` | nodes only | hover/click → flow popup |
+| Layer          | Id                   | Source                | Where visible           | Interaction              |
+| -------------- | -------------------- | --------------------- | ----------------------- | ------------------------ |
+| road backing   | `flow-roads-casing`  | `flow-samples-source` | traffic / speed / nodes | none                     |
+| road flow line | `flow-roads`         | `flow-samples-source` | traffic / speed / nodes | hover/click → flow popup |
+| sample points  | `flow-sample-points` | `flow-samples-source` | nodes only              | hover/click → flow popup |
 
 One geojson source (`flow-samples-source`) feeds all three layers. Each catalog road becomes a `LineString` built from the fetched `flowSegmentData.coordinates` (TomTom returns `[lat, lng]` pairs — converted to `[lng, lat]`); roads without a returned segment fall back to a `Point` at their catalog coordinate. Line color follows congestion: `>= 60` red, `>= 30` amber, else green; no geometry / no data → gray.
 
@@ -664,14 +664,302 @@ No key or all flow fetches fail → zero `LineString`s; roads render only as gra
 
 ### Files
 
-| File | Purpose | Status |
-| --- | --- | --- |
-| `src/api/tomtom/flow.ts` | `FlowSample.coordinates` + `parseCoordinates` from `flowSegmentData.coordinates` | [x] |
-| `src/components/map/overlays.ts` | `syncFlowSamples` + casing/line/points layers + visibility helpers | [x] |
-| `src/components/map/heatmap.ts` | restrained heatmap radius/intensity/opacity | [x] |
-| `src/pages/analysis/mapp.tsx` | layer wiring, hover lists, popup state ("pending" vs "No live flow data…") | [x] |
+| File                             | Purpose                                                                          | Status |
+| -------------------------------- | -------------------------------------------------------------------------------- | ------ |
+| `src/api/tomtom/flow.ts`         | `FlowSample.coordinates` + `parseCoordinates` from `flowSegmentData.coordinates` | [x]    |
+| `src/components/map/overlays.ts` | `syncFlowSamples` + casing/line/points layers + visibility helpers               | [x]    |
+| `src/components/map/heatmap.ts`  | restrained heatmap radius/intensity/opacity                                      | [x]    |
+| `src/pages/analysis/mapp.tsx`    | layer wiring, hover lists, popup state ("pending" vs "No live flow data…")       | [x]    |
 
 **Phase 1.8 verification:** `npm run lint && npm run build` clean · hover anywhere on a colored road line shows the flow popup · heatmap stays a compact cluster at zoom 11–13 · gate green.
+
+---
+
+## PHASE 1.9 — Pagination windowing + live incident/event-stream updates
+
+**Goal:** fix the duplicated paginators (page-number row overflows its container when there are many pages) and make every incident/event list truly live.
+
+### Pagination
+
+`components/ui/pagination.tsx` — shared, windowed page selector: `‹ 1 … page−1 page page+1 … last ›` (≤ 7 number buttons, ellipsis on both sides, `aria-current`). Replaced the 5 identical inline implementations:
+
+| File                                | Notes                     |
+| ----------------------------------- | ------------------------- |
+| `pages/incident/incidents.tsx`      | Recent Incidents          |
+| `pages/analysis/incident-queue.tsx` | Incident & Event Stream   |
+| `pages/page2/updates.tsx`           | ANPR updates              |
+| `pages/page2/feed.tsx`              | camera feed tile grid     |
+| `pages/anpr/details.tsx`            | vehicle detection history |
+
+Behavior unchanged otherwise: `safe` page clamping, `‹`/`Next ›` nav, round active dot, dark-mode variants. Rendering is bounded regardless of total page count (no more `Array.from({ length: totalPages })` in a flex row).
+
+### Live incident/event updates
+
+- `hooks/useAlerts.ts` — default `pollMs = 30_000` on `useAlerts()` (callers can still override/disable). All six consumers (bell, Recent Incidents, incident map, event stream panel, overview count, custom map markers) now refresh. The `fetchCityIncidentAlerts` 90 s cache + `inFlight` dedup means concurrent polls share one underlying TomTom fetch.
+- `api/tomtom/incidents.ts` — `alert_id` fallback is now coordinate-based (`tt_<lng>,<lat>`) instead of array index, so IDs are stable across TomTom re-orderings (no React key churn / list flicker).
+- `api/mock/data/alerts.ts` — seed timestamps generated relative to `Date.now()` (`toIsoTime` anchors to the current UTC day, falling back to yesterday if the time is in the future; event-stream entries tick backwards every 30 min; display strings reformatted via a local `formatEventTimestamp`). Removes the hardcoded Sep 2026 dates that made fallback/backend demos look permanently stale.
+
+### Files
+
+| File                                                                                                                                             | Purpose                                | Status |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- | ------ |
+| `components/ui/pagination.tsx`                                                                                                                   | shared windowed `Pagination` component | new    |
+| `pages/incident/incidents.tsx`, `pages/analysis/incident-queue.tsx`, `pages/page2/updates.tsx`, `pages/page2/feed.tsx`, `pages/anpr/details.tsx` | use `Pagination`                       | [x]    |
+| `hooks/useAlerts.ts`                                                                                                                             | default 30 s polling                   | [x]    |
+| `api/tomtom/incidents.ts`                                                                                                                        | deterministic `alert_id`               | [x]    |
+| `api/mock/data/alerts.ts`                                                                                                                        | now-relative seed timestamps           | [x]    |
+
+**Phase 1.9 verification:** `npm run lint && npm run build` clean · a list with ≥ 8 pages shows `‹ 1 … 5 6 7 … 12 ›` and stays inside its card · the bell/event-stream/incident panels update on their own while the page stays open · mock mode shows fresh timestamps.
+
+---
+
+## Phase 1.10 — Map mode rework (heatmap + camera icons)
+
+### Goal
+
+Replace raster tile overlays with flow heatmaps for traffic/speed modes, show incidents as markers only (no heatmap), and display camera-node icons via lucide-react in nodes mode.
+
+### Changes
+
+| Layer / mode                  | Before                                               | After                                                                                                                                                    |
+| ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traffic mode                  | TomTom `flow/relative` raster tiles                  | Congestion heatmap (`HEATMAP_TOMTOM`) + `flow-roads` lines from `flowSampleFeatures`                                                                     |
+| Avg Speed mode                | TomTom `flow/absolute` raster tiles                  | Speed heatmap (`HEATMAP_FLOW_SPEED`, red→amber→green) + `flow-roads` lines; feature weight encodes speed so higher speed → higher density → green        |
+| Incidents mode                | Heatmap density + severity markers (max 12)          | Markers only (no heatmap); 16 px dot, 3 px white border, drop shadow; `MAX_SEVERITY_MARKERS` 12 → 40                                                     |
+| Nodes mode                    | `flow-sample-points` circles                         | Lucide-react `Camera` icon (SVG data-URI → `map.addImage("camera-icon")`) via `flow-node-icons` symbol layer; circle fallback if icon registration fails |
+| `CustomTrafficView` (backend) | `HEATMAP_CUSTOM` alert density heatmap for incidents | Alert-pulse markers (same as incident-management map); flow-roads + heatmap for traffic/speed (null samples → blank)                                     |
+
+### New exports / helpers
+
+| Export                                        | Location                   | Purpose                                                                                  |
+| --------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| `HEATMAP_FLOW_SPEED`                          | `heatmap.ts`               | Red→amber→green stops for speed heatmap                                                  |
+| `applyHeatmapStops(map, stops)`               | `heatmap.ts`               | Swap `heatmap-color` stops dynamically when mode changes                                 |
+| `flowHeatmapFeatures(samples, mode)`          | `overlays.ts`              | Build GeoJSON points for flow heatmap from `FlowSample[]`                                |
+| `registerCameraIcon(map)`                     | `overlays.ts`              | Convert lucide `Camera` to SVG data-URI → `Image` → `map.addImage("camera-icon")` (once) |
+| `setFlowNodeMarkersVisibility(map, visible)`  | `overlays.ts`              | Show icons when camera icon registered, else fall back to circles                        |
+| `createAlertMarker(map, point)`               | `mapp.tsx` (module helper) | Pulse marker + popup for Alert in `CustomTrafficView`                                    |
+| `syncAlertMarkers(map, points, markers, fit)` | `mapp.tsx` (module helper) | Incremental alert-marker sync for `CustomTrafficView`                                    |
+| `ALERT_SEVERITY_COLORS`                       | `mapp.tsx`                 | `AlertSeverity` → hex color map for custom alert markers                                 |
+
+### Files changed
+
+| File                         | What                                                                                                                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `components/map/heatmap.ts`  | Added `HEATMAP_FLOW_SPEED` + `applyHeatmapStops`                                                                                                                                                             |
+| `components/map/overlays.ts` | Removed raster tile exports; added `flowHeatmapFeatures`, `registerCameraIcon`, `FLOW_NODE_ICONS_LAYER`, `setFlowNodeMarkersVisibility`                                                                      |
+| `pages/analysis/mapp.tsx`    | `applyMode` rewired for heatmap/marker/icon modes; `createSeverityMarker` beefed (16 px, 3 px border); `CustomTrafficView` now uses alert markers + flow heatmap + camera icons; removed raster tile imports |
+
+### Verification
+
+`npm run lint && npm run build` clean · Traffic/Avg Speed modes show heatmap (blue→red / red→green) + road lines · Incidents mode shows only severity markers (no heatmap) · Nodes mode shows camera icons (or circles on first load before icon registers) · Custom map shows alert-pulse markers · All modes support hover popups.
+
+---
+
+## Phase 1.11 — Map heatmap fixes + viewport-linked dashboard stats
+
+### Goal
+
+Fix the invisible-traffic / uniform-red heatmap bugs, make incident markers clearly visible, and scope the four overview cards to the map's current viewport.
+
+### Heatmap fixes (issues 1 + 2)
+
+| Problem                        | Root cause                                                                                                    | Fix                                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traffic mode shows nothing     | All 24 features had `severity: 0` before samples load (or no key); tiny 4–16 px radius → invisible dots       | Radius 14→35 px across zoom 0→20, intensity 1.2→3.5, opacity 0.85; `flowHeatmapFeatures` uses baseline weight `0.15` when a road has no sample |
+| Speed mode uniform red overlay | `HEATMAP_FLOW_SPEED[0]` was opaque `rgb(220,38,38)`; every pixel away from a feature rendered red (density=0) | First stop now `rgba(220,38,38,0)` (transparent), with a color stop added at density 0.2                                                       |
+
+### Incident marker visibility (issue 3)
+
+`addPulseMarker` (`components/map/helpers.ts`) gained a `size` param — `"sm"` (unchanged), `"md"`, `"lg"` (24 px wrapper / 22 px dot / ping ring). The analysis map's `createSeverityMarker` replaced its static 16 px DOM dot with `addPulseMarker(map, anchor, color, "lg")`, matching the incident-management map's animated, high-visibility presentation.
+
+### Viewport-linked dashboard (issue 4)
+
+| File                                                                                  | Change                                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contexts/mapViewport.ts` (new)                                                       | `MapViewportContext` + `useMapViewport()` hook (no component → clean react-refresh)                                                                                                                         |
+| `contexts/MapViewportProvider.tsx` (new)                                              | Provider holding `bbox` state; `setBbox` dedupes identical bounds                                                                                                                                           |
+| `pages/trafficanalysis.tsx`                                                           | Wraps `<OverviewRow> + <Map> + <IncidentQueue>` in `<MapViewportProvider>`                                                                                                                                  |
+| `pages/analysis/mapp.tsx`                                                             | Both views call `useMapViewport()`; new `bindViewportBroadcast(map, setBbox)` helper fires `setBbox(bboxFromMap(map))` on `moveend` (300 ms debounce) and unsubscribes on cleanup                           |
+| `api/tomtom/flow.ts`                                                                  | `pointInBbox`, `filterByBbox`, `roadsInBbox`, `roadFractionInBbox`; segment outputs now include `lat`/`lon`                                                                                                 |
+| `types/contract/trafficSummary.ts`                                                    | `SegmentCongestionDatum`/`SegmentSpeedDatum` gain optional `lat`/`lon`                                                                                                                                      |
+| `api/mock/handlers.ts`                                                                | `getTrafficSummary(bbox?)`/`getSegments(bbox?)` filter samples with `filterByBbox` before aggregating; `getDensityForecast(bbox?)` scales points by `roadFractionInBbox` (empty points if no roads in view) |
+| `api/endpoints/traffic.ts`                                                            | `TrafficRequestOptions` (extends `RequestOptions`) adds optional `bbox`; passed through to mock handlers                                                                                                    |
+| `hooks/useTrafficSummary.ts`, `useTrafficSegments.ts`, `useTrafficDensityForecast.ts` | Accept optional `bbox`; included in `useAsyncResource` deps so cards re-fetch on viewport change                                                                                                            |
+| `pages/analysis/overview.tsx`                                                         | Each card passes `bbox` to its hook; new `RegionBadge` ("Map region") shows while a viewport is active                                                                                                      |
+
+### Behavior
+
+- No bbox (initial load, no TomTom key, or CustomView before the first move) → global stats, exactly as before.
+- `moveend` → 300 ms debounce → `setBbox` → hooks re-fetch (aborts stale, "latest wins") → cards show the scoped subset with a "Map region" badge.
+- Static-fallback mode (no TomTom key): `getTrafficSummary`/`getSegments` return static seeds regardless of bbox (spatial filtering only applies to live TomTom samples) — intentionally simple and predictable.
+
+### Verification
+
+`npm run lint && npm run build` clean · Traffic shows a visible heatmap immediately (even pre-data) · Speed mode no longer paints the whole map red · Incident markers pulse and stand out · Panning/zooming the map updates the four overview cards and shows "Map region" badges · Region stats revert to global when bbox is cleared.
+
+---
+
+## Phase 1.12 — Continuous road heatmaps
+
+### Goal
+
+Fix traffic/speed heatmaps rendering as small blobs scattered across the city instead of tracing the roads.
+
+### Root cause
+
+`flowHeatmapFeatures` emitted exactly **one Point feature per road at its static centroid** (`[road.lon, road.lat]`): 24 dots over ~30×20 km. Roads are ~3–5 km apart, so their kernel radii (14–35 px ≈ 0.5–1.3 km at zoom 11) never overlapped → isolated sparse blobs. The fetched road polylines (`sample.coordinates`, already used by the `flow-roads` line layer) were never fed into the heatmap.
+
+### Changes
+
+| File                                                 | Change                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/map/overlays.ts` — `flowHeatmapFeatures` | For each road with `sample.coordinates` (≥2 vertices) emits **one Feature per polyline vertex**, each carrying that road's severity weight (traffic congestion / speed / 0.15 baseline). Roads without geometry keep the single centroid fallback feature |
+| `components/map/heatmap.ts`                          | Paint retune for continuous coverage: `heatmap-intensity` max 3.5 → 2.8, `heatmap-opacity` 0.85 → 0.7 (radius unchanged 14→35 px)                                                                                                                         |
+
+### Behavior
+
+- Traffic/speed modes: heatmap continuously traces each road's geometry, colored by per-road weight; overlapping vertices along a road accumulate so density/color reflect the road's level.
+- Pre-data / no-key custom view (`flowHeatmapFeatures(null, …)`): unchanged centroid-dot fallback (no geometry available in that path) — intentionally simple.
+
+### Verification
+
+`npm run lint && npm run build` clean · Heatmap follows the roads as continuous colored bands (blue→red for congestion, red→amber→green for speed) · No sparse isolated dots between roads · No uniform wash.
+
+---
+
+## Phase 1.13 — Always-visible roads with status popup
+
+### Goal
+
+Fix the hover crash (`The layer 'flow-roads' does not exist in the map's style`) and make road lines, heatmap ribbons, and per-road info work reliably regardless of TomTom fetch failures, rate limits, or a missing key. Replace the notion of a per-road "density number" with a traffic-status label.
+
+### Root causes
+
+1. `bindFeatureHoverPopup` called `map.queryRenderedFeatures(point, { layers })` with layer ids that may not exist yet/didn't get created → MapLibre throws on every `mousemove`, and the popup never opens.
+2. Layers were only created inside `applyMode`, which was invoked via `registerCameraIcon(...).then(...)` on `load`. Any hiccup in that async chain (e.g., a resolution after React StrictMode's cleanup removed the first map) meant `applyMode` never ran → no source/layers at all.
+3. Roads whose per-road TomTom query failed had no geometry → a bare invisible Point → no visible line and near-impossible to hover; heatmap degraded to sparse blobs.
+
+### Changes
+
+| File                            | Change                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/tomtom/flow.ts`            | `FlowSample` gains `roadClosure` (captured in `parseSample`); new `roadFallbackGeometry(road)` — deterministic 3-point schematic polyline (~1.3 km each way) through the centroid along a name-hash bearing                                                                                                                                                                |
+| `components/map/overlays.ts`    | `flowSampleFeatures`/`flowHeatmapFeatures` use `sample.coordinates ?? roadFallbackGeometry(road)` → lines + heatmap always trace roads; features expose `closed`; new `FLOW_ROADS_HOVER_LAYER` (line-width 14, line-opacity 0) added in `syncFlowSamples` for a generous, always-queryable hover hit-area                                                                  |
+| `components/map/interaction.ts` | `showFeature` filters the layer list to existing layers and wraps the query in try/catch — shape change only, never throws                                                                                                                                                                                                                                                 |
+| `pages/analysis/mapp.tsx`       | `applyMode` runs immediately on `load`, with `void registerCameraIcon(...).then(() => applyMode(...))` as an idempotent re-run; hover lists (both views) include `FLOW_ROADS_HOVER_LAYER`; `buildFlowSamplePopup` leads with a `trafficStatusLabel` chip — Road closed (red) / Congested ≥60% (red) / Heavy traffic ≥30% (amber) / Free-flow (green) / No live data (gray) |
+
+### Behavior
+
+- Hovering a road (traffic/speed/nodes) always opens the popup: status chip, avg speed, free-flow, congestion %, confidence. No console crash when layers are absent.
+- Roads always draw as colored lines (gray = fallback/no live data, red/amber/green by congestion) and the heatmap always traces them — even with failed fetches or no TomTom key, and in the custom/backend view.
+- Fallback geometry is consciously schematic (not true road alignment) — flagged by the gray "No live data" state.
+
+### Verification
+
+`npm run lint && npm run build` clean · No "layer 'flow-roads' does not exist" in console; hovering shows the status popup · Traffic/speed/nodes modes all show road lines + heatmap ribbons immediately, even on fetch failure.
+
+---
+
+## Phase 1.14 — Remake traffic + speed modes (native TomTom flow / network-wide speed heatmap)
+
+### Goal
+
+Replace the Phase 1.12–1.13 line/vertex-heatmap approach for **traffic** and **speed** modes (reported: random white lines, blob dots at segment ends/centers, and the heatmap "breaking" when switching modes). Traffic = **native TomTom `TrafficFlowModule` segments** (the familiar live-flow look); speed = a **custom full-network heatmap** harvested from the same flow tiles. Both keep per-road hover details. Incidents/nodes modes are untouched. Data stays mock/demo (TomTom API); real data will come from the backend — everything below is built around a neutral contract so that later switch is a one-function swap.
+
+### Design (mock → backend seam)
+
+- **Neutral contract:** `FlowSample[]` (`api/tomtom/flow.ts`, unchanged) is the boundary. `roadName`, `currentSpeed`, `freeFlowSpeed`, `confidence`, `roadClosure`, `coordinates` — all map-agnostic.
+- **TomTom-specific code stays in `api/tomtom/`:** `startFlowModule` + `harvestFlowSamples` are the only functions that know about `TrafficFlowModule` / vector-tile property names. A backend swap replaces these two with a fetch that returns the same `FlowSample[]`; `components/map/flowHeatmap.ts` and `pages/analysis/mapp.tsx` don't change.
+- **No style guessing:** the flow vector tile's `source-layer` is read from the live style (`map.getStyle().layers` → that source's `source-layer`), cached per map (`WeakMap`), so `querySourceFeatures` works against the real tiling even though the module runs hidden.
+
+### Changes
+
+| File                                            | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/tomtom/viewportFlow.ts` (new)              | `startFlowModule(sdkMap)` — `TrafficFlowModule.get(map, { visible: false, filters: { any: [{ roadCategories: { show: "only", values: [motorway…service] } }] } })`; the module is attached but hidden so it acts as a pure vector-tile data source. `harvestFlowSamples(map)` → `map.querySourceFeatures(TRAFFIC_FLOW_SOURCE_ID, { sourceLayer })` mapping raw snake_case tile props (`relative_speed`, `absolute_speed`, `road_closure`, `road_category`) to `FlowSample[]` (free-flow = `absolute/relative`, confidence = `relative×100`); returns `[]` when the source is absent and never throws. `isFlowSegmentFeature` / `normalizeFlowFeatureProps` adapt raw tile props for popups. `resolveFlowSourceLayer` reads the source-layer from the live style                                                            |
+| `components/map/flowHeatmap.ts` (new)           | `speedHeatmapFeatures(samples: FlowSample[])` — densifies each polyline to ~200 m spacing (`STEP_DEG 0.0018`) so heatmap kernels fuse into continuous ribbons, taper at segment ends, and attach popup props (`name`, `currentSpeed`, `freeFlowSpeed`, `confidence`, `congestion`, `closed`). Weight = `currentSpeed/100` (clamped, closed→0) so the red→amber→green `HEATMAP_FLOW_SPEED` ramp renders slow=red, fast=green. Neutral to source: same function works for backend data                                                                                                                                                                                                                                                                                                                                       |
+| `components/map/heatmap.ts`                     | `HEATMAP_SOURCE_ID`/`HEATMAP_LAYER_ID`/`HEATMAP_HOVER_LAYER` exported constants; `ensureHeatmapSource` now verifies source AND both layers and rebuilds wholesale if any piece is missing (kills the silent-skip "heatmap breaks on switch"); adds a transparent `traffic-heatmap-hover` circle layer (r 9) as the hover hit-area; helpers use the constants                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `components/map/interaction.ts`                 | `bindFeatureHoverPopup` gains optional `pickFallback` — when the managed-layer query finds nothing it runs an unrestricted `queryRenderedFeatures(point)` and lets the caller pick/normalize a feature (used to hover the native TomTom segments, which own no layer we manage); query wrapped in try/catch                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `pages/analysis/mapp.tsx` (`TomTomTrafficView`) | `flowModuleRef` holds the module; on init (guarded, StrictMode-safe) apply is re-run when ready. `applyMode` matrix: **traffic** = module visible + heatmap/road-lines hidden (native segments render); **speed** = module hidden + `ensureHeatmapSource`/`applyHeatmapStops(HEATMAP_FLOW_SPEED)`/`refreshSpeedHeatmap`; **nodes** = `flow-samples` lines visible (unchanged); **incidents** = markers only. `refreshSpeedHeatmap` guards on `mode === "speed"` + source present, harvests viewport flow and restamps the heatmap. Viewport rebuild via debounced `sourcedata` (`sourceId === "vectorTilesFlow" && isSourceLoaded`) + `moveend` handlers. Hover list includes the heatmap + hover layers and passes a fallback that recognizes native segment props and normalizes them for the existing status-chip popup |
+
+### Behavior
+
+- **Traffic:** live TomTom flow segments, color-coded by jam factor, exactly the pre-rework SDK look; hovering any segment opens the status popup (Road closed / Congested / Heavy / Free-flow + speed/free-flow/confidence).
+- **Speed:** network-wide continuous heatmap in the red→amber→green speed ramp across every flow segment in the viewport; rebuilds as you pan/zoom (debounced 200 ms); hovering reads the same popup. No native segments underneath (module hidden) → clean visuals.
+- **Switching** between all four modes is deterministic: every `applyMode` re-derives visibility from scratch and `ensureHeatmapSource` self-heals, so no mode can leave layers half-visible.
+- **Demo/backend seam:** replace `startFlowModule` + `harvestFlowSamples` with a backend-backed function returning `FlowSample[]` → traffic mode can keep showing the same heatmap/hover, or switch traffic to a backend status layer; speed mode and popups are unchanged.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev: (a) traffic mode shows live segments with hover popups; (b) speed mode shows a continuous speed heatmap that updates on pan/zoom, no white lines / no blob artifacts; (c) rapid mode switching traffic→speed→nodes→incidents never leaves stale layers or throws; (d) hover works in traffic (native segments) and speed (heatmap).
+
+---
+
+## Phase 1.15 — Clamp the speed heatmap + survive WebGL context loss
+
+### Goal
+
+Speed mode was rendering a heatmap that washed out the entire viewport and could crash the WebGL context (followed by a MapLibre restore that re-applied only the SDK style and then a churn loop of our effects failing against the half-rebuilt style). Core fixes: bound the heatmap's point/kernel footprint so it reads as thin readable ribbons, and make every custom style mutation idempotent + exception-safe and re-run `applyMode` after a context restore so the map always self-heals.
+
+### Root causes (verified in maplibre source)
+
+1. `map.querySourceFeatures` returns features with geometry already projected to real lng/lat (`util/vectortile_to_geojson.ts` `projectPoint`), and `getRenderableIds()` includes **overscaled zoom levels** → the same road is harvested per tile replica. Harvesting every viewport segment × ~200 m densification produced thousands of points with weight floor 0.05–0.25 and a big kernel (radius 14–35 px, intensity ≤2.8) → overlapping kernels merged into a full-screen glow (no per-road readability) and put heavy load on the GPU.
+2. On `webglcontextlost`, MapLibre captures the style and on restore calls `setStyle(saved, {diff:false})` (`ui/map.ts` `_contextRestored`) — which **rebuilds only the SDK/static style**, dropping our geojson sources/layers (`traffic-heatmap-source`, `flow-samples-source`, …). During that window our previously registered `sourcedata`/`moveend`/`applyMode` paths called `addLayer`/`setPaintProperty`/`setData` against a not-yet-loaded style → MapLibre fell back to full style rebuilds ("Unable to perform style diff… Rebuilding the style from scratch"), spurious validation errors (e.g. `flow-roads.paint.line-color` "Expected an odd number of arguments" — a valid `case` expression mis-validated mid-diff), and repeated context loss. Nothing re-ran `applyMode` after restore → permanent broken map.
+
+### Changes
+
+| File                            | Change                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/map/flowHeatmap.ts` | `MAX_HEATMAP_POINTS = 2500`; after densifying, if the feature list exceeds the budget apply an even stride (`index % stride === 0`) so count is bounded while coverage is preserved. Weight clamp narrowed from `[0.05, 1]` to `[0.15, 0.95]` (unknown → 0.15, closed → 0, end taper 0.6) so free-flow roads can't saturate the ramp                                            |
+| `components/map/heatmap.ts`     | Kernel clamped to ribbons: radius `0→10 / 12→15 / 16→19 / 20→24`, intensity `0→1.0 / 15→1.6`, opacity 0.8. `ensureHeatmapSource`, `updateHeatmapData`, `applyHeatmapStops` wrapped in try/catch so they never throw mid style-rebuild                                                                                                                                           |
+| `components/map/overlays.ts`    | `syncFlowSamples` returns unless `map.isStyleLoaded()` and wraps its `addSource`/`addLayer` chain in try/catch so it can't fire during a style rebuild                                                                                                                                                                                                                          |
+| `pages/analysis/mapp.tsx`       | `refreshSpeedHeatmap` additionally skips unless `map.isStyleLoaded()`. The speed rebuild debounce is 350 ms and the timeout itself re-checks `isStyleLoaded()`. New `webglcontextrestored` listener re-runs `applyMode(map, modeRef.current)` (creates flow-samples + heatmap sources/layers afresh, restores module visibility and incident markers) and is removed on unmount |
+
+### Behavior
+
+- **Speed** renders the whole network as thin continuous ribbons (green fast → red slow) instead of a full-screen glow; panning/zooming rebuilds efficiently (~≤2500 points) and no longer exhausts the GPU.
+- **Resilience:** style mutations are no-op-safe during style rebuilds (guarded + try/catch), and if a WebGL context loss still happens the map re-creates its overlays and keeps working instead of error-looping.
+- Traffic (native segments), incidents, and nodes are unchanged.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev: speed mode shows readable network ribbons (no wash), pan/zoom in speed mode causes no crash/"WebGL context was lost" loop, rapid mode switching stays clean, and forcing a context loss is recoverable in place.
+
+---
+
+## Phase 1.16 — Restore speed ribbons, kill ghost popups, clean node lines
+
+### Goal
+
+Phase 1.15's clamps swung the speed heatmap from "full-screen wash" to "not visibly rendering at all", road-info popups could appear over invisible roads in traffic/speed, and nodes mode showed the white casing aesthetic the earlier iteration was rejected for. This phase makes the speed pipeline deterministically visible + self-healing, gates hover targets to what is actually drawn, and removes the white casing layer.
+
+### Root causes (verified in maplibre source)
+
+1. **Blank speed mode.** (a) `ensureHeatmapSource` rebuild path called `map.removeSource(HEATMAP_SOURCE_ID)` while `HEATMAP_LAYER_ID`/`HEATMAP_HOVER_LAYER` still referenced it — `style.removeSource` (and the `Style.emit` for the error) **throws** when any layer uses the source, so the removeSource failure aborted inside the try/catch and left the heatmap half-dead whenever a partial state was discovered. (b) The 350 ms debounced rebuild depended on a cascade of soft conditions (`isStyleLoaded()`, `getSource(FLOW_SOURCE_ID)`, tile-loaded `sourcedata` events, the resolved source-layer name) — any single missed signal meant the heatmap stayed empty forever with no further trigger.
+2. **Random road-info popups.** `FLOW_ROADS_HOVER_LAYER` (the invisible 14 px line hit-area added in 1.13) had default `visibility: visible` and was in the hover-layer list in every mode, even though the roads it shadows are only drawn in nodes mode (`setFlowSamplesVisibility(next === "nodes")`). Hovering over empty-looking space in traffic/speed still hit those hidden 14 px polylines → status popups "for no reason". A popup opened in one mode also stayed open across a mode switch (only the next mousemove/leave closed it).
+3. **Node-mode white flow lines.** `FLOW_ROADS_CASING_LAYER` (7 px white `#ffffff`, opacity 0.9) — the same white-casing under the colored roads that the rejected earlier heatmap iteration drew — was re-enabled in nodes mode.
+
+### Changes
+
+| File                            | Change                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `components/map/heatmap.ts`     | `ensureHeatmapSource` now removes `HEATMAP_LAYER_ID` + `HEATMAP_HOVER_LAYER` **before** calling `removeSource`, so the wholesale recreate never trips maplibre's removeSource-with-layers throw and always converges in any partial state. Kernel retuned to clearly-visible ribbons: radius `0→12 / 12→18 / 16→22 / 20→28`, intensity `0→1.5 / 15→2.2`, opacity 0.85                                                    |
+| `components/map/flowHeatmap.ts` | Weight floor `0.15 → 0.2` (unknown speed), end taper `0.6 → 0.65` so sparse stride-de-sampled points still register above the transparent ramp bucket                                                                                                                                                                                                                                                                    |
+| `api/tomtom/viewportFlow.ts`    | `resolveFlowSourceLayer` only writes the `WeakMap` cache when a flow layer actually matched; if none matched it returns the "Flow" fallback but caches nothing, so a stale fallback can't poison harvesting for the map's lifetime                                                                                                                                                                                       |
+| `components/map/interaction.ts` | New module-level `WeakMap<MapLibreMap, Popup>` of the live hover popup per map; new exported `closeHoverPopups(map)` removes it. `close()` also deletes the weakmap entry                                                                                                                                                                                                                                                |
+| `components/map/overlays.ts`    | Deleted `FLOW_ROADS_CASING_LAYER` (constant, its `addLayer`, and its line in `setFlowSamplesVisibility`). `setFlowSamplesVisibility` now toggles `FLOW_ROADS_HOVER_LAYER` in lock-step with `FLOW_ROADS_LAYER` (hover hit-area only live where roads are actually drawn); hover layer's initial layout is now `visibility: "none"`                                                                                       |
+| `pages/analysis/mapp.tsx`       | `applyMode` (both views) calls `closeHoverPopups(map)` so no popup survives a mode switch. Speed self-heal: `lastSpeedRefreshRef` timestamp set on every refresh + a 2 s watchdog interval that refreshes when speed is active, style loaded, and the last refresh is ≥6 s stale — guarantees the heatmap appears even if every tile/style event was missed. `zoomend` joins `sourcedata`/`moveend` as a rebuild trigger |
+
+### Behavior
+
+- **Speed** shows clear green→amber→red network ribbons again (readable, no full-screen wash), and self-heals: even if the initial harvest was empty or all event signals were missed, the watchdog repaints within seconds.
+- **Popups** only appear over content that is actually on-screen (roads in nodes, native segments in traffic via fallback, heatmap ribbons in speed); nothing lingers across a mode switch.
+- **Nodes** shows colored status roads + sample points + camera icons with no white casing. Traffic and incidents are untouched.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev: speed shows visible ribbons immediately and after pan/zoom without ever staying blank; hovering empty space in traffic/speed shows no popup; switching modes leaves no stale popup or layer; nodes mode is clean (no white lines).
 
 ---
 
@@ -815,11 +1103,11 @@ No other new dependencies. Everything built with existing stack.
 
 ## Files to DELETE (across all phases)
 
-| File                                     | Phase | Reason                          |
-| ---------------------------------------- | ----- | ------------------------------- |
-| `pages/analysis/useTrafficData.ts`       | 0     | Replaced by `useTrafficSummary` |
-| ~~`components/map/incidentsApi.ts`~~     | 1     | ~~TomTom data API replaced~~ — RESTORED for mock map viewer |
-| ~~`components/map/useViewportIncidents.ts`~~ | 1 | ~~Viewport fetching replaced~~ — RESTORED for mock map viewer |
+| File                                         | Phase | Reason                                                        |
+| -------------------------------------------- | ----- | ------------------------------------------------------------- |
+| `pages/analysis/useTrafficData.ts`           | 0     | Replaced by `useTrafficSummary`                               |
+| ~~`components/map/incidentsApi.ts`~~         | 1     | ~~TomTom data API replaced~~ — RESTORED for mock map viewer   |
+| ~~`components/map/useViewportIncidents.ts`~~ | 1     | ~~Viewport fetching replaced~~ — RESTORED for mock map viewer |
 
 ---
 
