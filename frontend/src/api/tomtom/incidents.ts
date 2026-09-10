@@ -84,7 +84,7 @@ function typeOf(incident: TomTomIncident): AlertType {
   }
 }
 
-function buildAlert(incident: TomTomIncident, index: number): Alert | null {
+function buildAlert(incident: TomTomIncident): Alert | null {
   if (!incident.geometry) return null;
   const properties = incident.properties ?? {};
   const description = properties.events?.[0]?.description ?? "Traffic incident";
@@ -96,7 +96,9 @@ function buildAlert(incident: TomTomIncident, index: number): Alert | null {
   const severity = severityOf(properties.magnitudeOfDelay);
 
   const base: Alert = {
-    alert_id: `tt_${properties.id ?? `ts_${index}`}`,
+    alert_id: properties.id
+      ? `tt_${properties.id}`
+      : `tt_${longitude.toFixed(5)},${latitude.toFixed(5)}`,
     type: typeOf(incident),
     severity,
     status: "active",

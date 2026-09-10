@@ -346,35 +346,78 @@ const TRIAGE: Array<
   ],
 ];
 
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const EVENT_TICK_MS = 30 * 60_000;
+
 function toIsoTime(time: string): string {
-  return `2026-09-06T${time}:00.000Z`;
+  const parts = time.split(":").map((part) => Number(part) || 0);
+  const now = new Date();
+  const candidate = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      parts[0] ?? 0,
+      parts[1] ?? 0,
+      parts[2] ?? 0,
+    ),
+  );
+  if (candidate.getTime() > Date.now()) {
+    candidate.setUTCDate(candidate.getUTCDate() - 1);
+  }
+  return candidate.toISOString();
+}
+
+function formatEventTimestamp(iso: string): string {
+  const date = new Date(iso);
+  const hours = date.getUTCHours();
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  const period = hours < 12 ? "AM" : "PM";
+  const twelveHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${MONTHS[date.getUTCMonth()]} ${String(date.getUTCDate()).padStart(2, "0")}, ${twelveHour}:${minutes} ${period}`;
 }
 
 const EVENT_STREAM_ALERTS: Alert[] = EVENT_STREAM.map(
   (
-    [id, status, title, location, timestamp, detail_line, link_text, type],
+    [id, status, title, location, _timestamp, detail_line, link_text, type],
     i,
-  ) => ({
-    alert_id: id,
-    type,
-    severity:
-      status === "error" ? "high" : status === "warning" ? "medium" : "low",
-    status: status === "success" ? "resolved" : "investigating",
-    title,
-    detail: "",
-    location: { label: "" },
-    detected_at: `2026-09-05T${String(23 - Math.floor(i / 4)).padStart(2, "0")}:${String(
-      (i * 17) % 60,
-    ).padStart(2, "0")}:00.000Z`,
-    event_stream: {
-      status,
+  ) => {
+    const detectedAt = new Date(Date.now() - i * EVENT_TICK_MS).toISOString();
+    void _timestamp;
+    return {
+      alert_id: id,
+      type,
+      severity:
+        status === "error" ? "high" : status === "warning" ? "medium" : "low",
+      status: status === "success" ? "resolved" : "investigating",
       title,
-      location,
-      timestamp,
-      detail_line,
-      link_text,
-    },
-  }),
+      detail: "",
+      location: { label: "" },
+      detected_at: detectedAt,
+      event_stream: {
+        status,
+        title,
+        location,
+        timestamp: formatEventTimestamp(detectedAt),
+        detail_line,
+        link_text,
+      },
+    };
+  },
 );
 
 const TRIAGE_ALERTS: Alert[] = TRIAGE.map(
