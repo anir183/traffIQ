@@ -1,157 +1,118 @@
 import { useEffect, useRef } from "react";
-import {API_KEY} from '../analysis/config'
-
-// Replace with your own TomTom API key: https://developer.tomtom.com/
-const TOMTOM_API_KEY = API_KEY;
+import "maplibre-gl/dist/maplibre-gl.css";
+import { TomTomMap } from "@tomtom-org/maps-sdk/map";
+import type { Map } from "maplibre-gl";
+import {
+  ensureTomTomConfig,
+  applyTomTomTheme,
+  addDotMarker,
+  addLineLayer,
+  fitBoundsToCoordinates,
+} from "../../components/map/helpers";
+import { useTheme } from "../../theme/useTheme";
 
 type LngLat = { lng: number; lat: number };
 
-declare global {
-  interface Window {
-    tt: any;
-  }
-}
+const CAMERA_LOCATION: LngLat = { lng: 88.271, lat: 22.5958 };
+const VEHICLE_START: LngLat = { lng: 88.3105, lat: 22.5893 };
+const VEHICLE_MID: LngLat = { lng: 88.3639, lat: 22.5726 };
+const VEHICLE_END: LngLat = { lng: 88.4103, lat: 22.5697 };
 
-// Hardcoded trajectory data (Howrah -> Kolkata -> Salt Lake)
-const CAMERA_LOCATION: LngLat = { lng: 88.271, lat: 22.5958 }; // Howrah side
-const VEHICLE_START: LngLat = { lng: 88.3105, lat: 22.5893 }; // river crossing point
-const VEHICLE_MID: LngLat = { lng: 88.3639, lat: 22.5726 }; // Kolkata (yellow pin)
-const VEHICLE_END: LngLat = { lng: 88.4103, lat: 22.5697 }; // Salt Lake (green pin)
-
-// Highlighted lane: the river-crossing leg of the path
 const HIGHLIGHTED_LANE: [number, number][] = [
   [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat],
   [VEHICLE_START.lng, VEHICLE_START.lat],
 ];
 
-// Remaining path: crossing point -> mid -> end
 const VEHICLE_PATH: [number, number][] = [
   [VEHICLE_START.lng, VEHICLE_START.lat],
   [VEHICLE_MID.lng, VEHICLE_MID.lat],
   [VEHICLE_END.lng, VEHICLE_END.lat],
 ];
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.appendChild(script);
+const TRAJECTORY_POINTS: [number, number][] = [
+  [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat],
+  [VEHICLE_START.lng, VEHICLE_START.lat],
+  [VEHICLE_MID.lng, VEHICLE_MID.lat],
+  [VEHICLE_END.lng, VEHICLE_END.lat],
+];
+
+function getVehicleTrajectoryMap(container: HTMLDivElement): TomTomMap {
+  return new TomTomMap({
+    mapLibre: {
+      container,
+      center: [VEHICLE_MID.lng, VEHICLE_MID.lat],
+      zoom: 11,
+    },
   });
 }
 
-function loadStylesheet(href: string): void {
-  if (document.querySelector(`link[href="${href}"]`)) return;
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = href;
-  document.head.appendChild(link);
+function onMapLoad(map: Map): void {
+  if (map.getSource("highlighted-lane")) return;
+  addLineLayer(map, "highlighted-lane", HIGHLIGHTED_LANE, "#2563eb", 5);
+  addLineLayer(map, "vehicle-path", VEHICLE_PATH, "#dc2626", 4);
 }
 
 export default function VehicleTrajectoryMap() {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<any>(null);
+  const mapInstance = useRef<TomTomMap | null>(null);
+  const trajectoryFitted = useRef(false);
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    let cancelled = false;
+    ensureTomTomConfig();
+    if (!mapRef.current) return;
 
-    async function init() {
-      loadStylesheet(
-        "https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css"
-      );
-      await loadScript(
-        "https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"
-      );
-      if (cancelled || !window.tt || !mapRef.current) return;
+    const map = getVehicleTrajectoryMap(mapRef.current);
+    mapInstance.current = map;
 
-      const map = window.tt.map({
-        key: TOMTOM_API_KEY,
-        container: mapRef.current,
-        center: [VEHICLE_MID.lng, VEHICLE_MID.lat],
-        zoom: 11,
-      });
-      mapInstance.current = map;
+    map.mapLibreMap.on("load", () => {
+      onMapLoad(map.mapLibreMap);
+      if (!trajectoryFitted.current) {
+        trajectoryFitted.current = true;
+        fitBoundsToCoordinates(map.mapLibreMap, TRAJECTORY_POINTS, 70);
+      }
+    });
 
-      map.on("load", () => {
-        // Highlighted lane (river crossing) - blue, thicker
-        map.addLayer({
-          id: "highlighted-lane",
-          type: "line",
-          source: {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              geometry: { type: "LineString", coordinates: HIGHLIGHTED_LANE },
-            },
-          },
-          paint: {
-            "line-color": "#2563eb",
-            "line-width": 5,
-          },
-        });
-
-        // Remaining vehicle path - red
-        map.addLayer({
-          id: "vehicle-path",
-          type: "line",
-          source: {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              geometry: { type: "LineString", coordinates: VEHICLE_PATH },
-            },
-          },
-          paint: {
-            "line-color": "#dc2626",
-            "line-width": 4,
-          },
-        });
-
-        // Camera location marker (blue)
-        const cameraEl = document.createElement("div");
-        cameraEl.style.cssText =
-          "width:16px;height:16px;border-radius:50%;background:#2563eb;border:2px solid white;box-shadow:0 0 0 1px #2563eb;";
-        new window.tt.Marker({ element: cameraEl })
-          .setLngLat([CAMERA_LOCATION.lng, CAMERA_LOCATION.lat])
-          .addTo(map);
-
-        // Start of visible path (yellow)
-        new window.tt.Marker({ color: "#eab308" })
-          .setLngLat([VEHICLE_START.lng, VEHICLE_START.lat])
-          .addTo(map);
-
-        // Mid point / vehicle pin (red)
-        new window.tt.Marker({ color: "#dc2626" })
-          .setLngLat([VEHICLE_MID.lng, VEHICLE_MID.lat])
-          .addTo(map);
-
-        // End point (green)
-        new window.tt.Marker({ color: "#16a34a" })
-          .setLngLat([VEHICLE_END.lng, VEHICLE_END.lat])
-          .addTo(map);
-      });
-    }
-
-    init();
+    addDotMarker(
+      map.mapLibreMap,
+      [CAMERA_LOCATION.lng, CAMERA_LOCATION.lat],
+      "#2563eb",
+    );
+    addDotMarker(
+      map.mapLibreMap,
+      [VEHICLE_START.lng, VEHICLE_START.lat],
+      "#eab308",
+    );
+    addDotMarker(
+      map.mapLibreMap,
+      [VEHICLE_MID.lng, VEHICLE_MID.lat],
+      "#dc2626",
+    );
+    addDotMarker(
+      map.mapLibreMap,
+      [VEHICLE_END.lng, VEHICLE_END.lat],
+      "#16a34a",
+    );
 
     return () => {
-      cancelled = true;
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
+      map.mapLibreMap.remove();
+      mapInstance.current = null;
     };
   }, []);
 
+  useEffect(() => {
+    if (mapInstance.current) {
+      applyTomTomTheme(mapInstance.current, resolvedTheme === "dark");
+    }
+  }, [resolvedTheme]);
+
   return (
-    <div className="w-[50%] h-[362px] rounded-xl border border-gray-200 bg-white p-4! mr-6! shadow-sm">
-      <div className="flex items-center justify-between mb-3 h-[55px]">
-        <h3 className="text-base text-2xl p-4! text-gray-900">
+    <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <div className="mb-3 flex shrink-0 items-center justify-between">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
           Vehicle Trajectory
         </h3>
-        <div className="flex items-center gap-3 text-xs text-gray-600">
+        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1">
             <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
             Camera Location
@@ -165,10 +126,8 @@ export default function VehicleTrajectoryMap() {
 
       <div
         ref={mapRef}
-        className="h-72 w-full rounded-lg overflow-hidden border border-gray-100"
+        className="min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700"
       />
-
-
     </div>
   );
 }

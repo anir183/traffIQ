@@ -1,8 +1,7 @@
 interface TrafficVolumePoint {
-  time: string; // "00:00", "02:00", ...
+  time: string;
   value: number;
 }
-
 
 const DATA: TrafficVolumePoint[] = [
   { time: "00:00", value: 3200 },
@@ -21,7 +20,6 @@ const DATA: TrafficVolumePoint[] = [
 
 const Y_MAX = 15000;
 const Y_TICKS = [0, 5000, 10000, 15000];
-
 const X_LABEL_INTERVAL = 2;
 
 function formatYLabel(value: number): string {
@@ -32,17 +30,14 @@ export default function TrafficVolumeChart() {
   const chartHeight = 180;
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white  shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-gray-900">
-          Traffic Volume
-        </h3>
-      </div>
+    <div className="flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
+        Traffic Volume
+      </h3>
 
       <div className="flex">
-        {/* Y-axis labels */}
         <div
-          className="flex flex-col justify-between text-xs text-gray-400 pr-2 pb-2"
+          className="flex flex-col justify-between pr-2 pb-2 text-xs text-slate-400 dark:text-slate-500"
           style={{ height: chartHeight }}
         >
           {[...Y_TICKS].reverse().map((tick) => (
@@ -50,21 +45,17 @@ export default function TrafficVolumeChart() {
           ))}
         </div>
 
-        {/* Bars */}
         <div className="flex-1">
-          <div
-            className="flex items-end gap-2"
-            style={{ height: chartHeight }}
-          >
+          <div className="flex items-end gap-1" style={{ height: chartHeight }}>
             {DATA.map((point) => {
               const barHeightPct = (point.value / Y_MAX) * 100;
               return (
                 <div
                   key={point.time}
-                  className="flex-1  flex items-end justify-center h-full"
+                  className="flex h-full min-w-0 flex-1 items-end justify-center"
                 >
                   <div
-                    className="w-full w-[22px] rounded-t-md bg-blue-400"
+                    className="w-full max-w-[18px] rounded-t-md bg-blue-500"
                     style={{ height: `${barHeightPct}%` }}
                     title={`${point.time}: ${point.value.toLocaleString()}`}
                   />
@@ -73,12 +64,13 @@ export default function TrafficVolumeChart() {
             })}
           </div>
 
-          {/* X-axis labels */}
-          <div className="flex gap-2 mt-2">
+          <div className="mt-2 flex gap-1">
             {DATA.map((point, i) => (
-              <div key={point.time} className="flex-1 text-center">
+              <div key={point.time} className="min-w-0 flex-1 text-center">
                 {i % X_LABEL_INTERVAL === 0 && (
-                  <span className="text-xs text-gray-400">{point.time}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                    {point.time}
+                  </span>
                 )}
               </div>
             ))}

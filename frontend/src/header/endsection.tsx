@@ -1,12 +1,11 @@
-import './tailwind.css'
-import Profile from './profile'
-// import Notification from './notification'
-function App(){
-    return(
-        <div className='flex flex-row gap-8 justify-center items-center '>
-            
-            <Profile/>
-        </div>
-    )
+import Profile from "./profile";
+
+function App() {
+  return (
+    <div className="flex items-center">
+      <Profile />
+    </div>
+  );
 }
-export default App
+
+export default App;

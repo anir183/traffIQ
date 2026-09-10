@@ -1,14 +1,13 @@
-import './App.css'
-import Hero from './header'
-import Body from './body'
-function App() {
+import Hero from "./header";
+import Body from "./body";
 
+function App() {
   return (
-      <div className='h-screen flex flex-col items-center'>
-        <Hero/>
-        <Body/>
-      </div>
-  )
+    <div className="flex h-full flex-col bg-slate-50 dark:bg-slate-950">
+      <Hero />
+      <Body />
+    </div>
+  );
 }
 
-export default App
+export default App;

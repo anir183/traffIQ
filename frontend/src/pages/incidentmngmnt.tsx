@@ -1,61 +1,56 @@
 import { useState } from "react";
-import "./tailwind.css";
 import Map from "../pages/incident/map";
-import IncidentLogs from "../pages/incident/incidents";
+import IncidentLogs, { type FilterKey } from "../pages/incident/incidents";
 
-type FilterKey = "all" | "active" | "investigating" | "resolved";
-
-const FILTERS: { key: FilterKey; label: string; count: number }[] = [
-  { key: "all", label: "All", count: 12 },
-  { key: "active", label: "Active", count: 5 },
-  { key: "investigating", label: "Investigating", count: 3 },
-  { key: "resolved", label: "Resolved", count: 4 },
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "investigating", label: "Investigating" },
+  { key: "resolved", label: "Resolved" },
 ];
 
 const IncidentManagement = () => {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
 
   return (
-  <div className="flex flex-row gap-15">
-    <div className="flex flex-col justify-center gap-12 w-[60%]">
-      {/* Header */}
-      <div className="mb-6 flex flex-col justify-center items-start gap-2 mb-4!">
-        <h1 className="text-[35px]  text-gray-900 pt-5!">
-          Incident Management
-        </h1>
-        <p className="text-[20px] text-gray-500 mt-1">
-          Track and manage traffic incidents and alerts
-        </p>
+    <div className="flex min-h-0 flex-col gap-6 p-6 xl:h-full xl:flex-row">
+      <div className="flex min-w-0 flex-col gap-4 xl:min-h-0 xl:flex-1">
+        <div className="shrink-0">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+            Incident Management
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Track and manage traffic incidents and alerts
+          </p>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {FILTERS.map((filter) => {
+            const isActive = filter.key === activeFilter;
+            return (
+              <button
+                key={filter.key}
+                type="button"
+                onClick={() => setActiveFilter(filter.key)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          <Map />
+        </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex flex-wrap items-center gap-3  ">
-        {FILTERS.map((filter) => {
-          const isActive = filter.key === activeFilter;
-          return (
-            <button
-              key={filter.key}
-              onClick={() => setActiveFilter(filter.key)}
-              className={`rounded-lg p-2! text-sm text-[20px]! transition-colors ${
-                isActive
-                  ? "bg-blue-600 text-white"
-                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
-              }`}
-            >
-              {filter.label} ({filter.count})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Map + Incident list */}
-      <div className="flex flex-row  gap-12 justify-start items-start">
-        <Map />
-        
-      </div>
+      <IncidentLogs filter={activeFilter} />
     </div>
-    <IncidentLogs />
-</div>
   );
 };
 

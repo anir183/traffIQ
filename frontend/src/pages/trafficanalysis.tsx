@@ -1,24 +1,25 @@
-import './tailwind.css'
-import Analysis from './analysis/detailF'
-import Charts from './analysis/stataf'
-import DensityData from './analysis/densityforecast'
-import Map from './analysis/mapp'
-import Incident from './analysis/incident-queue'
+import Analysis from "./analysis/detailF";
+import Charts from "./analysis/stataf";
+import DensityData from "./analysis/densityforecast";
+import Map from "./analysis/mapp";
+import IncidentQueue from "./analysis/incident-queue";
 
 const trafficanalysis = () => {
   return (
-    <div className='flex flex-col justify-start pr-4! h-full'>
-        <div className='flex h-[30%] flex-row mt-4! gap-2'>
-            <Analysis/>
-            <Charts/>
-            <DensityData/>
+    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex min-h-[232px] flex-col gap-4 xl:flex-row">
+          <Analysis />
+          <Charts />
+          <DensityData />
         </div>
-        <div className='traffic-details h-[70%] w-full flex flex-row gap-18'>
-            <Map/>
-            <Incident/>
+        <div className="flex min-h-[400px] flex-1 flex-col gap-4 lg:flex-row">
+          <Map />
+          <IncidentQueue />
         </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default trafficanalysis
+export default trafficanalysis;

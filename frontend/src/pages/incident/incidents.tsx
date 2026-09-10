@@ -1,20 +1,12 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import { Route, TriangleAlert } from "lucide-react";
+import type { Incident, IncidentIcon } from "../../types/traffic";
+import StatusBadge from "../../components/ui/badge";
+import { useListPageSize } from "../../hooks/useListPageSize";
 
-type IncidentStatus = "Active" | "Investigating" | "Resolved";
+export type FilterKey = "all" | "active" | "investigating" | "resolved";
 
-type IncidentIcon = "alert" | "warning" | "wrongway";
-
-interface Incident {
-  id: string;
-  icon: IncidentIcon;
-  title: string;
-  detail: string; // plate number / description
-  location: string;
-  time: string; // e.g. "14:28"
-  status: IncidentStatus;
-}
-
-// ---- Hardcoded data (swap this out with fetched JSON later) ----
 const HARDCODED_INCIDENTS: Incident[] = [
   {
     id: "1",
@@ -61,112 +53,239 @@ const HARDCODED_INCIDENTS: Incident[] = [
     time: "12:30",
     status: "Resolved",
   },
+  {
+    id: "6",
+    icon: "warning",
+    title: "Signal Malfunction",
+    detail: "Intersection A12",
+    location: "Howrah Bridge",
+    time: "14:05",
+    status: "Active",
+  },
+  {
+    id: "7",
+    icon: "alert",
+    title: "Blacklisted Vehicle",
+    detail: "HR26DD2233",
+    location: "Salt Lake",
+    time: "14:02",
+    status: "Active",
+  },
+  {
+    id: "8",
+    icon: "warning",
+    title: "Accident",
+    detail: "Two-wheeler down",
+    location: "AJC Bose Road",
+    time: "13:40",
+    status: "Investigating",
+  },
+  {
+    id: "9",
+    icon: "alert",
+    title: "Speed Violation",
+    detail: "WB01BB5566",
+    location: "Kona Expressway",
+    time: "13:31",
+    status: "Investigating",
+  },
+  {
+    id: "10",
+    icon: "warning",
+    title: "Road Construction",
+    detail: "Lane closure",
+    location: "Ballygunge",
+    time: "12:15",
+    status: "Resolved",
+  },
+  {
+    id: "11",
+    icon: "warning",
+    title: "Signal Malfunction",
+    detail: "Intersection B7",
+    location: "Park Circus",
+    time: "11:58",
+    status: "Resolved",
+  },
+  {
+    id: "12",
+    icon: "wrongway",
+    title: "Wrong Way",
+    detail: "Unknown Vehicle",
+    location: "Dhakuria",
+    time: "13:58",
+    status: "Active",
+  },
+  {
+    id: "13",
+    icon: "wrongway",
+    title: "Route Anomaly",
+    detail: "MH02CX8899",
+    location: "City Centre",
+    time: "13:20",
+    status: "Investigating",
+  },
+  {
+    id: "14",
+    icon: "warning",
+    title: "Accident",
+    detail: "Minor collision",
+    location: "Ruby More",
+    time: "11:30",
+    status: "Resolved",
+  },
+  {
+    id: "15",
+    icon: "alert",
+    title: "Speed Violation",
+    detail: "DL4MA9900",
+    location: "Ballygunge Phari",
+    time: "13:50",
+    status: "Active",
+  },
 ];
 
-// ---- Style maps ----
 const ICON_STYLES: Record<
   IncidentIcon,
-  { bg: string; fg: string; symbol: string }
+  { bg: string; fg: string; Icon: LucideIcon }
 > = {
-  alert: { bg: "#fee2e2", fg: "#dc2626", symbol: "▲" },
-  warning: { bg: "#fef3c7", fg: "#d97706", symbol: "▲" },
-  wrongway: { bg: "#fef3c7", fg: "#d97706", symbol: "⟲" },
+  alert: { bg: "bg-red-50", fg: "text-red-600", Icon: TriangleAlert },
+  warning: { bg: "bg-amber-50", fg: "text-amber-600", Icon: TriangleAlert },
+  wrongway: { bg: "bg-amber-50", fg: "text-amber-600", Icon: Route },
 };
 
-const STATUS_STYLES: Record<IncidentStatus, { bg: string; fg: string }> = {
-  Active: { bg: "#fee2e2", fg: "#b91c1c" },
-  Investigating: { bg: "#fef3c7", fg: "#a16207" },
-  Resolved: { bg: "#dcfce7", fg: "#15803d" },
+const FILTER_MAP: Record<FilterKey, Incident["status"] | undefined> = {
+  all: undefined,
+  active: "Active",
+  investigating: "Investigating",
+  resolved: "Resolved",
 };
-
-// ---- Data hook: currently returns hardcoded data, ready to be   ----
-// ---- swapped for a real fetch / polling / websocket source     ----
-function useIncidents() {
-  const [incidents, setIncidents] = useState<Incident[]>(HARDCODED_INCIDENTS);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    // --- Plug your real data source in here ---
-    // Example (uncomment and adjust when ready):
-    //
-    // let cancelled = false;
-    // async function fetchIncidents() {
-    //   setIsLoading(true);
-    //   try {
-    //     const res = await fetch("/api/incidents");
-    //     const data: Incident[] = await res.json();
-    //     if (!cancelled) setIncidents(data);
-    //   } catch (err) {
-    //     if (!cancelled) setError("Failed to load incidents");
-    //   } finally {
-    //     if (!cancelled) setIsLoading(false);
-    //   }
-    // }
-    // fetchIncidents();
-    // const interval = setInterval(fetchIncidents, 15000); // poll every 15s
-    // return () => {
-    //   cancelled = true;
-    //   clearInterval(interval);
-    // };
-  }, []);
-
-  return { incidents, isLoading, error };
-}
 
 function IncidentRow({ incident }: { incident: Incident }) {
-  const icon = ICON_STYLES[incident.icon];
-  const status = STATUS_STYLES[incident.status];
+  const { bg, fg, Icon } = ICON_STYLES[incident.icon];
 
   return (
-    <div className=" w-[100%] h-[70%]! flex items-start gap-3 p-4!">
+    <div data-sm-row className="flex items-start gap-3 p-4">
       <div
-        className="flex h-9 w-9 flex-shrink-0 items-center! justify-center rounded-full text-sm"
-        style={{ backgroundColor: icon.bg, color: icon.fg }}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${bg} ${fg}`}
       >
-        {icon.symbol}
+        <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900">{incident.title}</p>
-        <p className="text-sm text-gray-500 truncate">{incident.detail}</p>
-        <p className="text-sm text-gray-400">{incident.location}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+          {incident.title}
+        </p>
+        <p className="truncate text-sm text-slate-500 dark:text-slate-400">
+          {incident.detail}
+        </p>
+        <p className="text-sm text-slate-400 dark:text-slate-500">
+          {incident.location}
+        </p>
       </div>
 
-      <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
-        <span className="text-xs text-gray-400">{incident.time}</span>
-        <span
-          className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-          style={{ backgroundColor: status.bg, color: status.fg }}
-        >
-          {incident.status}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <span className="text-xs text-slate-400 dark:text-slate-500">
+          {incident.time}
         </span>
+        <StatusBadge status={incident.status} />
       </div>
     </div>
   );
 }
 
-export default function RecentIncidents() {
-  const { incidents, isLoading, error } = useIncidents();
+export default function RecentIncidents({
+  filter = "all",
+}: {
+  filter?: FilterKey;
+}) {
+  const [page, setPage] = useState(1);
+  const [prevFilter, setPrevFilter] = useState(filter);
+
+  if (prevFilter !== filter) {
+    setPrevFilter(filter);
+    setPage(1);
+  }
+
+  const incidents = useMemo(() => {
+    const status = FILTER_MAP[filter];
+    if (!status) return HARDCODED_INCIDENTS;
+    return HARDCODED_INCIDENTS.filter((incident) => incident.status === status);
+  }, [filter]);
+
+  const { containerRef, rowsPerPage } = useListPageSize<HTMLDivElement>(
+    { min: 4, max: 12 },
+    incidents.length,
+  );
+
+  const totalPages = Math.max(1, Math.ceil(incidents.length / rowsPerPage));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * rowsPerPage;
+  const pageItems = incidents.slice(startIndex, startIndex + rowsPerPage);
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-[22px] font-semibold pl-4! pt-2! text-gray-900">
-          Recent Incidents
-        </h3>
-      </div>
+    <div className="flex w-full max-w-sm min-h-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="mb-1 shrink-0 pl-2 pt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+        Recent Incidents
+      </h3>
 
-      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
-      {isLoading && (
-        <p className="text-xs text-gray-400 mt-2">Updating…</p>
-      )}
-
-      <div className="divide-y divide-gray-100">
-        {incidents.map((incident) => (
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800"
+      >
+        {pageItems.map((incident) => (
           <IncidentRow key={incident.id} incident={incident} />
         ))}
       </div>
+      {incidents.length === 0 && (
+        <p className="flex-1 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+          No incidents match this filter.
+        </p>
+      )}
+
+      {incidents.length > 0 && (
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
+          <span className="text-slate-400 dark:text-slate-500">
+            Showing {startIndex + 1}–{startIndex + pageItems.length} of{" "}
+            {incidents.length}
+          </span>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                disabled={safePage === 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                ‹
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  className={`h-6 w-6 rounded-full text-xs transition-colors ${
+                    p === safePage
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
+                      : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={safePage === totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
+              >
+                Next ›
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
