@@ -3,15 +3,14 @@ package com.trafficiq.trafficiq_backend.service;
 import com.trafficiq.trafficiq_backend.dto.response.AlertResponse;
 import com.trafficiq.trafficiq_backend.entity.Alert;
 import com.trafficiq.trafficiq_backend.entity.Detection;
-import com.trafficiq.trafficiq_backend.entity.Vehicle;
 import com.trafficiq.trafficiq_backend.enums.AlertStatus;
 import com.trafficiq.trafficiq_backend.enums.AlertType;
 import com.trafficiq.trafficiq_backend.enums.VehicleStatus;
 import com.trafficiq.trafficiq_backend.repository.AlertRepository;
-
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,289 +19,183 @@ public class AlertService {
     private static final double SPEED_LIMIT = 60.0;
 
     private final AlertRepository alertRepository;
+    private final TrafficWebSocketService trafficWebSocketService;
 
     public AlertService(
-            AlertRepository alertRepository
+            AlertRepository alertRepository,
+            TrafficWebSocketService trafficWebSocketService
     ) {
         this.alertRepository = alertRepository;
+        this.trafficWebSocketService = trafficWebSocketService;
     }
 
-    public void checkAndCreateAlerts(
+    public List<AlertResponse> checkAndCreateAlerts(
             Detection detection
     ) {
+        List<AlertResponse> createdAlerts =
+                new ArrayList<>();
 
-        checkSpeedViolation(
-                detection
-        );
+        if (
+                detection.getSpeedKmh() != null
+                        && detection.getSpeedKmh() > SPEED_LIMIT
+                        && !alertRepository.existsByDetectionAndType(
+                        detection,
+                        AlertType.SPEED_VIOLATION
+                )
+        ) {
+            Alert alert = new Alert();
 
-        checkBlacklistedVehicle(
-                detection
-        );
-    }
+            alert.setType(AlertType.SPEED_VIOLATION);
+            alert.setStatus(AlertStatus.ACTIVE);
+            alert.setVehicle(detection.getVehicle());
+            alert.setDetection(detection);
+            alert.setSpeedKmh(detection.getSpeedKmh());
+            alert.setSpeedLimit(SPEED_LIMIT);
+            alert.setCreatedAt(LocalDateTime.now());
 
-    private void checkSpeedViolation(
-            Detection detection
-    ) {
+            Alert savedAlert =
+                    alertRepository.save(alert);
 
-        Double speed =
-                detection.getSpeedKmh();
-
-        if (speed == null) {
-            return;
+            createdAlerts.add(
+                    convertToResponse(savedAlert)
+            );
         }
 
-        if (speed <= SPEED_LIMIT) {
-            return;
+        if (
+                detection.getVehicle() != null
+                        && detection.getVehicle().getStatus()
+                        == VehicleStatus.BLACKLISTED
+                        && !alertRepository.existsByDetectionAndType(
+                        detection,
+                        AlertType.BLACKLISTED_VEHICLE
+                )
+        ) {
+            Alert alert = new Alert();
+
+            alert.setType(AlertType.BLACKLISTED_VEHICLE);
+            alert.setStatus(AlertStatus.ACTIVE);
+            alert.setVehicle(detection.getVehicle());
+            alert.setDetection(detection);
+            alert.setSpeedKmh(detection.getSpeedKmh());
+            alert.setCreatedAt(LocalDateTime.now());
+
+            Alert savedAlert =
+                    alertRepository.save(alert);
+
+            createdAlerts.add(
+                    convertToResponse(savedAlert)
+            );
         }
 
-        boolean alertExists =
-                alertRepository
-                        .existsByDetectionAndType(
-                                detection,
-                                AlertType.SPEED_VIOLATION
-                        );
-
-        if (alertExists) {
-            return;
-        }
-
-        Alert alert =
-                new Alert();
-
-        alert.setType(
-                AlertType.SPEED_VIOLATION
-        );
-
-        alert.setStatus(
-                AlertStatus.ACTIVE
-        );
-
-        alert.setVehicle(
-                detection.getVehicle()
-        );
-
-        alert.setDetection(
-                detection
-        );
-
-        alert.setSpeedKmh(
-                speed
-        );
-
-        alert.setSpeedLimit(
-                SPEED_LIMIT
-        );
-
-        alert.setCreatedAt(
-                LocalDateTime.now()
-        );
-
-        alertRepository.save(
-                alert
-        );
-    }
-
-    private void checkBlacklistedVehicle(
-            Detection detection
-    ) {
-
-        Vehicle vehicle =
-                detection.getVehicle();
-
-        if (vehicle == null) {
-            return;
-        }
-
-        if (vehicle.getStatus()
-                != VehicleStatus.BLACKLISTED) {
-            return;
-        }
-
-        boolean alertExists =
-                alertRepository
-                        .existsByDetectionAndType(
-                                detection,
-                                AlertType.BLACKLISTED_VEHICLE
-                        );
-
-        if (alertExists) {
-            return;
-        }
-
-        Alert alert =
-                new Alert();
-
-        alert.setType(
-                AlertType.BLACKLISTED_VEHICLE
-        );
-
-        alert.setStatus(
-                AlertStatus.ACTIVE
-        );
-
-        alert.setVehicle(
-                vehicle
-        );
-
-        alert.setDetection(
-                detection
-        );
-
-        alert.setSpeedKmh(
-                detection.getSpeedKmh()
-        );
-
-        alert.setCreatedAt(
-                LocalDateTime.now()
-        );
-
-        alertRepository.save(
-                alert
-        );
+        return createdAlerts;
     }
 
     public List<AlertResponse> getRecentAlerts() {
-
         return alertRepository
                 .findTop10ByOrderByCreatedAtDesc()
                 .stream()
-                .map(
-                        this::convertToResponse
-                )
+                .map(this::convertToResponse)
                 .toList();
     }
 
     public List<AlertResponse> getAlertsByStatus(
             AlertStatus status
     ) {
-
         return alertRepository
-                .findByStatusOrderByCreatedAtDesc(
-                        status
-                )
+                .findByStatusOrderByCreatedAtDesc(status)
                 .stream()
-                .map(
-                        this::convertToResponse
-                )
+                .map(this::convertToResponse)
                 .toList();
     }
 
     public List<AlertResponse> getAlertsByType(
             AlertType type
     ) {
-
         return alertRepository
-                .findByTypeOrderByCreatedAtDesc(
-                        type
-                )
+                .findByTypeOrderByCreatedAtDesc(type)
                 .stream()
-                .map(
-                        this::convertToResponse
-                )
+                .map(this::convertToResponse)
                 .toList();
     }
 
     public AlertResponse markAlertAsSeen(
             Long alertId
     ) {
-
         Alert alert =
-                alertRepository
-                        .findById(
-                                alertId
-                        )
+                alertRepository.findById(alertId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Alert not found: "
-                                                + alertId
+                                new IllegalArgumentException(
+                                        "Alert not found: " + alertId
                                 )
                         );
 
-        alert.setStatus(
-                AlertStatus.SEEN
-        );
+        alert.setStatus(AlertStatus.SEEN);
 
         Alert savedAlert =
-                alertRepository.save(
-                        alert
-                );
+                alertRepository.save(alert);
 
-        return convertToResponse(
-                savedAlert
+        AlertResponse response =
+                convertToResponse(savedAlert);
+
+        trafficWebSocketService.broadcastAlertUpdate(
+                response
         );
+
+        trafficWebSocketService.broadcastDashboardUpdate();
+
+        return response;
     }
 
     public AlertResponse resolveAlert(
             Long alertId
     ) {
-
         Alert alert =
-                alertRepository
-                        .findById(
-                                alertId
-                        )
+                alertRepository.findById(alertId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Alert not found: "
-                                                + alertId
+                                new IllegalArgumentException(
+                                        "Alert not found: " + alertId
                                 )
                         );
 
-        alert.setStatus(
-                AlertStatus.RESOLVED
-        );
+        alert.setStatus(AlertStatus.RESOLVED);
 
         Alert savedAlert =
-                alertRepository.save(
-                        alert
-                );
-
-        return convertToResponse(
-                savedAlert
-        );
-    }
-
-    private AlertResponse convertToResponse(
-            Alert alert
-    ) {
+                alertRepository.save(alert);
 
         AlertResponse response =
-                new AlertResponse();
+                convertToResponse(savedAlert);
 
-        response.setId(
-                alert.getId()
+        trafficWebSocketService.broadcastAlertUpdate(
+                response
         );
 
-        response.setType(
-                alert.getType()
-        );
+        trafficWebSocketService.broadcastDashboardUpdate();
 
-        response.setStatus(
-                alert.getStatus()
-        );
+        return response;
+    }
+
+    public AlertResponse convertToResponse(
+            Alert alert
+    ) {
+        AlertResponse response = new AlertResponse();
+
+        response.setId(alert.getId());
+        response.setType(alert.getType());
+        response.setStatus(alert.getStatus());
 
         if (alert.getVehicle() != null) {
-
             response.setPlateNumber(
-                    alert.getVehicle()
-                            .getPlateNumber()
+                    alert.getVehicle().getPlateNumber()
             );
 
-            if (alert.getVehicle()
-                    .getVehicleType() != null) {
-
-                response.setVehicleType(
-                        alert.getVehicle()
-                                .getVehicleType()
-                                .name()
-                );
-            }
+            response.setVehicleType(
+                    alert.getVehicle()
+                            .getVehicleType()
+                            .name()
+            );
         }
 
-        if (alert.getDetection() != null
-                && alert.getDetection()
-                .getCamera() != null) {
-
+        if (alert.getDetection() != null) {
             response.setCameraId(
                     alert.getDetection()
                             .getCamera()
@@ -310,17 +203,9 @@ public class AlertService {
             );
         }
 
-        response.setSpeedKmh(
-                alert.getSpeedKmh()
-        );
-
-        response.setSpeedLimit(
-                alert.getSpeedLimit()
-        );
-
-        response.setCreatedAt(
-                alert.getCreatedAt()
-        );
+        response.setSpeedKmh(alert.getSpeedKmh());
+        response.setSpeedLimit(alert.getSpeedLimit());
+        response.setCreatedAt(alert.getCreatedAt());
 
         return response;
     }

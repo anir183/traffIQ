@@ -2,23 +2,15 @@ package com.trafficiq.trafficiq_backend.repository;
 
 import com.trafficiq.trafficiq_backend.entity.Detection;
 import com.trafficiq.trafficiq_backend.enums.VehicleType;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface DetectionRepository
-        extends JpaRepository<Detection, Long> {
+public interface DetectionRepository extends JpaRepository<Detection, Long> {
 
-    Optional<Detection> findByEventId(
-            String eventId
-    );
-
-    boolean existsByEventId(
-            String eventId
-    );
+    Optional<Detection> findByEventId(String eventId);
 
     List<Detection> findTop50ByOrderByDetectedAtDesc();
 
@@ -37,11 +29,6 @@ public interface DetectionRepository
 
     long countByVehicleVehicleTypeAndDetectedAtBetween(
             VehicleType vehicleType,
-            LocalDateTime start,
-            LocalDateTime end
-    );
-
-    List<Detection> findByDetectedAtBetweenOrderByDetectedAtAsc(
             LocalDateTime start,
             LocalDateTime end
     );

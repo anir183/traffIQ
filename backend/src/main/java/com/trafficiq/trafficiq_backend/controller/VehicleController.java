@@ -6,7 +6,6 @@ import com.trafficiq.trafficiq_backend.service.VehicleService;
 
 import jakarta.validation.Valid;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,41 +19,39 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
 
+
     public VehicleController(
             VehicleService vehicleService
     ) {
-        this.vehicleService = vehicleService;
+        this.vehicleService =
+                vehicleService;
     }
 
+
     @GetMapping("/{plateNumber}")
-    public ResponseEntity<VehicleResponse> getVehicle(
+    public VehicleResponse getVehicle(
             @PathVariable String plateNumber
     ) {
 
-        VehicleResponse response =
-                vehicleService.getVehicleByPlateNumber(
+        return vehicleService
+                .getVehicleByPlateNumber(
                         plateNumber
                 );
-
-        return ResponseEntity.ok(
-                response
-        );
     }
 
+
     @PatchMapping("/{plateNumber}/status")
-    public ResponseEntity<VehicleResponse> updateVehicleStatus(
+    public VehicleResponse updateVehicleStatus(
             @PathVariable String plateNumber,
-            @Valid @RequestBody UpdateVehicleStatusRequest request
+            @Valid
+            @RequestBody
+            UpdateVehicleStatusRequest request
     ) {
 
-        VehicleResponse response =
-                vehicleService.updateVehicleStatus(
+        return vehicleService
+                .updateVehicleStatus(
                         plateNumber,
                         request
                 );
-
-        return ResponseEntity.ok(
-                response
-        );
     }
 }

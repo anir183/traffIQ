@@ -2,46 +2,34 @@ package com.trafficiq.trafficiq_backend.dto.response;
 
 public class TrafficTrendResponse {
 
-    private String time;
+    private String label;
 
-    private long vehicleCount;
-
-    private Double averageSpeed;
-
+    private Double value;
 
     public TrafficTrendResponse() {
     }
 
-
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(
-            String time
+    public TrafficTrendResponse(
+            String label,
+            Double value
     ) {
-        this.time = time;
+        this.label = label;
+        this.value = value;
     }
 
-
-    public long getVehicleCount() {
-        return vehicleCount;
+    public String getLabel() {
+        return label;
     }
 
-    public void setVehicleCount(
-            long vehicleCount
-    ) {
-        this.vehicleCount = vehicleCount;
+    public void setLabel(String label) {
+        this.label = label;
     }
 
-
-    public Double getAverageSpeed() {
-        return averageSpeed;
+    public Double getValue() {
+        return value;
     }
 
-    public void setAverageSpeed(
-            Double averageSpeed
-    ) {
-        this.averageSpeed = averageSpeed;
+    public void setValue(Double value) {
+        this.value = value;
     }
 }

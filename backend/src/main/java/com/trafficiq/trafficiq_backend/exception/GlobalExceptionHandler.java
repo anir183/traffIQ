@@ -12,19 +12,29 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(
+            IllegalArgumentException exception
+    ) {
+        Map<String, String> response = new HashMap<>();
+
+        response.put("error", exception.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationException(
             MethodArgumentNotValidException exception
     ) {
+        Map<String, String> response = new HashMap<>();
 
-        Map<String, String> errors =
-                new HashMap<>();
-
-        exception
-                .getBindingResult()
+        exception.getBindingResult()
                 .getFieldErrors()
                 .forEach(error ->
-                        errors.put(
+                        response.put(
                                 error.getField(),
                                 error.getDefaultMessage()
                         )
@@ -32,25 +42,22 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(errors);
+                .body(response);
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(
             Exception exception
     ) {
+        Map<String, String> response = new HashMap<>();
 
-        Map<String, String> error =
-                new HashMap<>();
-
-        error.put(
-                "message",
-                exception.getMessage()
+        response.put(
+                "error",
+                "Internal server error"
         );
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+                .body(response);
     }
 }

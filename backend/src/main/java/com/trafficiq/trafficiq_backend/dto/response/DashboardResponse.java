@@ -8,13 +8,13 @@ public class DashboardResponse {
 
     private long uniqueVehicles;
 
-    private long totalCameras;
+    private long activeCameras;
 
-    private Double averageSpeed;
+    private long activeAlerts;
 
     private List<VehicleTypeCountResponse> vehicleTypeBreakdown;
 
-    private List<TrafficTrendResponse> trafficTrend;
+    private List<TrafficAnalysisResponse> trafficTrend;
 
     private List<AlertResponse> recentAlerts;
 
@@ -45,66 +45,57 @@ public class DashboardResponse {
     }
 
 
-    public long getTotalCameras() {
-        return totalCameras;
+    public long getActiveCameras() {
+        return activeCameras;
     }
 
-    public void setTotalCameras(
-            long totalCameras
+    public void setActiveCameras(
+            long activeCameras
     ) {
-        this.totalCameras = totalCameras;
+        this.activeCameras = activeCameras;
     }
 
 
-    public Double getAverageSpeed() {
-        return averageSpeed;
+    public long getActiveAlerts() {
+        return activeAlerts;
     }
 
-    public void setAverageSpeed(
-            Double averageSpeed
+    public void setActiveAlerts(
+            long activeAlerts
     ) {
-        this.averageSpeed = averageSpeed;
+        this.activeAlerts = activeAlerts;
     }
 
 
-    public List<VehicleTypeCountResponse>
-    getVehicleTypeBreakdown() {
+    public List<VehicleTypeCountResponse> getVehicleTypeBreakdown() {
         return vehicleTypeBreakdown;
     }
 
     public void setVehicleTypeBreakdown(
-            List<VehicleTypeCountResponse>
-                    vehicleTypeBreakdown
+            List<VehicleTypeCountResponse> vehicleTypeBreakdown
     ) {
-        this.vehicleTypeBreakdown =
-                vehicleTypeBreakdown;
+        this.vehicleTypeBreakdown = vehicleTypeBreakdown;
     }
 
 
-    public List<TrafficTrendResponse>
-    getTrafficTrend() {
+    public List<TrafficAnalysisResponse> getTrafficTrend() {
         return trafficTrend;
     }
 
     public void setTrafficTrend(
-            List<TrafficTrendResponse>
-                    trafficTrend
+            List<TrafficAnalysisResponse> trafficTrend
     ) {
-        this.trafficTrend =
-                trafficTrend;
+        this.trafficTrend = trafficTrend;
     }
 
 
-    public List<AlertResponse>
-    getRecentAlerts() {
+    public List<AlertResponse> getRecentAlerts() {
         return recentAlerts;
     }
 
     public void setRecentAlerts(
-            List<AlertResponse>
-                    recentAlerts
+            List<AlertResponse> recentAlerts
     ) {
-        this.recentAlerts =
-                recentAlerts;
+        this.recentAlerts = recentAlerts;
     }
 }

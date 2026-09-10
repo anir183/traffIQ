@@ -5,7 +5,6 @@ import com.trafficiq.trafficiq_backend.enums.AlertStatus;
 import com.trafficiq.trafficiq_backend.enums.AlertType;
 import com.trafficiq.trafficiq_backend.service.AlertService;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,88 +20,67 @@ public class AlertController {
 
     private final AlertService alertService;
 
+
     public AlertController(
             AlertService alertService
     ) {
-        this.alertService = alertService;
+        this.alertService =
+                alertService;
     }
+
 
     @GetMapping("/recent")
-    public ResponseEntity<List<AlertResponse>> getRecentAlerts() {
+    public List<AlertResponse> getRecentAlerts() {
 
-        List<AlertResponse> response =
-                alertService.getRecentAlerts();
-
-        return ResponseEntity.ok(
-                response
-        );
+        return alertService
+                .getRecentAlerts();
     }
 
-    @GetMapping
-    public ResponseEntity<List<AlertResponse>> getAlerts(
-            @RequestParam(required = false) AlertStatus status,
-            @RequestParam(required = false) AlertType type
+
+    @GetMapping("/status")
+    public List<AlertResponse> getAlertsByStatus(
+            @RequestParam AlertStatus status
     ) {
 
-        if (status != null) {
-
-            List<AlertResponse> response =
-                    alertService.getAlertsByStatus(
-                            status
-                    );
-
-            return ResponseEntity.ok(
-                    response
-            );
-        }
-
-        if (type != null) {
-
-            List<AlertResponse> response =
-                    alertService.getAlertsByType(
-                            type
-                    );
-
-            return ResponseEntity.ok(
-                    response
-            );
-        }
-
-        List<AlertResponse> response =
-                alertService.getRecentAlerts();
-
-        return ResponseEntity.ok(
-                response
-        );
+        return alertService
+                .getAlertsByStatus(
+                        status
+                );
     }
+
+
+    @GetMapping("/type")
+    public List<AlertResponse> getAlertsByType(
+            @RequestParam AlertType type
+    ) {
+
+        return alertService
+                .getAlertsByType(
+                        type
+                );
+    }
+
 
     @PatchMapping("/{alertId}/seen")
-    public ResponseEntity<AlertResponse> markAlertAsSeen(
+    public AlertResponse markAlertAsSeen(
             @PathVariable Long alertId
     ) {
 
-        AlertResponse response =
-                alertService.markAlertAsSeen(
+        return alertService
+                .markAlertAsSeen(
                         alertId
                 );
-
-        return ResponseEntity.ok(
-                response
-        );
     }
 
+
     @PatchMapping("/{alertId}/resolve")
-    public ResponseEntity<AlertResponse> resolveAlert(
+    public AlertResponse resolveAlert(
             @PathVariable Long alertId
     ) {
 
-        AlertResponse response =
-                alertService.resolveAlert(
+        return alertService
+                .resolveAlert(
                         alertId
                 );
-
-        return ResponseEntity.ok(
-                response
-        );
     }
 }
