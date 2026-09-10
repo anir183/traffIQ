@@ -19,6 +19,7 @@ import { useTrafficDensityForecast } from "../../hooks/useTrafficDensityForecast
 import { useTrafficSegments } from "../../hooks/useTrafficSegments";
 import { useTrafficSummary } from "../../hooks/useTrafficSummary";
 import { useTheme } from "../../theme/useTheme";
+import { useMapViewport } from "../../contexts/mapViewport";
 import {
   forecastToDensityPoints,
   segmentCongestionData,
@@ -53,20 +54,24 @@ const tooltipStyle = {
 } as const;
 const cursorFill = { fill: "rgba(148,163,184,0.08)" } as const;
 
+function truncateLabel(value: unknown, max = 12): string {
+  const text = String(value ?? "");
+  return text.length > max ? `${text.slice(0, max - 1)}\u2026` : text;
+}
+
 interface CardProps {
   title: string;
   dark?: boolean;
   tight?: boolean;
-  badge?: ReactNode;
   children: ReactNode;
 }
 
-function Card({ title, dark, tight, badge, children }: CardProps) {
+function Card({ title, dark, tight, children }: CardProps) {
   return (
     <div
       className={
         dark
-          ? `flex h-full min-h-0 flex-col rounded-xl border border-slate-700 bg-slate-900 text-white shadow-sm ${tight ? "px-5 pb-3 pt-5" : "p-5"}`
+          ? `flex h-full min-h-0 flex-col rounded-xl border border-slate-700 bg-slate-900 text-white shadow-sm dark:border-slate-600 dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 ${tight ? "px-5 pb-3 pt-5" : "p-5"}`
           : `flex h-full min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 ${tight ? "px-5 pb-3 pt-5" : "p-5"}`
       }
     >
@@ -80,7 +85,6 @@ function Card({ title, dark, tight, badge, children }: CardProps) {
         >
           {title}
         </h3>
-        {badge}
       </div>
       <div className={`min-h-0 flex-1 ${tight ? "mt-2" : "mt-3"}`}>
         {children}
@@ -105,7 +109,8 @@ function useCongestionFontSize(value: number, size: ElementSize): number {
 }
 
 function NetworkOverviewCard() {
-  const { data } = useTrafficSummary();
+  const { bbox } = useMapViewport();
+  const { data } = useTrafficSummary(bbox);
   const metrics = data?.metrics;
   const { items: alerts } = useAlerts();
   const { items: cameras } = useCameras();
@@ -183,7 +188,8 @@ function NetworkOverviewCard() {
 }
 
 function CongestedSegmentsCard() {
-  const { data } = useTrafficSegments();
+  const { bbox } = useMapViewport();
+  const { data } = useTrafficSegments(bbox);
   const { resolvedTheme } = useTheme();
   const segments = data ? segmentCongestionData(data.congested) : [];
   const colors =
@@ -217,6 +223,7 @@ function CongestedSegmentsCard() {
                 type="category"
                 dataKey="name"
                 tick={axisTick}
+                tickFormatter={(value) => truncateLabel(value, 12)}
                 width={86}
                 tickLine={false}
                 axisLine={false}
@@ -240,7 +247,8 @@ function CongestedSegmentsCard() {
 }
 
 function AverageSpeedCard() {
-  const { data } = useTrafficSegments();
+  const { bbox } = useMapViewport();
+  const { data } = useTrafficSegments(bbox);
   const segments = data ? segmentSpeedData(data.speed) : [];
 
   return (
@@ -262,6 +270,7 @@ function AverageSpeedCard() {
               <XAxis
                 dataKey="name"
                 tick={axisTick}
+                tickFormatter={(value) => truncateLabel(value, 12)}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
@@ -292,7 +301,8 @@ function AverageSpeedCard() {
 }
 
 function DensityForecastCard() {
-  const { data } = useTrafficDensityForecast();
+  const { bbox } = useMapViewport();
+  const { data } = useTrafficDensityForecast(bbox);
   const points = data ? forecastToDensityPoints(data.points) : [];
 
   return (

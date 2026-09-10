@@ -1,3 +1,4 @@
+import type { Bbox } from "../../components/map/incidentsApi";
 import type {
   DensityForecastResponse,
   SegmentResponse,
@@ -9,29 +10,39 @@ import type { RequestOptions } from "../http";
 import * as mock from "../mock/handlers";
 import { abortable } from "../mock/middleware";
 
+export interface TrafficRequestOptions extends RequestOptions {
+  bbox?: Bbox | null;
+}
+
 export async function getTrafficSummary(
-  options: RequestOptions = {},
+  options: TrafficRequestOptions = {},
 ): Promise<TrafficSummaryResponse> {
   if (env.dataSource === "mock") {
-    return abortable(mock.getTrafficSummary(), options.signal);
+    return abortable(
+      mock.getTrafficSummary(options.bbox ?? null),
+      options.signal,
+    );
   }
   return request<TrafficSummaryResponse>("/traffic/summary", options);
 }
 
 export async function getTrafficSegments(
-  options: RequestOptions = {},
+  options: TrafficRequestOptions = {},
 ): Promise<SegmentResponse> {
   if (env.dataSource === "mock") {
-    return abortable(mock.getSegments(), options.signal);
+    return abortable(mock.getSegments(options.bbox ?? null), options.signal);
   }
   return request<SegmentResponse>("/traffic/segments", options);
 }
 
 export async function getTrafficDensityForecast(
-  options: RequestOptions = {},
+  options: TrafficRequestOptions = {},
 ): Promise<DensityForecastResponse> {
   if (env.dataSource === "mock") {
-    return abortable(mock.getDensityForecast(), options.signal);
+    return abortable(
+      mock.getDensityForecast(options.bbox ?? null),
+      options.signal,
+    );
   }
   return request<DensityForecastResponse>("/traffic/density-forecast", options);
 }

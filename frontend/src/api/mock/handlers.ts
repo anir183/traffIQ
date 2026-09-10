@@ -23,11 +23,14 @@ import { ApiError } from "../http";
 import {
   congestedSegments,
   fetchRoadFlow,
+  filterByBbox,
   flowUsableCount,
+  roadFractionInBbox,
   speedSegments,
   summarizeFlow,
 } from "../tomtom/flow";
 import { fetchCityIncidentAlerts } from "../tomtom/incidents";
+import type { Bbox } from "../../components/map/incidentsApi";
 import { tomtomKeyIsSet } from "../tomtom/keys";
 import { ALERTS } from "./data/alerts";
 import { ANPR_EVENTS } from "./data/anprEvents";
@@ -204,11 +207,14 @@ function hourBackWindow(): { from: string; to: string } {
   };
 }
 
-export async function getTrafficSummary(): Promise<TrafficSummaryResponse> {
+export async function getTrafficSummary(
+  bbox?: Bbox | null,
+): Promise<TrafficSummaryResponse> {
   if (tomtomKeyIsSet()) {
     const samples = await fetchRoadFlow().catch(() => null);
     if (samples && flowUsableCount(samples) >= 3) {
-      const { avgSpeedKmh, congestionScore } = summarizeFlow(samples);
+      const scoped = bbox ? filterByBbox(samples, bbox) : samples;
+      const { avgSpeedKmh, congestionScore } = summarizeFlow(scoped);
       return mockDelay(
         {
           ...TRAFFIC_SUMMARY,
@@ -226,15 +232,18 @@ export async function getTrafficSummary(): Promise<TrafficSummaryResponse> {
   return mockDelay(TRAFFIC_SUMMARY);
 }
 
-export async function getSegments(): Promise<SegmentResponse> {
+export async function getSegments(
+  bbox?: Bbox | null,
+): Promise<SegmentResponse> {
   if (tomtomKeyIsSet()) {
     const samples = await fetchRoadFlow().catch(() => null);
     if (samples && flowUsableCount(samples) >= 3) {
+      const scoped = bbox ? filterByBbox(samples, bbox) : samples;
       return mockDelay(
         {
           ...hourBackWindow(),
-          congested: congestedSegments(samples, 6),
-          speed: speedSegments(samples, 6),
+          congested: congestedSegments(scoped, 6),
+          speed: speedSegments(scoped, 6),
         },
         { failure: false },
       );
@@ -243,7 +252,32 @@ export async function getSegments(): Promise<SegmentResponse> {
   return mockDelay(SEGMENTS);
 }
 
-export async function getDensityForecast(): Promise<DensityForecastResponse> {
+export async function getDensityForecast(
+  bbox?: Bbox | null,
+): Promise<DensityForecastResponse> {
+  if (bbox) {
+    const fraction = roadFractionInBbox(bbox);
+    if (fraction <= 0) {
+      return mockDelay(
+        {
+          from: DENSITY_FORECAST.from,
+          to: DENSITY_FORECAST.to,
+          points: [],
+        },
+        { failure: false },
+      );
+    }
+    return mockDelay(
+      {
+        ...DENSITY_FORECAST,
+        points: DENSITY_FORECAST.points.map((point) => ({
+          ...point,
+          density: Math.round(point.density * fraction),
+        })),
+      },
+      { failure: false },
+    );
+  }
   return mockDelay(DENSITY_FORECAST);
 }
 
