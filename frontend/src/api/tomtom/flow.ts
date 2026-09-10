@@ -1,4 +1,5 @@
 import { API_KEY } from "../../config";
+import type { Bbox } from "../../components/map/incidentsApi";
 import type {
   SegmentCongestionDatum,
   SegmentSpeedDatum,
@@ -10,6 +11,7 @@ export interface FlowSample {
   currentSpeed: number | null;
   freeFlowSpeed: number | null;
   confidence: number | null;
+  roadClosure: boolean;
   coordinates: Array<[number, number]> | null;
 }
 
@@ -47,6 +49,24 @@ export const ROADS: RoadPoint[] = [
   { name: "Kidderpore", lat: 22.545, lon: 88.327 },
   { name: "Bagbazar", lat: 22.599, lon: 88.366 },
 ];
+
+// Deterministic schematic polyline (3 points, ~1.3 km each way through the
+// centroid along a road-name-derived bearing). Used whenever a road has no
+// live TomTom geometry so lines/heatmap/hover always render.
+export function roadFallbackGeometry(road: RoadPoint): Array<[number, number]> {
+  let hash = 0;
+  for (let i = 0; i < road.name.length; i += 1) {
+    hash = (hash * 31 + road.name.charCodeAt(i)) >>> 0;
+  }
+  const bearing = ((hash % 360) * Math.PI) / 180;
+  const dx = Math.sin(bearing) * 0.012;
+  const dy = Math.cos(bearing) * 0.012;
+  return [
+    [road.lon - dx, road.lat - dy],
+    [road.lon, road.lat],
+    [road.lon + dx, road.lat + dy],
+  ];
+}
 
 const FLOW_URL =
   "https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json";
@@ -98,6 +118,7 @@ function parseSample(road: RoadPoint, data: unknown): FlowSample {
     currentSpeed: segment ? numberOrNull(segment.currentSpeed) : null,
     freeFlowSpeed: segment ? numberOrNull(segment.freeFlowSpeed) : null,
     confidence: segment ? numberOrNull(segment.confidence) : null,
+    roadClosure: segment?.roadClosure === true,
     coordinates: segment ? parseCoordinates(segment.coordinates) : null,
   };
 }
@@ -185,6 +206,31 @@ function congestionScore(sample: FlowSample): number {
   return Math.round(Math.max(0, 1 - ratio) * 100);
 }
 
+export function pointInBbox(lat: number, lon: number, bbox: Bbox): boolean {
+  return (
+    lon >= bbox.west &&
+    lon <= bbox.east &&
+    lat >= bbox.south &&
+    lat <= bbox.north
+  );
+}
+
+export function filterByBbox(samples: FlowSample[], bbox: Bbox): FlowSample[] {
+  return samples.filter((sample) => {
+    const road = ROADS.find((r) => r.name === sample.roadName);
+    return road && pointInBbox(road.lat, road.lon, bbox);
+  });
+}
+
+export function roadsInBbox(bbox: Bbox): RoadPoint[] {
+  return ROADS.filter((road) => pointInBbox(road.lat, road.lon, bbox));
+}
+
+export function roadFractionInBbox(bbox: Bbox): number {
+  if (ROADS.length === 0) return 0;
+  return roadsInBbox(bbox).length / ROADS.length;
+}
+
 function segmentId(name: string): string {
   const slug = name
     .toUpperCase()
@@ -201,11 +247,16 @@ export function congestedSegments(
     .filter(
       (sample) => sample.freeFlowSpeed !== null && sample.freeFlowSpeed > 0,
     )
-    .map((sample) => ({
-      segment_id: segmentId(sample.roadName),
-      name: sample.roadName,
-      congestion_score: congestionScore(sample),
-    }))
+    .map((sample) => {
+      const road = ROADS.find((r) => r.name === sample.roadName);
+      return {
+        segment_id: segmentId(sample.roadName),
+        name: sample.roadName,
+        congestion_score: congestionScore(sample),
+        lat: road?.lat,
+        lon: road?.lon,
+      };
+    })
     .sort((a, b) => b.congestion_score - a.congestion_score)
     .slice(0, limit);
 }
@@ -216,11 +267,16 @@ export function speedSegments(
 ): SegmentSpeedDatum[] {
   return samples
     .filter((sample) => sample.currentSpeed !== null)
-    .map((sample) => ({
-      segment_id: segmentId(sample.roadName),
-      name: sample.roadName,
-      avg_speed_kmh: sample.currentSpeed as number,
-    }))
+    .map((sample) => {
+      const road = ROADS.find((r) => r.name === sample.roadName);
+      return {
+        segment_id: segmentId(sample.roadName),
+        name: sample.roadName,
+        avg_speed_kmh: sample.currentSpeed as number,
+        lat: road?.lat,
+        lon: road?.lon,
+      };
+    })
     .sort((a, b) => a.avg_speed_kmh - b.avg_speed_kmh)
     .slice(0, limit);
 }

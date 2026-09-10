@@ -48,12 +48,16 @@ export interface SegmentCongestionDatum {
   segment_id: string;
   name: string;
   congestion_score: number;
+  lat?: number;
+  lon?: number;
 }
 
 export interface SegmentSpeedDatum {
   segment_id: string;
   name: string;
   avg_speed_kmh: number;
+  lat?: number;
+  lon?: number;
 }
 
 export interface SegmentResponse {

@@ -1,59 +1,52 @@
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { Feature } from "geojson";
-import { ROADS, type FlowSample } from "../../api/tomtom/flow";
-import { tomtomApiKey, tomtomKeyIsSet } from "../../api/tomtom/keys";
+import {
+  ROADS,
+  roadFallbackGeometry,
+  type FlowSample,
+} from "../../api/tomtom/flow";
+import { Camera } from "lucide-react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
-const FLOW_TILE_URL = "https://api.tomtom.com/traffic/map/4/tile/flow";
-
-export const FLOW_LAYER_RELATIVE = "flow-layer-relative";
-export const FLOW_LAYER_ABSOLUTE = "flow-layer-absolute";
 export const INCIDENT_HEATMAP_LAYER = "live-traffic-heatmap";
-export const FLOW_ROADS_CASING_LAYER = "flow-roads-casing";
 export const FLOW_ROADS_LAYER = "flow-roads";
+export const FLOW_ROADS_HOVER_LAYER = "flow-roads-hover";
 export const FLOW_POINTS_LAYER = "flow-sample-points";
+export const FLOW_NODE_ICONS_LAYER = "flow-node-icons";
 const FLOW_SAMPLES_SOURCE = "flow-samples-source";
 
-function flowTileUrl(type: "relative" | "absolute"): string {
-  const key = tomtomApiKey();
-  return `${FLOW_TILE_URL}/${type}/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}&tileSize=256`;
+let cameraIconReady = false;
+let cameraIconPromise: Promise<void> | null = null;
+
+function cameraSvgDataUri(): string {
+  const svg = renderToStaticMarkup(
+    createElement(Camera, { size: 32, strokeWidth: 2.2, color: "#1e293b" }),
+  );
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-function ensureRasterOverlay(
-  map: MapLibreMap,
-  layerId: string,
-  sourceId: string,
-  url: string,
-): void {
-  if (map.getSource(sourceId)) return;
-  map.addSource(sourceId, {
-    type: "raster",
-    tiles: [url],
-    tileSize: 256,
-    attribution: "TomTom",
+export function registerCameraIcon(map: MapLibreMap): Promise<void> {
+  if (cameraIconReady || map.hasImage("camera-icon")) {
+    cameraIconReady = true;
+    return Promise.resolve();
+  }
+  if (cameraIconPromise) return cameraIconPromise;
+  cameraIconPromise = new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        if (!map.hasImage("camera-icon")) map.addImage("camera-icon", image);
+        cameraIconReady = true;
+      } catch {
+        // Keep the circle fallback if the icon cannot be registered.
+      }
+      resolve();
+    };
+    image.onerror = () => resolve();
+    image.src = cameraSvgDataUri();
   });
-  map.addLayer({
-    id: layerId,
-    type: "raster",
-    source: sourceId,
-    layout: { visibility: "none" },
-    paint: { "raster-opacity": 1, "raster-fade-duration": 0 },
-  });
-}
-
-export function ensureTrafficTiles(map: MapLibreMap): void {
-  if (!tomtomKeyIsSet()) return;
-  ensureRasterOverlay(
-    map,
-    FLOW_LAYER_RELATIVE,
-    "tomtom-flow-relative",
-    flowTileUrl("relative"),
-  );
-  ensureRasterOverlay(
-    map,
-    FLOW_LAYER_ABSOLUTE,
-    "tomtom-flow-absolute",
-    flowTileUrl("absolute"),
-  );
+  return cameraIconPromise;
 }
 
 export function setLayerVisibility(
@@ -80,11 +73,11 @@ function flowSampleFeatures(samples: FlowSample[] | null): Feature[] {
   return ROADS.map((road) => {
     const sample =
       samples?.find((candidate) => candidate.roadName === road.name) ?? null;
-    const coordinates = sample?.coordinates ?? null;
-    const geometry =
-      coordinates && coordinates.length >= 2
-        ? { type: "LineString" as const, coordinates }
-        : { type: "Point" as const, coordinates: [road.lon, road.lat] };
+    const liveCoordinates = sample?.coordinates ?? null;
+    const geometry = {
+      type: "LineString" as const,
+      coordinates: liveCoordinates ?? roadFallbackGeometry(road),
+    };
     return {
       type: "Feature",
       properties: {
@@ -93,11 +86,43 @@ function flowSampleFeatures(samples: FlowSample[] | null): Feature[] {
         freeFlowSpeed: sample?.freeFlowSpeed ?? null,
         congestion: sample ? congestionPct(sample) : null,
         confidence: sample?.confidence ?? null,
-        hasFlow: coordinates !== null && coordinates.length >= 2,
+        hasFlow: liveCoordinates !== null && liveCoordinates.length >= 2,
+        closed: sample?.roadClosure ?? false,
       },
       geometry,
     } as Feature;
   });
+}
+
+export function flowHeatmapFeatures(
+  samples: FlowSample[] | null,
+  mode: "traffic" | "speed",
+): Feature[] {
+  const features: Feature[] = [];
+  for (const road of ROADS) {
+    const sample =
+      samples?.find((candidate) => candidate.roadName === road.name) ?? null;
+    let weight = 0.15;
+    if (mode === "traffic") {
+      const congestion = sample ? congestionPct(sample) : null;
+      weight = congestion != null ? congestion / 100 : 0.15;
+    } else {
+      const speed = sample?.currentSpeed;
+      weight =
+        typeof speed === "number"
+          ? Math.min(Math.max(speed / 100, 0.05), 1)
+          : 0.15;
+    }
+    const coordinates = sample?.coordinates ?? roadFallbackGeometry(road);
+    for (const point of coordinates) {
+      features.push({
+        type: "Feature",
+        properties: { severity: weight },
+        geometry: { type: "Point", coordinates: point },
+      } as Feature);
+    }
+  }
+  return features;
 }
 
 export function syncFlowSamples(
@@ -112,73 +137,95 @@ export function syncFlowSamples(
     (map.getSource(FLOW_SAMPLES_SOURCE) as GeoJSONSource).setData(data);
     return;
   }
-  map.addSource(FLOW_SAMPLES_SOURCE, { type: "geojson", data });
-  map.addLayer({
-    id: FLOW_ROADS_CASING_LAYER,
-    type: "line",
-    source: FLOW_SAMPLES_SOURCE,
-    layout: {
-      "line-cap": "round",
-      "line-join": "round",
-      visibility: "none",
-    },
-    paint: {
-      "line-width": 7,
-      "line-color": "#ffffff",
-      "line-opacity": 0.9,
-    },
-  });
-  map.addLayer({
-    id: FLOW_ROADS_LAYER,
-    type: "line",
-    source: FLOW_SAMPLES_SOURCE,
-    layout: {
-      "line-cap": "round",
-      "line-join": "round",
-      visibility: "none",
-    },
-    paint: {
-      "line-width": 4,
-      "line-opacity": 0.9,
-      "line-color": [
-        "case",
-        ["!", ["get", "hasFlow"]],
-        "#94a3b8",
-        [">=", ["get", "congestion"], 60],
-        "#dc2626",
-        [">=", ["get", "congestion"], 30],
-        "#f59e0b",
-        true,
-        "#22c55e",
-      ],
-    },
-  });
-  map.addLayer({
-    id: FLOW_POINTS_LAYER,
-    type: "circle",
-    source: FLOW_SAMPLES_SOURCE,
-    layout: { visibility: "none" },
-    paint: {
-      "circle-radius": 4,
-      "circle-color": "#64748b",
-      "circle-opacity": 0.9,
-      "circle-stroke-width": 1.5,
-      "circle-stroke-color": "#ffffff",
-    },
-  });
+  if (!map.isStyleLoaded()) return;
+  try {
+    map.addSource(FLOW_SAMPLES_SOURCE, { type: "geojson", data });
+    map.addLayer({
+      id: FLOW_ROADS_LAYER,
+      type: "line",
+      source: FLOW_SAMPLES_SOURCE,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        visibility: "none",
+      },
+      paint: {
+        "line-width": 4,
+        "line-opacity": 0.9,
+        "line-color": [
+          "case",
+          ["!", ["get", "hasFlow"]],
+          "#94a3b8",
+          [">=", ["get", "congestion"], 60],
+          "#dc2626",
+          [">=", ["get", "congestion"], 30],
+          "#f59e0b",
+          true,
+          "#22c55e",
+        ],
+      },
+    });
+    map.addLayer({
+      id: FLOW_ROADS_HOVER_LAYER,
+      type: "line",
+      source: FLOW_SAMPLES_SOURCE,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+        visibility: "none",
+      },
+      paint: {
+        "line-width": 14,
+        "line-opacity": 0,
+      },
+    });
+    map.addLayer({
+      id: FLOW_POINTS_LAYER,
+      type: "circle",
+      source: FLOW_SAMPLES_SOURCE,
+      layout: { visibility: "none" },
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#334155",
+        "circle-opacity": 1,
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+    map.addLayer({
+      id: FLOW_NODE_ICONS_LAYER,
+      type: "symbol",
+      source: FLOW_SAMPLES_SOURCE,
+      layout: {
+        visibility: "none",
+        "icon-image": "camera-icon",
+        "icon-size": 1,
+        "icon-anchor": "center",
+        "icon-allow-overlap": true,
+      },
+    });
+  } catch {
+    // no-op if the style is being rebuilt
+  }
 }
 
 export function setFlowSamplesVisibility(
   map: MapLibreMap,
   visible: boolean,
 ): void {
-  setLayerVisibility(map, FLOW_ROADS_CASING_LAYER, visible);
+  setLayerVisibility(map, FLOW_ROADS_HOVER_LAYER, visible);
   setLayerVisibility(map, FLOW_ROADS_LAYER, visible);
 }
 
-export function setFlowPointsVisibility(
+export function setFlowNodeMarkersVisibility(
   map: MapLibreMap,
   visible: boolean,
 ): void {
-  setLayerVisibility(map, FLOW_POINTS_LAYER, visible);
+  if (visible && cameraIconReady) {
+    setLayerVisibility(map, FLOW_NODE_ICONS_LAYER, true);
+    setLayerVisibility(map, FLOW_POINTS_LAYER, false);
+  } else {
+    setLayerVisibility(map, FLOW_NODE_ICONS_LAYER, false);
+    setLayerVisibility(map, FLOW_POINTS_LAYER, visible);
+  }
 }

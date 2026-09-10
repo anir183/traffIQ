@@ -3,11 +3,11 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { TomTomMap } from "@tomtom-org/maps-sdk/map";
 import { Marker, Popup } from "maplibre-gl";
-import type { Map as MapLibreMap } from "maplibre-gl";
-import type { Feature, Geometry } from "geojson";
+import type { Map as MapLibreMap, MapSourceDataEvent } from "maplibre-gl";
 import {
   applyMapTheme,
   applyTomTomTheme,
+  addPulseMarker,
   baseStyle,
   bindMarkerDetails,
   ensureTomTomConfig,
@@ -15,39 +15,61 @@ import {
   KOLKATA_CENTER,
 } from "../../components/map/helpers";
 import {
-  HEATMAP_CUSTOM,
+  HEATMAP_FLOW_SPEED,
+  HEATMAP_HOVER_LAYER,
+  HEATMAP_LAYER_ID,
   HEATMAP_TOMTOM,
-  alertGeoPoints,
+  applyHeatmapStops,
   ensureHeatmapSource,
-  geoPointsToCoordinates,
-  geoPointsToFeatures,
   updateHeatmapData,
 } from "../../components/map/heatmap";
 import {
-  ensureTrafficTiles,
-  FLOW_LAYER_ABSOLUTE,
-  FLOW_LAYER_RELATIVE,
+  FLOW_NODE_ICONS_LAYER,
   FLOW_POINTS_LAYER,
+  FLOW_ROADS_HOVER_LAYER,
   FLOW_ROADS_LAYER,
   INCIDENT_HEATMAP_LAYER,
-  setFlowPointsVisibility,
+  flowHeatmapFeatures,
+  registerCameraIcon,
+  setFlowNodeMarkersVisibility,
   setFlowSamplesVisibility,
   setLayerVisibility,
   syncFlowSamples,
 } from "../../components/map/overlays";
-import { bindFeatureHoverPopup } from "../../components/map/interaction";
+import {
+  bindFeatureHoverPopup,
+  closeHoverPopups,
+} from "../../components/map/interaction";
+import { speedHeatmapFeatures } from "../../components/map/flowHeatmap";
+import { buildAlertPopup } from "../../components/map/alertPopup";
 import {
   type TomTomIncident,
   incidentAnchor,
 } from "../../components/map/incidentsApi";
 import { fetchRoadFlow, type FlowSample } from "../../api/tomtom/flow";
+import {
+  FLOW_SOURCE_ID,
+  harvestFlowSamples,
+  isFlowSegmentFeature,
+  normalizeFlowFeatureProps,
+  startFlowModule,
+  type FlowModule,
+} from "../../api/tomtom/viewportFlow";
 import { tomtomKeyIsSet } from "../../api/tomtom/keys";
 import { useViewportIncidents } from "../../components/map/useViewportIncidents";
 import { mapRenderMode } from "../../api/sources";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useTheme } from "../../theme/useTheme";
+import {
+  mapIncidentPoints,
+  type IncidentMarkerPoint,
+} from "../../types/ui/adapters";
+import type { Bbox } from "../../components/map/incidentsApi";
+import type { AlertSeverity } from "../../types/contract/alert";
+import { useMapViewport } from "../../contexts/mapViewport";
+import { bboxFromMap } from "../../components/map/useViewportIncidents";
 
-const MAX_SEVERITY_MARKERS = 12;
+const MAX_SEVERITY_MARKERS = 40;
 
 export type MapMode = "traffic" | "speed" | "incidents" | "nodes";
 
@@ -83,24 +105,6 @@ function MapModeSwitcher({ mode, onChange }: MapModeSwitcherProps) {
       ))}
     </div>
   );
-}
-
-function getFeatures(incidents: TomTomIncident[]): Feature[] {
-  return incidents
-    .filter(
-      (incident) =>
-        incident.geometry && (incident.geometry.coordinates as unknown) != null,
-    )
-    .map((incident) => ({
-      type: "Feature" as const,
-      properties: {
-        severity: Math.min(
-          (incident.properties?.magnitudeOfDelay || 1) / 5,
-          1.0,
-        ),
-      },
-      geometry: incident.geometry as Geometry,
-    }));
 }
 
 function severityRank(incident: TomTomIncident): number {
@@ -145,6 +149,24 @@ function popupRow(label: string, value: string): HTMLDivElement {
   return row;
 }
 
+interface TrafficStatus {
+  label: string;
+  color: string;
+}
+
+function trafficStatusLabel(props: Record<string, unknown>): TrafficStatus {
+  if (props.closed === true) {
+    return { label: "Road closed", color: "#dc2626" };
+  }
+  const congestion = props.congestion;
+  if (typeof congestion === "number") {
+    if (congestion >= 60) return { label: "Congested", color: "#dc2626" };
+    if (congestion >= 30) return { label: "Heavy traffic", color: "#f59e0b" };
+    return { label: "Free-flow", color: "#22c55e" };
+  }
+  return { label: "No live data", color: "#94a3b8" };
+}
+
 function buildFlowSamplePopup(props: Record<string, unknown>): HTMLElement {
   const container = document.createElement("div");
   container.className = "w-52 px-1.5 py-1";
@@ -153,6 +175,14 @@ function buildFlowSamplePopup(props: Record<string, unknown>): HTMLElement {
   title.className = "text-sm font-semibold text-slate-900";
   title.textContent = String(props.name ?? "Road");
   container.appendChild(title);
+
+  const status = trafficStatusLabel(props);
+  const chip = document.createElement("span");
+  chip.className =
+    "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold text-white";
+  chip.style.backgroundColor = status.color;
+  chip.textContent = status.label;
+  container.appendChild(chip);
 
   const speed = props.currentSpeed;
   const free = props.freeFlowSpeed;
@@ -223,19 +253,14 @@ function createSeverityMarker(
   const rank = severityRank(incident);
   const description =
     incident.properties?.events?.[0]?.description ?? "Traffic incident";
-  const element = document.createElement("div");
-  element.style.cssText =
-    `width:12px;height:12px;border-radius:50%;cursor:pointer;` +
-    `background:${SEVERITY_COLORS[rank] ?? "#94a3b8"};` +
-    "border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);";
+  const color = SEVERITY_COLORS[rank] ?? "#94a3b8";
+  const anchor = incidentAnchor(incident);
+  const marker = addPulseMarker(map, [anchor[0], anchor[1]], color, "lg");
 
   const popup = new Popup({ offset: 12, closeButton: false }).setDOMContent(
     buildIncidentPopup(incident),
   );
-  const marker = new Marker({ element })
-    .setLngLat(incidentAnchor(incident))
-    .setPopup(popup)
-    .addTo(map);
+  marker.setPopup(popup);
   bindMarkerDetails(map, marker, popup, description);
   return marker;
 }
@@ -267,6 +292,73 @@ function syncSeverityMarkers(
 function clearSeverityMarkers(markers: Map<string, Marker>): void {
   for (const marker of markers.values()) marker.remove();
   markers.clear();
+}
+
+const ALERT_SEVERITY_COLORS: Record<AlertSeverity, string> = {
+  high: "#dc2626",
+  medium: "#eab308",
+  low: "#22c55e",
+};
+
+function createAlertMarker(
+  map: MapLibreMap,
+  point: IncidentMarkerPoint,
+): Marker {
+  const marker = addPulseMarker(
+    map,
+    [point.lng, point.lat],
+    ALERT_SEVERITY_COLORS[point.severity],
+  );
+  const popup = new Popup({ offset: 12, closeButton: false }).setDOMContent(
+    buildAlertPopup(point.alert),
+  );
+  marker.setPopup(popup);
+  bindMarkerDetails(map, marker, popup, point.alert.title);
+  return marker;
+}
+
+function syncAlertMarkers(
+  map: MapLibreMap,
+  points: IncidentMarkerPoint[],
+  markers: Map<string, Marker>,
+  fit: (coordinates: [number, number][]) => void,
+): void {
+  const keep = new Set<string>();
+  for (const point of points) {
+    keep.add(point.alert.alert_id);
+    if (markers.has(point.alert.alert_id)) continue;
+    markers.set(point.alert.alert_id, createAlertMarker(map, point));
+  }
+  for (const [id, marker] of markers) {
+    if (keep.has(id)) continue;
+    marker.remove();
+    markers.delete(id);
+  }
+  if (points.length > 0) fit(points.map((point) => [point.lng, point.lat]));
+}
+
+function clearAlertMarkers(markers: Map<string, Marker>): void {
+  for (const marker of markers.values()) marker.remove();
+  markers.clear();
+}
+
+function bindViewportBroadcast(
+  map: MapLibreMap,
+  setBbox: (bbox: Bbox | null) => void,
+): () => void {
+  let timer: number | undefined;
+  const onMoveEnd = () => {
+    if (timer !== undefined) window.clearTimeout(timer);
+    timer = window.setTimeout(() => {
+      timer = undefined;
+      setBbox(bboxFromMap(map));
+    }, 300);
+  };
+  map.on("moveend", onMoveEnd);
+  return () => {
+    if (timer !== undefined) window.clearTimeout(timer);
+    map.off("moveend", onMoveEnd);
+  };
 }
 
 function formatRelativeTime(timestamp: number, now: number): string {
@@ -320,7 +412,12 @@ function TomTomTrafficView() {
   const incidentsRef = useRef<TomTomIncident[]>([]);
   const samplesRef = useRef<FlowSample[] | null>(null);
   const modeRef = useRef<MapMode>("traffic");
+  const flowModuleRef = useRef<FlowModule | null>(null);
+  const heatmapTimerRef = useRef<number | null>(null);
+  const lastSpeedRefreshRef = useRef(0);
+  const watchdogTimerRef = useRef<number | null>(null);
   const { resolvedTheme } = useTheme();
+  const { setBbox } = useMapViewport();
   const [now, setNow] = useState(() => Date.now());
   const [mode, setMode] = useState<MapMode>("traffic");
 
@@ -328,14 +425,12 @@ function TomTomTrafficView() {
     modeRef.current = mode;
   }, [mode]);
 
-  const syncIncidentLayers = useCallback((map: MapLibreMap): void => {
+  const syncIncidentMarkers = useCallback((map: MapLibreMap): void => {
     if (modeRef.current !== "incidents") {
       clearSeverityMarkers(severityMarkers.current);
       return;
     }
     const apply = () => {
-      ensureHeatmapSource(map, HEATMAP_TOMTOM);
-      updateHeatmapData(map, getFeatures(incidentsRef.current));
       syncSeverityMarkers(map, incidentsRef.current, severityMarkers.current);
     };
     if (map.loaded()) {
@@ -345,18 +440,39 @@ function TomTomTrafficView() {
     }
   }, []);
 
+  const setFlowModuleVisibility = useCallback((visible: boolean): void => {
+    const module = flowModuleRef.current;
+    if (module && module.isVisible() !== visible) {
+      module.setVisible(visible);
+    }
+  }, []);
+
+  const refreshSpeedHeatmap = useCallback((map: MapLibreMap): void => {
+    if (modeRef.current !== "speed") return;
+    if (!map.getSource(FLOW_SOURCE_ID)) return;
+    if (!map.isStyleLoaded()) return;
+    ensureHeatmapSource(map, HEATMAP_FLOW_SPEED);
+    updateHeatmapData(map, speedHeatmapFeatures(harvestFlowSamples(map)));
+    lastSpeedRefreshRef.current = Date.now();
+  }, []);
+
   const applyMode = useCallback(
     (map: MapLibreMap, next: MapMode): void => {
-      ensureTrafficTiles(map);
+      closeHoverPopups(map);
       syncFlowSamples(map, samplesRef.current);
-      setLayerVisibility(map, FLOW_LAYER_RELATIVE, next === "traffic");
-      setLayerVisibility(map, FLOW_LAYER_ABSOLUTE, next === "speed");
-      setLayerVisibility(map, INCIDENT_HEATMAP_LAYER, next === "incidents");
-      setFlowSamplesVisibility(map, next !== "incidents");
-      setFlowPointsVisibility(map, next === "nodes");
-      syncIncidentLayers(map);
+      if (next === "speed") {
+        ensureHeatmapSource(map, HEATMAP_FLOW_SPEED);
+        applyHeatmapStops(map, HEATMAP_FLOW_SPEED);
+        refreshSpeedHeatmap(map);
+      } else {
+        setLayerVisibility(map, HEATMAP_LAYER_ID, false);
+      }
+      setFlowSamplesVisibility(map, next === "nodes");
+      setFlowNodeMarkersVisibility(map, next === "nodes");
+      setFlowModuleVisibility(next === "traffic");
+      syncIncidentMarkers(map);
     },
-    [syncIncidentLayers],
+    [refreshSpeedHeatmap, setFlowModuleVisibility, syncIncidentMarkers],
   );
 
   useEffect(() => {
@@ -375,18 +491,22 @@ function TomTomTrafficView() {
 
     const mapLibre = map.mapLibreMap;
     const onLoad = () => {
-      ensureTrafficTiles(mapLibre);
       applyMode(mapLibre, modeRef.current);
+      void registerCameraIcon(mapLibre).then(() =>
+        applyMode(mapLibre, modeRef.current),
+      );
     };
     mapLibre.on("load", onLoad);
+    const unbindViewport = bindViewportBroadcast(mapLibre, setBbox);
 
     return () => {
       mapLibre.off("load", onLoad);
+      unbindViewport();
       clearSeverityMarkers(markers);
       mapLibre.remove();
       mapInstance.current = null;
     };
-  }, [applyMode]);
+  }, [applyMode, setBbox]);
 
   useEffect(() => {
     if (!tomtomKeyIsSet()) return;
@@ -409,11 +529,107 @@ function TomTomTrafficView() {
   useEffect(() => {
     const map = mapInstance.current;
     if (!map) return;
+    let cancelled = false;
+    startFlowModule(map)
+      .then((module) => {
+        if (cancelled || !module) return;
+        flowModuleRef.current = module;
+        const mapLibre = mapInstance.current?.mapLibreMap;
+        if (mapLibre?.loaded()) {
+          applyMode(mapLibre, modeRef.current);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      flowModuleRef.current = null;
+    };
+  }, [applyMode]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    const mapLibre = map.mapLibreMap;
+    const schedule = () => {
+      if (modeRef.current !== "speed" || heatmapTimerRef.current != null) {
+        return;
+      }
+      heatmapTimerRef.current = window.setTimeout(() => {
+        heatmapTimerRef.current = null;
+        const current = mapInstance.current?.mapLibreMap;
+        if (current?.isStyleLoaded()) refreshSpeedHeatmap(current);
+      }, 350);
+    };
+    const onSourceData = (event: MapSourceDataEvent) => {
+      if (event.sourceId === FLOW_SOURCE_ID && event.isSourceLoaded) {
+        schedule();
+      }
+    };
+    const onMoveEnd = () => {
+      schedule();
+    };
+    const onContextRestored = () => {
+      const current = mapInstance.current?.mapLibreMap;
+      if (current?.isStyleLoaded()) {
+        applyMode(current, modeRef.current);
+      }
+    };
+    const onZoomEnd = () => {
+      schedule();
+    };
+    mapLibre.on("sourcedata", onSourceData);
+    mapLibre.on("moveend", onMoveEnd);
+    mapLibre.on("zoomend", onZoomEnd);
+    mapLibre.on("webglcontextrestored", onContextRestored);
+    watchdogTimerRef.current = window.setInterval(() => {
+      const current = mapInstance.current?.mapLibreMap;
+      if (!current?.isStyleLoaded()) return;
+      if (modeRef.current !== "speed") return;
+      if (Date.now() - lastSpeedRefreshRef.current < 6000) return;
+      refreshSpeedHeatmap(current);
+    }, 2000);
+    return () => {
+      mapLibre.off("sourcedata", onSourceData);
+      mapLibre.off("moveend", onMoveEnd);
+      mapLibre.off("zoomend", onZoomEnd);
+      mapLibre.off("webglcontextrestored", onContextRestored);
+      if (watchdogTimerRef.current != null) {
+        window.clearInterval(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
+      if (heatmapTimerRef.current != null) {
+        window.clearTimeout(heatmapTimerRef.current);
+        heatmapTimerRef.current = null;
+      }
+    };
+  }, [applyMode, refreshSpeedHeatmap]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    const mapLibre = map.mapLibreMap;
     return bindFeatureHoverPopup(
-      map.mapLibreMap,
-      [FLOW_ROADS_LAYER, FLOW_POINTS_LAYER],
+      mapLibre,
+      [
+        FLOW_ROADS_LAYER,
+        FLOW_ROADS_HOVER_LAYER,
+        FLOW_POINTS_LAYER,
+        FLOW_NODE_ICONS_LAYER,
+        HEATMAP_LAYER_ID,
+        HEATMAP_HOVER_LAYER,
+      ],
       () => modeRef.current !== "incidents",
       buildFlowSamplePopup,
+      (features) => {
+        for (const feature of features) {
+          if (isFlowSegmentFeature(feature.properties)) {
+            return {
+              properties: normalizeFlowFeatureProps(feature.properties) ?? {},
+            };
+          }
+        }
+        return null;
+      },
     );
   }, []);
 
@@ -428,10 +644,10 @@ function TomTomTrafficView() {
     }
   }, [mode, applyMode]);
 
-  const syncIncidentLayersRef = useRef(syncIncidentLayers);
+  const syncIncidentMarkersRef = useRef(syncIncidentMarkers);
   useEffect(() => {
-    syncIncidentLayersRef.current = syncIncidentLayers;
-  }, [syncIncidentLayers]);
+    syncIncidentMarkersRef.current = syncIncidentMarkers;
+  }, [syncIncidentMarkers]);
 
   const { state, refresh } = useViewportIncidents({
     getMap: () => mapInstance.current?.mapLibreMap ?? null,
@@ -439,7 +655,7 @@ function TomTomTrafficView() {
       incidentsRef.current = incidents;
       const map = mapInstance.current;
       if (!map) return;
-      syncIncidentLayersRef.current(map.mapLibreMap);
+      syncIncidentMarkersRef.current(map.mapLibreMap);
     }, []),
   });
 
@@ -486,7 +702,9 @@ function CustomTrafficView() {
   const markersFitted = useRef(false);
   const lastSync = useRef(0);
   const { resolvedTheme } = useTheme();
+  const { setBbox } = useMapViewport();
   const { items, loading, error } = useAlerts();
+  const itemsRef = useRef(items);
   const [pillText, setPillText] = useState("Loading incidents\u2026");
   const [mode, setMode] = useState<MapMode>("incidents");
   const modeRef = useRef<MapMode>("incidents");
@@ -494,12 +712,56 @@ function CustomTrafficView() {
     modeRef.current = mode;
   }, [mode]);
 
-  const applyMode = useCallback((map: MapLibreMap, next: MapMode): void => {
-    syncFlowSamples(map, null);
-    setLayerVisibility(map, INCIDENT_HEATMAP_LAYER, next === "incidents");
-    setFlowSamplesVisibility(map, next === "nodes");
-    setFlowPointsVisibility(map, next === "nodes");
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const alertMarkers = useRef<Map<string, Marker>>(new Map());
+
+  const syncIncidentMarkers = useCallback((map: MapLibreMap): void => {
+    const apply = () => {
+      syncAlertMarkers(
+        map,
+        mapIncidentPoints(itemsRef.current),
+        alertMarkers.current,
+        (coordinates) => {
+          if (!markersFitted.current) {
+            markersFitted.current = true;
+            fitBoundsToCoordinates(map, coordinates, 90);
+          }
+        },
+      );
+      lastSync.current = Date.now();
+    };
+    if (modeRef.current !== "incidents") {
+      clearAlertMarkers(alertMarkers.current);
+      return;
+    }
+    if (map.loaded()) {
+      apply();
+    } else {
+      map.once("load", apply);
+    }
   }, []);
+
+  const applyMode = useCallback(
+    (map: MapLibreMap, next: MapMode): void => {
+      closeHoverPopups(map);
+      syncFlowSamples(map, null);
+      const heatmapActive = next === "traffic" || next === "speed";
+      if (heatmapActive) {
+        const stops = next === "speed" ? HEATMAP_FLOW_SPEED : HEATMAP_TOMTOM;
+        ensureHeatmapSource(map, stops);
+        applyHeatmapStops(map, stops);
+        updateHeatmapData(map, flowHeatmapFeatures(null, next));
+      }
+      setLayerVisibility(map, INCIDENT_HEATMAP_LAYER, heatmapActive);
+      setFlowSamplesVisibility(map, next === "nodes");
+      setFlowNodeMarkersVisibility(map, next === "nodes");
+      syncIncidentMarkers(map);
+    },
+    [syncIncidentMarkers],
+  );
 
   useEffect(() => {
     const map = new maplibregl.Map({
@@ -511,23 +773,35 @@ function CustomTrafficView() {
     mapInstance.current = map;
     lastSync.current = Date.now();
 
-    const onLoad = () => applyMode(map, modeRef.current);
+    const onLoad = () => {
+      applyMode(map, modeRef.current);
+      void registerCameraIcon(map).then(() => applyMode(map, modeRef.current));
+    };
     map.on("load", onLoad);
+    const unbindViewport = bindViewportBroadcast(map, setBbox);
 
+    const alertSnapshot = alertMarkers.current;
     return () => {
       map.off("load", onLoad);
+      unbindViewport();
+      clearAlertMarkers(alertSnapshot);
       map.remove();
       mapInstance.current = null;
     };
-  }, [applyMode]);
+  }, [applyMode, setBbox]);
 
   useEffect(() => {
     const map = mapInstance.current;
     if (!map) return;
     return bindFeatureHoverPopup(
       map,
-      [FLOW_ROADS_LAYER, FLOW_POINTS_LAYER],
-      () => modeRef.current === "nodes",
+      [
+        FLOW_ROADS_LAYER,
+        FLOW_ROADS_HOVER_LAYER,
+        FLOW_POINTS_LAYER,
+        FLOW_NODE_ICONS_LAYER,
+      ],
+      () => modeRef.current !== "incidents",
       buildFlowSamplePopup,
     );
   }, []);
@@ -551,26 +825,14 @@ function CustomTrafficView() {
   useEffect(() => {
     const map = mapInstance.current;
     if (!map) return;
-
-    const points = alertGeoPoints(items);
-    const applyMarkers = () => {
-      ensureHeatmapSource(map, HEATMAP_CUSTOM);
-      updateHeatmapData(map, geoPointsToFeatures(points));
-      if (!markersFitted.current && points.length > 0) {
-        markersFitted.current = true;
-        fitBoundsToCoordinates(map, geoPointsToCoordinates(points), 90);
-      }
-      lastSync.current = Date.now();
-    };
-
     if (map.loaded()) {
-      applyMarkers();
+      syncIncidentMarkers(map);
     } else {
-      map.once("load", applyMarkers);
+      map.once("load", () => syncIncidentMarkers(map));
     }
-  }, [items]);
+  }, [items, syncIncidentMarkers]);
 
-  const liveCount = alertGeoPoints(items).length;
+  const liveCount = items.length;
   const empty = items.length === 0;
 
   useEffect(() => {

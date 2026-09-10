@@ -58,21 +58,46 @@ export function addDotMarker(
   return new Marker({ element: el }).setLngLat(lngLat).addTo(map);
 }
 
+export type PulseMarkerSize = "sm" | "md" | "lg";
+
+const PULSE_SIZE: Record<
+  PulseMarkerSize,
+  { wrapper: string; pulse: string; dot: string }
+> = {
+  sm: {
+    wrapper: "relative flex h-4 w-4 items-center justify-center",
+    pulse: "absolute h-4 w-4 rounded-full animate-ping",
+    dot: "relative h-3.5 w-3.5 rounded-full border-2 border-white",
+  },
+  md: {
+    wrapper: "relative flex h-5 w-5 items-center justify-center",
+    pulse: "absolute h-5 w-5 rounded-full animate-ping",
+    dot: "relative h-[18px] w-[18px] rounded-full border-2 border-white",
+  },
+  lg: {
+    wrapper: "relative flex h-6 w-6 items-center justify-center",
+    pulse: "absolute h-6 w-6 rounded-full animate-ping",
+    dot: "relative h-[22px] w-[22px] rounded-full border-[2.5px] border-white",
+  },
+};
+
 export function addPulseMarker(
   map: Map,
   lngLat: [number, number],
   color = "#dc2626",
+  size: PulseMarkerSize = "sm",
 ): Marker {
+  const s = PULSE_SIZE[size];
   const wrapper = document.createElement("div");
-  wrapper.className = "relative flex h-4 w-4 items-center justify-center";
+  wrapper.className = s.wrapper;
 
   const pulse = document.createElement("div");
-  pulse.className = "absolute h-4 w-4 rounded-full animate-ping";
+  pulse.className = s.pulse;
   pulse.style.backgroundColor = color;
   wrapper.appendChild(pulse);
 
   const dot = document.createElement("div");
-  dot.className = "relative h-3.5 w-3.5 rounded-full border-2 border-white";
+  dot.className = s.dot;
   dot.style.backgroundColor = color;
   wrapper.appendChild(dot);
 
