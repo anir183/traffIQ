@@ -8,6 +8,7 @@ import {
   vehicleToDetections,
 } from "../../types/ui/adapters";
 import InlineFetchStatus from "../../components/ui/fetch-status";
+import Pagination from "../../components/ui/pagination";
 
 export default function VehicleInformation({ plate }: { plate: string }) {
   const { data, loading, error, refetch } = useVehicleDetail(plate);
@@ -139,40 +140,11 @@ export default function VehicleInformation({ plate }: { plate: string }) {
               </span>
 
               {totalPages > 1 && (
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    disabled={safePage === 1}
-                    onClick={() => setPage((p) => p - 1)}
-                    className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-                  >
-                    ‹
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setPage(p)}
-                        className={`h-6 w-6 rounded-full text-xs transition-colors ${
-                          p === safePage
-                            ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                            : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ),
-                  )}
-                  <button
-                    type="button"
-                    disabled={safePage === totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                    className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-                  >
-                    Next ›
-                  </button>
-                </div>
+                <Pagination
+                  page={safePage}
+                  totalPages={totalPages}
+                  onChange={setPage}
+                />
               )}
             </div>
           )}

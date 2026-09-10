@@ -7,6 +7,7 @@ import {
   incidentStreamAlerts,
 } from "../../types/ui/adapters";
 import InlineFetchStatus from "../../components/ui/fetch-status";
+import Pagination from "../../components/ui/pagination";
 
 const STATUS_ICON: Record<IncidentEventStatus, string> = {
   error: "✕",
@@ -97,37 +98,8 @@ function IncidentQueue() {
       </div>
 
       {totalPages > 1 && (
-        <div className="mt-auto flex items-center justify-center gap-1 pt-4 text-xs">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-          >
-            ‹
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPage(p)}
-              className={`h-6 w-6 rounded-full text-xs transition-colors ${
-                p === page
-                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                  : "text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            type="button"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-30 dark:text-slate-400 dark:hover:bg-slate-800"
-          >
-            Next ›
-          </button>
+        <div className="mt-auto flex items-center justify-center pt-4">
+          <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </div>
       )}
     </div>
