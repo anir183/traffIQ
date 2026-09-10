@@ -1,5 +1,5 @@
 import { LngLatBounds, Marker } from "maplibre-gl";
-import type { Map, StyleSpecification } from "maplibre-gl";
+import type { Map, Popup, StyleSpecification } from "maplibre-gl";
 import { TomTomConfig } from "@tomtom-org/maps-sdk/core";
 import type { TomTomMap } from "@tomtom-org/maps-sdk/map";
 import { API_KEY } from "../../config";
@@ -58,20 +58,42 @@ export function addDotMarker(
   return new Marker({ element: el }).setLngLat(lngLat).addTo(map);
 }
 
-export function addPulseMarker(map: Map, lngLat: [number, number]): Marker {
+export function addPulseMarker(
+  map: Map,
+  lngLat: [number, number],
+  color = "#dc2626",
+): Marker {
   const wrapper = document.createElement("div");
   wrapper.className = "relative flex h-4 w-4 items-center justify-center";
 
   const pulse = document.createElement("div");
-  pulse.className = "absolute h-4 w-4 rounded-full bg-red-500 animate-ping";
+  pulse.className = "absolute h-4 w-4 rounded-full animate-ping";
+  pulse.style.backgroundColor = color;
   wrapper.appendChild(pulse);
 
   const dot = document.createElement("div");
-  dot.className =
-    "relative h-3.5 w-3.5 rounded-full bg-red-600 border-2 border-white";
+  dot.className = "relative h-3.5 w-3.5 rounded-full border-2 border-white";
+  dot.style.backgroundColor = color;
   wrapper.appendChild(dot);
 
   return new Marker({ element: wrapper }).setLngLat(lngLat).addTo(map);
+}
+
+export function bindMarkerDetails(
+  map: Map,
+  marker: Marker,
+  popup: Popup,
+  title = "",
+): void {
+  const element = marker.getElement();
+  element.style.cursor = "pointer";
+  if (title) element.title = title;
+  element.addEventListener("mouseenter", () => {
+    if (map.loaded() && !popup.isOpen()) popup.addTo(map);
+  });
+  element.addEventListener("mouseleave", () => {
+    if (popup.isOpen()) popup.remove();
+  });
 }
 
 export function addLineLayer(

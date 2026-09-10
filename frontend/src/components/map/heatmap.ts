@@ -52,10 +52,30 @@ export function ensureHeatmapSource(
     source: "traffic-heatmap-source",
     paint: {
       "heatmap-weight": ["get", "severity"],
-      "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 15, 3],
+      "heatmap-intensity": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        0,
+        0.8,
+        15,
+        2.2,
+      ],
       "heatmap-color": heatmapColorExpression(stops),
-      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 15, 18, 40],
-      "heatmap-opacity": 0.85,
+      "heatmap-radius": [
+        "interpolate",
+        ["linear"],
+        ["zoom"],
+        0,
+        4,
+        12,
+        7,
+        16,
+        11,
+        20,
+        16,
+      ],
+      "heatmap-opacity": 0.7,
     },
   });
 }

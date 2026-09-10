@@ -34,24 +34,29 @@
     @apply h-screen;
   }
 
-  .dark .maplibregl-popup-content {
-    background: #0f172a;
-    color: #e2e8f0;
+  .maplibregl-popup-content {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
   }
 
-  .dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-    border-top-color: #0f172a;
+  .maplibregl-popup-close-button {
+    color: #334155;
   }
 
-  .dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
-    border-bottom-color: #0f172a;
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: #ffffff;
   }
 
-  .dark .maplibregl-popup-anchor-left .maplibregl-popup-tip {
-    border-right-color: #0f172a;
+  .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #ffffff;
   }
 
-  .dark .maplibregl-popup-anchor-right .maplibregl-popup-tip {
-    border-left-color: #0f172a;
+  .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+    border-right-color: #ffffff;
+  }
+
+  .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+    border-left-color: #ffffff;
   }
 }

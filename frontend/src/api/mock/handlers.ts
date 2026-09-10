@@ -20,6 +20,15 @@ import type {
   VehicleDetailResponse,
 } from "../../types/contract/vehicle";
 import { ApiError } from "../http";
+import {
+  congestedSegments,
+  fetchRoadFlow,
+  flowUsableCount,
+  speedSegments,
+  summarizeFlow,
+} from "../tomtom/flow";
+import { fetchCityIncidentAlerts } from "../tomtom/incidents";
+import { tomtomKeyIsSet } from "../tomtom/keys";
 import { ALERTS } from "./data/alerts";
 import { ANPR_EVENTS } from "./data/anprEvents";
 import { CAMERAS } from "./data/cameras";
@@ -187,11 +196,50 @@ export async function getCameraById(cameraId: string): Promise<CameraMeta> {
   return mockDelay(camera);
 }
 
+function hourBackWindow(): { from: string; to: string } {
+  const to = new Date();
+  return {
+    from: new Date(to.getTime() - 60 * 60 * 1000).toISOString(),
+    to: to.toISOString(),
+  };
+}
+
 export async function getTrafficSummary(): Promise<TrafficSummaryResponse> {
+  if (tomtomKeyIsSet()) {
+    const samples = await fetchRoadFlow().catch(() => null);
+    if (samples && flowUsableCount(samples) >= 3) {
+      const { avgSpeedKmh, congestionScore } = summarizeFlow(samples);
+      return mockDelay(
+        {
+          ...TRAFFIC_SUMMARY,
+          window: hourBackWindow(),
+          metrics: {
+            ...TRAFFIC_SUMMARY.metrics,
+            avg_speed_kmh: avgSpeedKmh,
+            congestion_score: congestionScore,
+          },
+        },
+        { failure: false },
+      );
+    }
+  }
   return mockDelay(TRAFFIC_SUMMARY);
 }
 
 export async function getSegments(): Promise<SegmentResponse> {
+  if (tomtomKeyIsSet()) {
+    const samples = await fetchRoadFlow().catch(() => null);
+    if (samples && flowUsableCount(samples) >= 3) {
+      return mockDelay(
+        {
+          ...hourBackWindow(),
+          congested: congestedSegments(samples, 6),
+          speed: speedSegments(samples, 6),
+        },
+        { failure: false },
+      );
+    }
+  }
   return mockDelay(SEGMENTS);
 }
 
@@ -203,13 +251,28 @@ export async function getAlerts(
   query: AlertQuery = {},
 ): Promise<Paginated<Alert>> {
   const { status, type, severity, limit, offset } = query;
-  const filtered = ALERTS.filter((alert) => {
-    if (status && alert.status !== status) return false;
-    if (type && alert.type !== type) return false;
-    if (severity && alert.severity !== severity) return false;
-    return true;
-  });
-  return mockDelay(paginate(filtered, limit, offset));
+
+  const filterAlerts = (alerts: Alert[]): Alert[] =>
+    alerts.filter((alert) => {
+      if (status && alert.status !== status) return false;
+      if (type && alert.type !== type) return false;
+      if (severity && alert.severity !== severity) return false;
+      return true;
+    });
+
+  if (tomtomKeyIsSet()) {
+    try {
+      const live = await fetchCityIncidentAlerts();
+      if (live.length > 0) {
+        return mockDelay(paginate(filterAlerts(live), limit, offset), {
+          failure: false,
+        });
+      }
+    } catch {
+      // TomTom unavailable — fall through to the static seed list.
+    }
+  }
+  return mockDelay(paginate(filterAlerts(ALERTS), limit, offset));
 }
 
 export async function login(req: LoginRequest): Promise<LoginResponse> {

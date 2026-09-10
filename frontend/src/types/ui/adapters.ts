@@ -156,22 +156,42 @@ export function activeAlertCount(alerts: Alert[]): number {
   return alerts.filter((alert) => alert.status === "active").length;
 }
 
-export function mapAlertMarkers(
-  alerts: Alert[],
-  severity: AlertSeverity = "high",
-): [number, number][] {
+export interface IncidentMarkerPoint {
+  lng: number;
+  lat: number;
+  severity: AlertSeverity;
+  alert: Alert;
+}
+
+export function mapIncidentPoints(alerts: Alert[]): IncidentMarkerPoint[] {
   return alerts
     .filter(
       (alert) =>
         alert.status === "active" &&
-        alert.severity === severity &&
         alert.location.latitude != null &&
         alert.location.longitude != null,
     )
-    .map((alert) => [
-      alert.location.longitude as number,
-      alert.location.latitude as number,
-    ]);
+    .map((alert) => ({
+      lng: alert.location.longitude as number,
+      lat: alert.location.latitude as number,
+      severity: alert.severity,
+      alert,
+    }));
+}
+
+const ALERT_TYPE_LABEL: Record<AlertType, string> = {
+  blacklisted_vehicle: "Blacklisted vehicle",
+  accident: "Accident",
+  speed_violation: "Speed violation",
+  wrong_way: "Wrong-way driving",
+  route_anomaly: "Route anomaly",
+  signal_malfunction: "Signal malfunction",
+  road_construction: "Road construction",
+  suspicious_activity: "Suspicious activity",
+};
+
+export function alertTypeLabel(type: AlertType): string {
+  return ALERT_TYPE_LABEL[type];
 }
 
 export function metricsToStatCards(metrics: TrafficMetrics): {

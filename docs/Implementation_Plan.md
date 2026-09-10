@@ -492,6 +492,8 @@ Centered: "404 — Page not found" + link to `/`.
 | `RecentIncidents` | HARDCODED_INCIDENTS (15) | `useAlerts({ status, limit, offset })` | `alertToIncident()`              |
 | `IncidentMap`     | 2 hardcoded markers      | `useAlerts({ status })`                | alert `location` → pulse markers |
 
+> Mock-mode note: `useAlerts` is now sourced from real TomTom incidents in `mock` mode (Phase 1.5) when `VITE_TOMTOM_API_KEY` is set — every incident carries lat/lng, so the incident map shows live markers instead of 2 hardcoded ones.
+
 ### 1E. Traffic Analysis
 
 | Component              | Old source         | New hook                          | Adapter                        |
@@ -551,6 +553,125 @@ Centered: "404 — Page not found" + link to `/`.
 - [x] Header search shows results
 - [x] Notification bell shows badge + dropdown
 - [ ] Profile dropdown shows user + logout (identity shown; dropdown deferred to Phase 2)
+
+---
+
+## PHASE 1.5 — TomTom-backed mock data (incidents + traffic flow)
+
+**Goal:** In `mock` mode, feed the live-looking datasets from the real TomTom API so the hand-maintained seed files shrink to pure fallbacks. Scope = **incident listings** and **traffic/speed**. Everything TomTom cannot provide (vehicle/ANPR counts, density, cameras, alerts triage meta) stays on the static seed files. This is a mock-mode-only optimization; the `backend` source is unchanged.
+
+### Data sources
+
+| Surface | TomTom API | Endpoint | Notes |
+| --- | --- | --- | --- |
+| Incident listings (management list + incident map + event stream + bell) | Traffic Incident Details v5 | `GET https://api.tomtom.com/traffic/services/5/incidentDetails?key=&bbox=&timeValidityFilter=present&fields={incidents{type,geometry{type,coordinates},properties{...}}}&language=en-GB` | bbox ≤ 10,000 km² (city bbox ≈ 700 km²). `fields` is strict — **no whitespace** inside braces (spaces cause `Parameter 'fields' has incorrect syntax.`). Query cached 90 s. |
+| Congestion + average speed (segments cards, summary metrics) | Traffic Flow — flow segment data | `GET https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?point={lat},{lon}&unit=KMPH&key=` | One call per road in a fixed ~24-point Kolkata **geometry catalog** (`src/api/tomtom/flow.ts` `ROADS`). Runs at concurrency 5, timeout 8 s, per-request failures skipped; cached 90 s. Returns `currentSpeed`, `freeFlowSpeed`, `confidence`, `roadClosure`. |
+
+### Mapping rules (TomTom → app contracts)
+
+- **Incidents → `Alert`** (`src/api/tomtom/incidents.ts`): `severity = f(magnitudeOfDelay)` (≥3 high, ≥1 medium, else low); `type` from `iconCategory` (1/2→`accident`, 7/13/14→`route_anomaly`, 8/9/10→`road_construction`, else `suspicious_activity`); `status` always `active` (viewport filter is `present`); `location.label` = `from → to`; lat/lng from incident geometry (fixes the incident map marker count). **high/medium → triage alerts** (incident-management list + map), **low → event-stream alerts** (Overview queue + notification bell), so both surfaces populate.
+- **Flow → segments/metrics** (`src/api/tomtom/flow.ts`): congestion ratio `100 × (1 − current/free)` clamped 0–100; city summary = free-flow-speed-weighted means (`summarizeFlow`). Only `avg_speed_kmh` + `congestion_score` are overridden in the traffic summary; volumes/breakdown/per-camera stay static.
+- Fallback TTL/robustness: all three TomTom sources are module-cached (90 s). If `VITE_TOMTOM_API_KEY` is unset, the request times out, or the API errors, handlers fall back to the static seed files (`alerts.ts`, `segments.ts`, `traffic.ts`) — which are **retained as fallbacks**, not deleted.
+
+### Files
+
+| File | Purpose | Status |
+| --- | --- | --- |
+| `src/api/tomtom/keys.ts` | `tomtomKeyIsSet()` guard (empty/`undefined` key detection) | [x] |
+| `src/api/tomtom/flow.ts` | flow segment fetch (catalog + concurrency + cache) + flow→segments/summary derivations | [x] |
+| `src/api/tomtom/incidents.ts` | city incident fetch (bbox + cache + timeout) + TomTom→`Alert` mapping | [x] |
+| `src/api/mock/handlers.ts` | `getAlerts`/`getSegments`/`getTrafficSummary` call TomTom first, static as fallback | [x] |
+| `src/components/map/incidentsApi.ts` | reused for the city incident fetch (existing `fetchIncidents`/`incidentAnchor`) | unchanged |
+
+**Phase 1.5 verification:** `npm run lint && npm run build` clean · no key / offline → identical to previous static-mock rendering · key set → incident list + map show real Kolkata incidents and segments/metrics show live speeds.
+
+---
+
+## PHASE 1.7 — Map interactions (hover/click) + functional view modes
+
+**Goal:** The four analysis-map modes actually switch layers, and every element on the maps shows details on hover or click. Also surface the initial incident-fetch delay with an explicit loading indicator.
+
+### View modes
+
+| Mode | Layer shown | Interaction |
+| --- | --- | --- |
+| `traffic` | TomTom raster `flow/relative` tiles (`/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key=&tileSize=256`) | hover/click road-sample point → speed popup |
+| `speed` | TomTom raster `flow/absolute` tiles (`/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=&tileSize=256`) | same |
+| `incidents` | incident heatmap (`HEATMAP_TOMTOM`) + severity markers w/ popups | marker hover/click → incident popup |
+| `nodes` | `flow-sample-points` circle layer over the fixed ~24-road geometry catalog | hover/click point → name (+ live speed when key set) |
+
+Raster overlay helpers: `components/map/overlays.ts` (`ensureTrafficTiles`, `setLayerVisibility`, `FLOW_LAYER_RELATIVE/ABSOLUTE`). Modes applied on map `load` and on change (`applyMode` in `pages/analysis/mapp.tsx`); `TrafficFlowModule` from the SDK is no longer used — one raster mechanism for Traffic + Avg Speed.
+
+### Interactivity
+
+- `components/map/helpers.ts` — `bindMarkerDetails(map, marker, popup, title)`: hover opens the marker popup, mouse-leave closes it, cursor pointer + native `title` tooltip.
+- `components/map/interaction.ts` — `bindFeatureHoverPopup(map, layerIds, isActive, buildContent)`: maplibre `mousemove`/`click` on geo-referenced feature layers (`queryRenderedFeatures`) → cursor pointer + popup at pointer; closes on leave; safe to bind before style load; returns a cleanup.
+- `components/map/alertPopup.ts` — `buildAlertPopup(alert)`: title, severity + type, detail, location, detected-at (`formatUtcDateTime`), status, plate.
+- `pages/incident/map.tsx` — every active incident now draws as a severity-colored pulse marker with a detail popup (was: high-severity only, no popups). Incident points come from `mapIncidentPoints` (all severities, carries the `Alert`).
+- `pages/analysis/mapp.tsx` — `flow-roads` + `flow-sample-points` layers (live speed / free-flow / congestion / confidence from `fetchRoadFlow`, refreshed with the 90 s cache) are hoverable in all non-incidents modes; severity markers (max 12) get hover popups.
+- Loading lag: pulsing `StatusPill` ("Loading incidents…" / "Updating…") on the overview map; `incident/map.tsx` shows "Loading incidents…" until the first fetch resolves. On entering Incidents mode the viewport fetcher is force-refreshed (`refresh()`).
+
+### API references
+
+- Traffic Map tiles (raster flow): `GET https://api.tomtom.com/traffic/map/4/tile/flow/{absolute|relative}/{z}/{x}/{y}.png?key=<key>&tileSize=256` — `relative` colors congestion vs avg flow, `absolute` colors by actual speed. Tile 256 px, EPSG:3857.
+- Live per-road speeds still come from `flowSegmentData` (`api/tomtom/flow.ts`).
+- No TomTom junction/nodes API exists → Nodes mode uses the road-geometry catalog points (name + live speed when available).
+
+### Failure behavior
+
+No key or flow fetch failure → `ensureTrafficTiles` no-ops, roads render as gray catalog points or lines without geometry (popup shows "No live flow data for this road" / pending while a fetched segment's speeds are still resolving). Incident layers unaffected. Base map always renders.
+
+### Files
+
+| File | Purpose | Status |
+| --- | --- | --- |
+| `src/components/map/overlays.ts` | raster flow tile layers + `syncFlowSamples` (interactive road lines + sample points) | [x] |
+| `src/components/map/interaction.ts` | `bindFeatureHoverPopup` (hover/click feature popups) | new |
+| `src/components/map/alertPopup.ts` | `buildAlertPopup` shared popup content | new |
+| `src/components/map/helpers.ts` | `bindMarkerDetails` (marker hover w/ popup) | [x] |
+| `src/types/ui/adapters.ts` | `mapIncidentPoints` (all severities + `alert`), `alertTypeLabel` | [x] |
+| `src/pages/analysis/mapp.tsx` | functional 4-mode switcher + flow-point hover + marker hover + loading pill | [x] |
+| `src/pages/incident/map.tsx` | all-incident markers + popups + loading/empty state | [x] |
+
+**Phase 1.7 verification:** `npm run lint && npm run build` clean · hovering/clicking an incident marker or a road point opens a detail popup · mode buttons visibly switch layers · initial load shows "Loading incidents…" until data arrives.
+
+---
+
+## PHASE 1.8 — Road-level flow lines + legible overlays
+
+**Goal:** Let the user hover/click *any part of a road* (not just the fixed sample points) for live flow info, and keep the incident heatmap compact enough to read when zoomed out.
+
+### Overview map layers
+
+| Layer | Id | Source | Where visible | Interaction |
+| --- | --- | --- | --- | --- |
+| road backing | `flow-roads-casing` | `flow-samples-source` | traffic / speed / nodes | none |
+| road flow line | `flow-roads` | `flow-samples-source` | traffic / speed / nodes | hover/click → flow popup |
+| sample points | `flow-sample-points` | `flow-samples-source` | nodes only | hover/click → flow popup |
+
+One geojson source (`flow-samples-source`) feeds all three layers. Each catalog road becomes a `LineString` built from the fetched `flowSegmentData.coordinates` (TomTom returns `[lat, lng]` pairs — converted to `[lng, lat]`); roads without a returned segment fall back to a `Point` at their catalog coordinate. Line color follows congestion: `>= 60` red, `>= 30` amber, else green; no geometry / no data → gray.
+
+### Changes
+
+- `api/tomtom/flow.ts` — `FlowSample` gains `coordinates: Array<[number, number]> | null` parsed from `flowSegmentData.coordinates` (`parseCoordinates`, valid only when at least 2 points).
+- `components/map/overlays.ts` — replaces `syncFlowPointLayer` with `syncFlowSamples(map, samples)` (creates/updates the casing + line + points layers on one source) and exports `setFlowSamplesVisibility` / `setFlowPointsVisibility`. Keeps `FLOW_ROADS_LAYER`, `FLOW_ROADS_CASING_LAYER`, `FLOW_POINTS_LAYER` ids.
+- `components/map/heatmap.ts` — tightened paint: radius `4 → 16 px` across zoom `0 → 20` (was 15→40), intensity ≤ `2.2`, opacity `0.7` so clustered incidents don't blob at low zoom.
+- `pages/analysis/mapp.tsx` — `applyMode` shows the line layers in traffic/speed/nodes and circles only in nodes; hover bindings cover `flow-roads` + `flow-sample-points`. `buildFlowSamplePopup` distinguishes "pending" (segment fetched, speeds resolving) from "No live flow data for this road" (no geometry / fetch failed).
+
+### Failure behavior
+
+No key or all flow fetches fail → zero `LineString`s; roads render only as gray catalog points (Nodes mode), popup reads "No live flow data…". The raster tile overlays no-op without a key. Incident and base map are unaffected.
+
+### Files
+
+| File | Purpose | Status |
+| --- | --- | --- |
+| `src/api/tomtom/flow.ts` | `FlowSample.coordinates` + `parseCoordinates` from `flowSegmentData.coordinates` | [x] |
+| `src/components/map/overlays.ts` | `syncFlowSamples` + casing/line/points layers + visibility helpers | [x] |
+| `src/components/map/heatmap.ts` | restrained heatmap radius/intensity/opacity | [x] |
+| `src/pages/analysis/mapp.tsx` | layer wiring, hover lists, popup state ("pending" vs "No live flow data…") | [x] |
+
+**Phase 1.8 verification:** `npm run lint && npm run build` clean · hover anywhere on a colored road line shows the flow popup · heatmap stays a compact cluster at zoom 11–13 · gate green.
 
 ---
 

@@ -1,43 +1,78 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { Map } from "maplibre-gl";
+import { Popup } from "maplibre-gl";
+import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import {
   baseStyle,
   applyMapTheme,
   addPulseMarker,
+  bindMarkerDetails,
   KOLKATA_CENTER,
   fitBoundsToCoordinates,
 } from "../../components/map/helpers";
+import { buildAlertPopup } from "../../components/map/alertPopup";
 import { useTheme } from "../../theme/useTheme";
 import { useAlerts } from "../../hooks/useAlerts";
-import { mapAlertMarkers } from "../../types/ui/adapters";
+import {
+  mapIncidentPoints,
+  type IncidentMarkerPoint,
+} from "../../types/ui/adapters";
+import type { AlertSeverity } from "../../types/contract/alert";
 
-const LEGEND = [
-  { label: "Normal", color: "#22c55e" },
-  { label: "Moderate", color: "#eab308" },
-  { label: "Heavy", color: "#f97316" },
-  { label: "Incident", color: "#dc2626" },
+const SEVERITY_COLORS: Record<AlertSeverity, string> = {
+  high: "#dc2626",
+  medium: "#eab308",
+  low: "#22c55e",
+};
+
+const LEGEND: { label: string; color: string }[] = [
+  { label: "High", color: SEVERITY_COLORS.high },
+  { label: "Medium", color: SEVERITY_COLORS.medium },
+  { label: "Low", color: SEVERITY_COLORS.low },
 ];
 
-function drawMarkers(map: Map, markers: [number, number][]): void {
-  if (markers.length === 0) return;
-  markers.forEach(([lng, lat]) => addPulseMarker(map, [lng, lat]));
-  if (markers.length > 1) {
-    fitBoundsToCoordinates(map, markers, 90);
+function clearMarkers(markers: Marker[]): void {
+  for (const marker of markers) marker.remove();
+  markers.length = 0;
+}
+
+function drawMarkers(map: MapLibreMap, points: IncidentMarkerPoint[]): void {
+  for (const point of points) {
+    const marker = addPulseMarker(
+      map,
+      [point.lng, point.lat],
+      SEVERITY_COLORS[point.severity],
+    );
+    const popup = new Popup({ offset: 12, closeButton: false }).setDOMContent(
+      buildAlertPopup(point.alert),
+    );
+    marker.setPopup(popup);
+    bindMarkerDetails(map, marker, popup, point.alert.title);
   }
+  fitBoundsToCoordinates(
+    map,
+    points.map((point) => [point.lng, point.lat]),
+    90,
+  );
 }
 
 export default function IncidentMap() {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstance = useRef<Map | null>(null);
-  const drawnKey = useRef("");
+  const mapInstance = useRef<MapLibreMap | null>(null);
+  const mapMarkers = useRef<Marker[]>([]);
+  const pointsRef = useRef<IncidentMarkerPoint[]>([]);
   const { resolvedTheme } = useTheme();
-  const { items } = useAlerts();
-  const markers = mapAlertMarkers(items);
+  const { items, loading, error } = useAlerts();
+  const points = useMemo(() => mapIncidentPoints(items), [items]);
+
+  useEffect(() => {
+    pointsRef.current = points;
+  }, [points]);
 
   useEffect(() => {
     if (!mapRef.current) return;
+    const markers = mapMarkers.current;
     const map = new maplibregl.Map({
       container: mapRef.current,
       style: baseStyle(),
@@ -46,6 +81,7 @@ export default function IncidentMap() {
     });
     mapInstance.current = map;
     return () => {
+      clearMarkers(markers);
       map.remove();
       mapInstance.current = null;
     };
@@ -53,16 +89,18 @@ export default function IncidentMap() {
 
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map || markers.length === 0) return;
-    const key = JSON.stringify(markers);
-    if (drawnKey.current === key) return;
-    drawnKey.current = key;
+    if (!map) return;
+    const markers = mapMarkers.current;
+    const apply = () => {
+      clearMarkers(markers);
+      drawMarkers(map, pointsRef.current);
+    };
     if (map.loaded()) {
-      drawMarkers(map, markers);
+      apply();
     } else {
-      map.once("load", () => drawMarkers(map, markers));
+      map.once("load", apply);
     }
-  }, [markers]);
+  }, [points]);
 
   useEffect(() => {
     if (mapInstance.current) {
@@ -92,8 +130,23 @@ export default function IncidentMap() {
 
       <div
         ref={mapRef}
-        className="min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700"
-      />
+        className="relative min-h-72 w-full flex-1 overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700"
+      >
+        {loading && points.length === 0 && (
+          <div className="absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+            </span>
+            Loading incidents…
+          </div>
+        )}
+        {!loading && points.length === 0 && !error && (
+          <div className="absolute left-3 top-3 z-10 rounded-full border border-slate-200 bg-white/95 px-2.5 py-1 text-[11px] font-medium text-slate-500 shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-400">
+            No active incidents
+          </div>
+        )}
+      </div>
     </div>
   );
 }
