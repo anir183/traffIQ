@@ -8,24 +8,31 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface DetectionRepository extends JpaRepository<Detection, Long> {
+public interface DetectionRepository
+        extends JpaRepository<Detection, Long> {
 
-    Optional<Detection> findByEventId(String eventId);
+    Optional<Detection> findByEventId(
+            String eventId
+    );
 
     List<Detection> findTop50ByOrderByDetectedAtDesc();
+
 
     List<Detection> findByVehiclePlateNumberOrderByDetectedAtDesc(
             String plateNumber
     );
 
+
     List<Detection> findByCameraCameraIdOrderByDetectedAtDesc(
             String cameraId
     );
+
 
     long countByDetectedAtBetween(
             LocalDateTime start,
             LocalDateTime end
     );
+
 
     long countByVehicleVehicleTypeAndDetectedAtBetween(
             VehicleType vehicleType,

@@ -12,11 +12,46 @@ public class DetectionService {
 
     private final DetectionRepository detectionRepository;
 
-    public DetectionService(DetectionRepository detectionRepository) {
+    // Stores the exact latest detection processed by ML
+    private volatile DetectionResponse liveDetection;
+
+
+    public DetectionService(
+            DetectionRepository detectionRepository
+    ) {
         this.detectionRepository = detectionRepository;
     }
 
+
+    // =========================================
+    // LIVE DETECTION
+    // =========================================
+
+    public void setLiveDetection(
+            DetectionResponse detectionResponse
+    ) {
+        this.liveDetection = detectionResponse;
+    }
+
+
+    public DetectionResponse getLatestDetection() {
+
+        if (liveDetection == null) {
+            throw new RuntimeException(
+                    "No live detection available"
+            );
+        }
+
+        return liveDetection;
+    }
+
+
+    // =========================================
+    // RECENT DETECTIONS
+    // =========================================
+
     public List<DetectionResponse> getRecentDetections() {
+
         return detectionRepository
                 .findTop50ByOrderByDetectedAtDesc()
                 .stream()
@@ -24,55 +59,108 @@ public class DetectionService {
                 .toList();
     }
 
+
+    // =========================================
+    // DETECTIONS BY VEHICLE
+    // =========================================
+
     public List<DetectionResponse> getDetectionsByVehicle(
             String plateNumber
     ) {
+
         return detectionRepository
                 .findByVehiclePlateNumberOrderByDetectedAtDesc(
-                        plateNumber.trim().toUpperCase()
+                        plateNumber
+                                .trim()
+                                .toUpperCase()
                 )
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
     }
 
+
+    // =========================================
+    // DETECTIONS BY CAMERA
+    // =========================================
+
     public List<DetectionResponse> getDetectionsByCamera(
             String cameraId
     ) {
+
         return detectionRepository
-                .findByCameraCameraIdOrderByDetectedAtDesc(cameraId)
+                .findByCameraCameraIdOrderByDetectedAtDesc(
+                        cameraId
+                )
                 .stream()
                 .map(this::convertToResponse)
                 .toList();
     }
 
+
+    // =========================================
+    // ENTITY → RESPONSE
+    // =========================================
+
     public DetectionResponse convertToResponse(
             Detection detection
     ) {
-        DetectionResponse response = new DetectionResponse();
 
-        response.setId(detection.getId());
-        response.setEventId(detection.getEventId());
-        response.setLocalTrackId(detection.getLocalTrackId());
-        response.setPlateNumber(
-                detection.getVehicle().getPlateNumber()
+        DetectionResponse response =
+                new DetectionResponse();
+
+        response.setId(
+                detection.getId()
         );
+
+        response.setEventId(
+                detection.getEventId()
+        );
+
+        response.setLocalTrackId(
+                detection.getLocalTrackId()
+        );
+
+        response.setPlateNumber(
+                detection.getVehicle()
+                        .getPlateNumber()
+        );
+
         response.setVehicleType(
                 detection.getVehicle()
                         .getVehicleType()
                         .name()
         );
+
         response.setCameraId(
-                detection.getCamera().getCameraId()
+                detection.getCamera()
+                        .getCameraId()
         );
-        response.setDetectedAt(detection.getDetectedAt());
-        response.setFirstSeen(detection.getFirstSeen());
-        response.setLastSeen(detection.getLastSeen());
-        response.setSpeedKmh(detection.getSpeedKmh());
-        response.setDirection(detection.getDirection());
+
+        response.setDetectedAt(
+                detection.getDetectedAt()
+        );
+
+        response.setFirstSeen(
+                detection.getFirstSeen()
+        );
+
+        response.setLastSeen(
+                detection.getLastSeen()
+        );
+
+        response.setSpeedKmh(
+                detection.getSpeedKmh()
+        );
+
+        response.setDirection(
+                detection.getDirection()
+        );
+
         response.setVehicleConfidence(
                 detection.getVehicleConfidence()
         );
+
         response.setPlateConfidence(
                 detection.getPlateConfidence()
         );

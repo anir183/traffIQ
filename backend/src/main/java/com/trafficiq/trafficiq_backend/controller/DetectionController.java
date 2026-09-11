@@ -23,6 +23,10 @@ public class DetectionController {
         this.detectionService =
                 detectionService;
     }
+    @GetMapping("/live")
+    public DetectionResponse getLiveDetection() {
+        return detectionService.getLatestDetection();
+    }
 
 
     @GetMapping("/recent")

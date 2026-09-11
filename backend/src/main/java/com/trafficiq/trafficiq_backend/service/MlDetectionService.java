@@ -48,15 +48,23 @@ public class MlDetectionService {
     public MlIngestResponse processDetection(
             MlDetectionRequest request
     ) {
+
         LocalDateTime detectionTime =
                 convertTimestamp(
                         request.getTimestamp()
                 );
 
         Detection existingDetection =
-                detectionRepository.findByEventId(
-                        request.getEventId()
-                ).orElse(null);
+                detectionRepository
+                        .findByEventId(
+                                request.getEventId()
+                        )
+                        .orElse(null);
+
+
+        // =========================================
+        // EXISTING DETECTION
+        // =========================================
 
         if (existingDetection != null) {
 
@@ -65,12 +73,15 @@ public class MlDetectionService {
             );
 
             if (request.getSpeed() != null) {
+
                 existingDetection.setSpeedKmh(
-                        request.getSpeed().getValueKmh()
+                        request.getSpeed()
+                                .getValueKmh()
                 );
 
                 existingDetection.setDirection(
-                        request.getSpeed().getDirection()
+                        request.getSpeed()
+                                .getDirection()
                 );
             }
 
@@ -84,31 +95,39 @@ public class MlDetectionService {
                             .getConfidence()
             );
 
+
             Detection savedDetection =
                     detectionRepository.save(
                             existingDetection
                     );
 
+
             Vehicle vehicle =
                     savedDetection.getVehicle();
 
             if (vehicle != null) {
+
                 vehicle.setLastSeen(
                         detectionTime
                 );
 
-                vehicleRepository.save(vehicle);
+                vehicleRepository.save(
+                        vehicle
+                );
             }
+
 
             List<AlertResponse> createdAlerts =
                     alertService.checkAndCreateAlerts(
                             savedDetection
                     );
 
+
             broadcastLiveUpdates(
                     savedDetection,
                     createdAlerts
             );
+
 
             return new MlIngestResponse(
                     true,
@@ -117,19 +136,32 @@ public class MlDetectionService {
             );
         }
 
-        Camera camera =
-                cameraRepository.findById(
-                        request.getCameraId()
-                ).orElseGet(() -> {
-                    Camera newCamera =
-                            new Camera(
-                                    request.getCameraId()
-                            );
 
-                    return cameraRepository.save(
-                            newCamera
-                    );
-                });
+        // =========================================
+        // NEW CAMERA
+        // =========================================
+
+        Camera camera =
+                cameraRepository
+                        .findById(
+                                request.getCameraId()
+                        )
+                        .orElseGet(() -> {
+
+                            Camera newCamera =
+                                    new Camera(
+                                            request.getCameraId()
+                                    );
+
+                            return cameraRepository.save(
+                                    newCamera
+                            );
+                        });
+
+
+        // =========================================
+        // VEHICLE
+        // =========================================
 
         String plateNumber =
                 request.getPlate()
@@ -139,36 +171,41 @@ public class MlDetectionService {
                                 Locale.ROOT
                         );
 
+
         Vehicle vehicle =
-                vehicleRepository.findByPlateNumber(
-                        plateNumber
-                ).orElseGet(() -> {
-                    Vehicle newVehicle =
-                            new Vehicle();
+                vehicleRepository
+                        .findByPlateNumber(
+                                plateNumber
+                        )
+                        .orElseGet(() -> {
 
-                    newVehicle.setPlateNumber(
-                            plateNumber
-                    );
+                            Vehicle newVehicle =
+                                    new Vehicle();
 
-                    newVehicle.setVehicleType(
-                            convertVehicleType(
-                                    request.getVehicle()
-                                            .getType()
-                            )
-                    );
+                            newVehicle.setPlateNumber(
+                                    plateNumber
+                            );
 
-                    newVehicle.setFirstSeen(
-                            detectionTime
-                    );
+                            newVehicle.setVehicleType(
+                                    convertVehicleType(
+                                            request.getVehicle()
+                                                    .getType()
+                                    )
+                            );
 
-                    newVehicle.setLastSeen(
-                            detectionTime
-                    );
+                            newVehicle.setFirstSeen(
+                                    detectionTime
+                            );
 
-                    return vehicleRepository.save(
-                            newVehicle
-                    );
-                });
+                            newVehicle.setLastSeen(
+                                    detectionTime
+                            );
+
+                            return vehicleRepository.save(
+                                    newVehicle
+                            );
+                        });
+
 
         vehicle.setLastSeen(
                 detectionTime
@@ -178,8 +215,14 @@ public class MlDetectionService {
                 vehicle
         );
 
+
+        // =========================================
+        // NEW DETECTION
+        // =========================================
+
         Detection detection =
                 new Detection();
+
 
         detection.setEventId(
                 request.getEventId()
@@ -201,7 +244,9 @@ public class MlDetectionService {
                 detectionTime
         );
 
+
         if (request.getSpeed() != null) {
+
             detection.setSpeedKmh(
                     request.getSpeed()
                             .getValueKmh()
@@ -213,6 +258,7 @@ public class MlDetectionService {
             );
         }
 
+
         detection.setVehicleConfidence(
                 request.getVehicle()
                         .getTypeConfidence()
@@ -223,6 +269,7 @@ public class MlDetectionService {
                         .getConfidence()
         );
 
+
         detection.setVehicle(
                 vehicle
         );
@@ -231,20 +278,25 @@ public class MlDetectionService {
                 camera
         );
 
+
         Detection savedDetection =
                 detectionRepository.save(
                         detection
                 );
+
 
         List<AlertResponse> createdAlerts =
                 alertService.checkAndCreateAlerts(
                         savedDetection
                 );
 
+
+        // SEND EXACT CURRENT DETECTION
         broadcastLiveUpdates(
                 savedDetection,
                 createdAlerts
         );
+
 
         return new MlIngestResponse(
                 true,
@@ -253,49 +305,84 @@ public class MlDetectionService {
         );
     }
 
+
+    // =========================================
+    // LIVE WEBSOCKET UPDATES
+    // =========================================
+
     private void broadcastLiveUpdates(
             Detection detection,
             List<AlertResponse> createdAlerts
     ) {
+
         DetectionResponse detectionResponse =
                 detectionService.convertToResponse(
                         detection
                 );
 
-        trafficWebSocketService.broadcastDetectionUpdate(
+
+        // STORE EXACT CURRENT LIVE DETECTION
+        detectionService.setLiveDetection(
                 detectionResponse
         );
 
+
+        // SEND EXACT CURRENT DETECTION
+        trafficWebSocketService
+                .broadcastDetectionUpdate(
+                        detectionResponse
+                );
+
+
+        // SEND NEW ALERTS
         for (AlertResponse alert : createdAlerts) {
-            trafficWebSocketService.broadcastAlertUpdate(
-                    alert
-            );
+
+            trafficWebSocketService
+                    .broadcastAlertUpdate(
+                            alert
+                    );
         }
 
-        trafficWebSocketService.broadcastDashboardUpdate();
+
+        // UPDATE DASHBOARD
+        trafficWebSocketService
+                .broadcastDashboardUpdate();
     }
+
 
     private LocalDateTime convertTimestamp(
             String timestamp
     ) {
-        return Instant.parse(timestamp)
-                .atZone(ZoneId.systemDefault())
+
+        return Instant.parse(
+                        timestamp
+                )
+                .atZone(
+                        ZoneId.systemDefault()
+                )
                 .toLocalDateTime();
     }
+
 
     private VehicleType convertVehicleType(
             String type
     ) {
+
         if (type == null) {
             return VehicleType.OTHER;
         }
 
         try {
+
             return VehicleType.valueOf(
                     type.trim()
-                            .toUpperCase(Locale.ROOT)
+                            .toUpperCase(
+                                    Locale.ROOT
+                            )
             );
+
         } catch (IllegalArgumentException exception) {
+
             return VehicleType.OTHER;
         }
     }
