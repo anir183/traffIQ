@@ -4,8 +4,8 @@ import { Route, TriangleAlert } from "lucide-react";
 import type { Incident, IncidentIcon } from "../../types/traffic";
 import StatusBadge from "../../components/ui/badge";
 import { useListPageSize } from "../../hooks/useListPageSize";
-import { useAlerts } from "../../hooks/useAlerts";
-import { alertToIncident, triageAlerts } from "../../types/ui/adapters";
+import { useStoredAlerts } from "../../hooks/useAlerts";
+import { alertToIncident, listIncidentAlerts } from "../../types/ui/adapters";
 import InlineFetchStatus from "../../components/ui/fetch-status";
 import Pagination from "../../components/ui/pagination";
 
@@ -65,7 +65,7 @@ export default function RecentIncidents({
 }: {
   filter?: FilterKey;
 }) {
-  const { items: alerts, loading, error, refetch } = useAlerts();
+  const { items: alerts, loading, error, refetch } = useStoredAlerts();
   const [page, setPage] = useState(1);
   const [prevFilter, setPrevFilter] = useState(filter);
 
@@ -75,7 +75,7 @@ export default function RecentIncidents({
   }
 
   const incidents = useMemo(() => {
-    const source = triageAlerts(alerts).map(alertToIncident);
+    const source = listIncidentAlerts(alerts).map(alertToIncident);
     const status = FILTER_MAP[filter];
     if (!status) return source;
     return source.filter((incident) => incident.status === status);

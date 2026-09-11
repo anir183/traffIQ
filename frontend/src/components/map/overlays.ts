@@ -94,25 +94,13 @@ function flowSampleFeatures(samples: FlowSample[] | null): Feature[] {
   });
 }
 
-export function flowHeatmapFeatures(
-  samples: FlowSample[] | null,
-  mode: "traffic" | "speed",
-): Feature[] {
+export function flowHeatmapFeatures(samples: FlowSample[] | null): Feature[] {
   const features: Feature[] = [];
   for (const road of ROADS) {
     const sample =
       samples?.find((candidate) => candidate.roadName === road.name) ?? null;
-    let weight = 0.15;
-    if (mode === "traffic") {
-      const congestion = sample ? congestionPct(sample) : null;
-      weight = congestion != null ? congestion / 100 : 0.15;
-    } else {
-      const speed = sample?.currentSpeed;
-      weight =
-        typeof speed === "number"
-          ? Math.min(Math.max(speed / 100, 0.05), 1)
-          : 0.15;
-    }
+    const congestion = sample ? congestionPct(sample) : null;
+    const weight = congestion != null ? congestion / 100 : 0.15;
     const coordinates = sample?.coordinates ?? roadFallbackGeometry(road);
     for (const point of coordinates) {
       features.push({

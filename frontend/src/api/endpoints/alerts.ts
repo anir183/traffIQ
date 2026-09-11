@@ -51,3 +51,37 @@ export async function getAlerts(
     options,
   );
 }
+
+export async function getStoredAlerts(
+  filter: AlertFilter = {},
+  options: RequestOptions = {},
+): Promise<PaginatedResult<Alert>> {
+  if (env.dataSource === "mock") {
+    const query: AlertQuery = {
+      status: filter.status,
+      type: filter.type,
+      severity: filter.severity,
+      from: filter.from,
+      to: filter.to,
+      limit: filter.limit,
+      offset: filter.offset,
+    };
+    return toPaginatedResult(
+      await abortable(mock.getStoredAlerts(query), options.signal),
+    );
+  }
+  return requestPaginated<Alert>(
+    "/alerts",
+    {
+      status: filter.status,
+      type: filter.type,
+      severity: filter.severity,
+      from: filter.from,
+      to: filter.to,
+      limit: filter.limit,
+      offset: filter.offset,
+      sort: "desc",
+    },
+    options,
+  );
+}

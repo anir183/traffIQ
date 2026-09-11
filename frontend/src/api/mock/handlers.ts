@@ -281,32 +281,52 @@ export async function getDensityForecast(
   return mockDelay(DENSITY_FORECAST);
 }
 
+function filterAlerts(
+  alerts: Alert[],
+  filter: { status?: string; type?: string; severity?: string },
+): Alert[] {
+  return alerts.filter((alert) => {
+    if (filter.status && alert.status !== filter.status) return false;
+    if (filter.type && alert.type !== filter.type) return false;
+    if (filter.severity && alert.severity !== filter.severity) return false;
+    return true;
+  });
+}
+
 export async function getAlerts(
   query: AlertQuery = {},
 ): Promise<Paginated<Alert>> {
   const { status, type, severity, limit, offset } = query;
 
-  const filterAlerts = (alerts: Alert[]): Alert[] =>
-    alerts.filter((alert) => {
-      if (status && alert.status !== status) return false;
-      if (type && alert.type !== type) return false;
-      if (severity && alert.severity !== severity) return false;
-      return true;
-    });
-
   if (tomtomKeyIsSet()) {
     try {
       const live = await fetchCityIncidentAlerts();
       if (live.length > 0) {
-        return mockDelay(paginate(filterAlerts(live), limit, offset), {
-          failure: false,
-        });
+        return mockDelay(
+          paginate(
+            filterAlerts(live, { status, type, severity }),
+            limit,
+            offset,
+          ),
+          { failure: false },
+        );
       }
     } catch {
       // TomTom unavailable — fall through to the static seed list.
     }
   }
-  return mockDelay(paginate(filterAlerts(ALERTS), limit, offset));
+  return mockDelay(
+    paginate(filterAlerts(ALERTS, { status, type, severity }), limit, offset),
+  );
+}
+
+export async function getStoredAlerts(
+  query: AlertQuery = {},
+): Promise<Paginated<Alert>> {
+  const { status, type, severity, limit, offset } = query;
+  return mockDelay(
+    paginate(filterAlerts(ALERTS, { status, type, severity }), limit, offset),
+  );
 }
 
 export async function login(req: LoginRequest): Promise<LoginResponse> {

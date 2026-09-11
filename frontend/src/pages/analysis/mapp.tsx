@@ -3,7 +3,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { TomTomMap } from "@tomtom-org/maps-sdk/map";
 import { Marker, Popup } from "maplibre-gl";
-import type { Map as MapLibreMap, MapSourceDataEvent } from "maplibre-gl";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import {
   applyMapTheme,
   applyTomTomTheme,
@@ -15,7 +15,6 @@ import {
   KOLKATA_CENTER,
 } from "../../components/map/helpers";
 import {
-  HEATMAP_FLOW_SPEED,
   HEATMAP_HOVER_LAYER,
   HEATMAP_LAYER_ID,
   HEATMAP_TOMTOM,
@@ -40,7 +39,6 @@ import {
   bindFeatureHoverPopup,
   closeHoverPopups,
 } from "../../components/map/interaction";
-import { speedHeatmapFeatures } from "../../components/map/flowHeatmap";
 import { buildAlertPopup } from "../../components/map/alertPopup";
 import {
   type TomTomIncident,
@@ -48,8 +46,6 @@ import {
 } from "../../components/map/incidentsApi";
 import { fetchRoadFlow, type FlowSample } from "../../api/tomtom/flow";
 import {
-  FLOW_SOURCE_ID,
-  harvestFlowSamples,
   isFlowSegmentFeature,
   normalizeFlowFeatureProps,
   startFlowModule,
@@ -71,11 +67,10 @@ import { bboxFromMap } from "../../components/map/useViewportIncidents";
 
 const MAX_SEVERITY_MARKERS = 40;
 
-export type MapMode = "traffic" | "speed" | "incidents" | "nodes";
+export type MapMode = "traffic" | "incidents" | "nodes";
 
 const MAP_MODES: { id: MapMode; label: string }[] = [
   { id: "traffic", label: "Traffic" },
-  { id: "speed", label: "Avg Speed" },
   { id: "incidents", label: "Incidents" },
   { id: "nodes", label: "Nodes" },
 ];
@@ -413,9 +408,6 @@ function TomTomTrafficView() {
   const samplesRef = useRef<FlowSample[] | null>(null);
   const modeRef = useRef<MapMode>("traffic");
   const flowModuleRef = useRef<FlowModule | null>(null);
-  const heatmapTimerRef = useRef<number | null>(null);
-  const lastSpeedRefreshRef = useRef(0);
-  const watchdogTimerRef = useRef<number | null>(null);
   const { resolvedTheme } = useTheme();
   const { setBbox } = useMapViewport();
   const [now, setNow] = useState(() => Date.now());
@@ -447,32 +439,16 @@ function TomTomTrafficView() {
     }
   }, []);
 
-  const refreshSpeedHeatmap = useCallback((map: MapLibreMap): void => {
-    if (modeRef.current !== "speed") return;
-    if (!map.getSource(FLOW_SOURCE_ID)) return;
-    if (!map.isStyleLoaded()) return;
-    ensureHeatmapSource(map, HEATMAP_FLOW_SPEED);
-    updateHeatmapData(map, speedHeatmapFeatures(harvestFlowSamples(map)));
-    lastSpeedRefreshRef.current = Date.now();
-  }, []);
-
   const applyMode = useCallback(
     (map: MapLibreMap, next: MapMode): void => {
       closeHoverPopups(map);
       syncFlowSamples(map, samplesRef.current);
-      if (next === "speed") {
-        ensureHeatmapSource(map, HEATMAP_FLOW_SPEED);
-        applyHeatmapStops(map, HEATMAP_FLOW_SPEED);
-        refreshSpeedHeatmap(map);
-      } else {
-        setLayerVisibility(map, HEATMAP_LAYER_ID, false);
-      }
       setFlowSamplesVisibility(map, next === "nodes");
       setFlowNodeMarkersVisibility(map, next === "nodes");
       setFlowModuleVisibility(next === "traffic");
       syncIncidentMarkers(map);
     },
-    [refreshSpeedHeatmap, setFlowModuleVisibility, syncIncidentMarkers],
+    [setFlowModuleVisibility, syncIncidentMarkers],
   );
 
   useEffect(() => {
@@ -550,59 +526,17 @@ function TomTomTrafficView() {
     const map = mapInstance.current;
     if (!map) return;
     const mapLibre = map.mapLibreMap;
-    const schedule = () => {
-      if (modeRef.current !== "speed" || heatmapTimerRef.current != null) {
-        return;
-      }
-      heatmapTimerRef.current = window.setTimeout(() => {
-        heatmapTimerRef.current = null;
-        const current = mapInstance.current?.mapLibreMap;
-        if (current?.isStyleLoaded()) refreshSpeedHeatmap(current);
-      }, 350);
-    };
-    const onSourceData = (event: MapSourceDataEvent) => {
-      if (event.sourceId === FLOW_SOURCE_ID && event.isSourceLoaded) {
-        schedule();
-      }
-    };
-    const onMoveEnd = () => {
-      schedule();
-    };
     const onContextRestored = () => {
       const current = mapInstance.current?.mapLibreMap;
       if (current?.isStyleLoaded()) {
         applyMode(current, modeRef.current);
       }
     };
-    const onZoomEnd = () => {
-      schedule();
-    };
-    mapLibre.on("sourcedata", onSourceData);
-    mapLibre.on("moveend", onMoveEnd);
-    mapLibre.on("zoomend", onZoomEnd);
     mapLibre.on("webglcontextrestored", onContextRestored);
-    watchdogTimerRef.current = window.setInterval(() => {
-      const current = mapInstance.current?.mapLibreMap;
-      if (!current?.isStyleLoaded()) return;
-      if (modeRef.current !== "speed") return;
-      if (Date.now() - lastSpeedRefreshRef.current < 6000) return;
-      refreshSpeedHeatmap(current);
-    }, 2000);
     return () => {
-      mapLibre.off("sourcedata", onSourceData);
-      mapLibre.off("moveend", onMoveEnd);
-      mapLibre.off("zoomend", onZoomEnd);
       mapLibre.off("webglcontextrestored", onContextRestored);
-      if (watchdogTimerRef.current != null) {
-        window.clearInterval(watchdogTimerRef.current);
-        watchdogTimerRef.current = null;
-      }
-      if (heatmapTimerRef.current != null) {
-        window.clearTimeout(heatmapTimerRef.current);
-        heatmapTimerRef.current = null;
-      }
     };
-  }, [applyMode, refreshSpeedHeatmap]);
+  }, [applyMode]);
 
   useEffect(() => {
     const map = mapInstance.current;
@@ -748,12 +682,12 @@ function CustomTrafficView() {
     (map: MapLibreMap, next: MapMode): void => {
       closeHoverPopups(map);
       syncFlowSamples(map, null);
-      const heatmapActive = next === "traffic" || next === "speed";
+      const heatmapActive = next === "traffic";
       if (heatmapActive) {
-        const stops = next === "speed" ? HEATMAP_FLOW_SPEED : HEATMAP_TOMTOM;
+        const stops = HEATMAP_TOMTOM;
         ensureHeatmapSource(map, stops);
         applyHeatmapStops(map, stops);
-        updateHeatmapData(map, flowHeatmapFeatures(null, next));
+        updateHeatmapData(map, flowHeatmapFeatures(null));
       }
       setLayerVisibility(map, INCIDENT_HEATMAP_LAYER, heatmapActive);
       setFlowSamplesVisibility(map, next === "nodes");

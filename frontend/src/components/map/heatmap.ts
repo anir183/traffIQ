@@ -27,13 +27,6 @@ export const HEATMAP_CUSTOM: HeatmapStops = [
   [1, "rgba(220, 38, 38, 0.85)"],
 ];
 
-export const HEATMAP_FLOW_SPEED: HeatmapStops = [
-  [0, "rgba(220, 38, 38, 0)"],
-  [0.2, "rgb(220, 38, 38)"],
-  [0.5, "rgb(250, 204, 21)"],
-  [1, "rgb(34, 197, 94)"],
-];
-
 function heatmapColorExpression(stops: HeatmapStops): ExpressionSpecification {
   return [
     "interpolate",

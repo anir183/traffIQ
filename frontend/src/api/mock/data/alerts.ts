@@ -223,6 +223,8 @@ const TRIAGE: Array<
     "13:52",
     "medium",
     "investigating",
+    22.611,
+    88.424,
   ],
   [
     "alrt_04",
@@ -233,6 +235,8 @@ const TRIAGE: Array<
     "13:45",
     "medium",
     "investigating",
+    22.5744,
+    88.427,
   ],
   [
     "alrt_05",
@@ -243,6 +247,8 @@ const TRIAGE: Array<
     "12:30",
     "low",
     "resolved",
+    22.586,
+    88.434,
   ],
   [
     "alrt_06",
@@ -253,6 +259,8 @@ const TRIAGE: Array<
     "14:05",
     "medium",
     "active",
+    22.588,
+    88.324,
   ],
   [
     "alrt_07",
@@ -263,6 +271,8 @@ const TRIAGE: Array<
     "14:02",
     "medium",
     "active",
+    22.596,
+    88.408,
   ],
   [
     "alrt_08",
@@ -273,6 +283,8 @@ const TRIAGE: Array<
     "13:40",
     "medium",
     "investigating",
+    22.54,
+    88.36,
   ],
   [
     "alrt_09",
@@ -283,6 +295,8 @@ const TRIAGE: Array<
     "13:31",
     "medium",
     "investigating",
+    22.59,
+    88.3,
   ],
   [
     "alrt_10",
@@ -293,6 +307,8 @@ const TRIAGE: Array<
     "12:15",
     "low",
     "resolved",
+    22.5266,
+    88.365,
   ],
   [
     "alrt_11",
@@ -303,6 +319,8 @@ const TRIAGE: Array<
     "11:58",
     "low",
     "resolved",
+    22.53,
+    88.372,
   ],
   [
     "alrt_12",
@@ -313,6 +331,8 @@ const TRIAGE: Array<
     "13:58",
     "medium",
     "active",
+    22.52,
+    88.37,
   ],
   [
     "alrt_13",
@@ -323,6 +343,8 @@ const TRIAGE: Array<
     "13:20",
     "medium",
     "investigating",
+    22.596,
+    88.4,
   ],
   [
     "alrt_14",
@@ -333,6 +355,8 @@ const TRIAGE: Array<
     "11:30",
     "low",
     "resolved",
+    22.538,
+    88.373,
   ],
   [
     "alrt_15",
@@ -343,6 +367,8 @@ const TRIAGE: Array<
     "13:50",
     "medium",
     "active",
+    22.526,
+    88.377,
   ],
 ];
 

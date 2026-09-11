@@ -7,8 +7,9 @@ import {
   activeAlertCount,
   activeAlerts,
   alertToIncident,
+  listIncidentAlerts,
 } from "../types/ui/adapters";
-import { useAlerts } from "../hooks/useAlerts";
+import { useStoredAlerts } from "../hooks/useAlerts";
 import StatusBadge from "../components/ui/badge";
 
 const ICON_STYLES: Record<
@@ -54,10 +55,10 @@ function NotificationBell() {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { items: alerts } = useAlerts();
-
-  const activeCount = activeAlertCount(alerts);
-  const recent = activeAlerts(alerts, MAX_ITEMS).map(alertToIncident);
+  const { items: storedAlerts } = useStoredAlerts();
+  const incidents = listIncidentAlerts(storedAlerts);
+  const activeCount = activeAlertCount(incidents);
+  const recent = activeAlerts(incidents, MAX_ITEMS).map(alertToIncident);
 
   useEffect(() => {
     if (!open) return;

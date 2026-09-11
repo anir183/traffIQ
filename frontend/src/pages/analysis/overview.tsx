@@ -133,9 +133,9 @@ function NetworkOverviewCard() {
   }
 
   const congestionLevel =
-    metrics.congestion_score >= 70
+    metrics.congestion_score >= 55
       ? "High"
-      : metrics.congestion_score >= 40
+      : metrics.congestion_score >= 25
         ? "Moderate"
         : "Low";
   const congestionTone =

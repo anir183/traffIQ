@@ -41,7 +41,7 @@ function IncidentQueue() {
     <div className="flex w-full shrink-0 flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm xl:w-[28%] dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-          Incident &amp; Event Stream
+          Event Stream
         </span>
         <button
           type="button"

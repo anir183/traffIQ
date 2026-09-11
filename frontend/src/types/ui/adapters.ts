@@ -124,8 +124,10 @@ export function incidentStreamAlerts(alerts: Alert[]): AlertWithEventStream[] {
   return alerts.filter(hasEventStream);
 }
 
-export function triageAlerts(alerts: Alert[]): Alert[] {
-  return alerts.filter((alert) => !hasEventStream(alert));
+export function listIncidentAlerts(alerts: Alert[]): Alert[] {
+  return alerts.filter(
+    (alert) => alert.alert_id.startsWith("tt_") || !hasEventStream(alert),
+  );
 }
 
 export interface CriticalIncidentCounts {
@@ -163,11 +165,14 @@ export interface IncidentMarkerPoint {
   alert: Alert;
 }
 
-export function mapIncidentPoints(alerts: Alert[]): IncidentMarkerPoint[] {
+export function mapIncidentPoints(
+  alerts: Alert[],
+  includeInactive = false,
+): IncidentMarkerPoint[] {
   return alerts
     .filter(
       (alert) =>
-        alert.status === "active" &&
+        (includeInactive || alert.status === "active") &&
         alert.location.latitude != null &&
         alert.location.longitude != null,
     )

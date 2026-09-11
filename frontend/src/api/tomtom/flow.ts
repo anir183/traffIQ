@@ -170,6 +170,16 @@ export interface FlowTrafficSummary {
   congestionScore: number;
 }
 
+function percentile(values: number[], p: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const rank = Math.min(
+    sorted.length - 1,
+    Math.max(0, Math.ceil((p / 100) * sorted.length) - 1),
+  );
+  return sorted[rank];
+}
+
 export function summarizeFlow(samples: FlowSample[]): FlowTrafficSummary {
   const usable = samples.filter(
     (sample) =>
@@ -180,17 +190,23 @@ export function summarizeFlow(samples: FlowSample[]): FlowTrafficSummary {
   const freeSum = usable.reduce((sum, sample) => sum + sample.freeFlowSpeed, 0);
 
   let speedWeighted = 0;
-  let congestionWeighted = 0;
+  const perRoadCongestion: number[] = [];
   for (const sample of usable) {
     speedWeighted += sample.currentSpeed * sample.freeFlowSpeed;
     const ratio = Math.min(sample.currentSpeed / sample.freeFlowSpeed, 1);
-    congestionWeighted += (1 - ratio) * sample.freeFlowSpeed;
+    perRoadCongestion.push(Math.max(0, 1 - ratio) * 100);
   }
 
   if (freeSum <= 0) return { avgSpeedKmh: 0, congestionScore: 0 };
+  const meanCongestion =
+    perRoadCongestion.reduce((sum, value) => sum + value, 0) /
+    perRoadCongestion.length;
+  const congestionScore = Math.round(
+    0.5 * meanCongestion + 0.5 * percentile(perRoadCongestion, 90),
+  );
   return {
     avgSpeedKmh: Math.round((speedWeighted / freeSum) * 10) / 10,
-    congestionScore: Math.round((congestionWeighted / freeSum) * 100),
+    congestionScore,
   };
 }
 

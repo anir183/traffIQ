@@ -86,15 +86,18 @@ export function addPulseMarker(
   lngLat: [number, number],
   color = "#dc2626",
   size: PulseMarkerSize = "sm",
+  animate = true,
 ): Marker {
   const s = PULSE_SIZE[size];
   const wrapper = document.createElement("div");
   wrapper.className = s.wrapper;
 
-  const pulse = document.createElement("div");
-  pulse.className = s.pulse;
-  pulse.style.backgroundColor = color;
-  wrapper.appendChild(pulse);
+  if (animate) {
+    const pulse = document.createElement("div");
+    pulse.className = s.pulse;
+    pulse.style.backgroundColor = color;
+    wrapper.appendChild(pulse);
+  }
 
   const dot = document.createElement("div");
   dot.className = s.dot;

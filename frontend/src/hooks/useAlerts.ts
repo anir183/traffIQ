@@ -1,4 +1,4 @@
-import { getAlerts } from "../api/endpoints/alerts";
+import { getAlerts, getStoredAlerts } from "../api/endpoints/alerts";
 import type { AlertFilter } from "../api/endpoints/alerts";
 import type { Alert } from "../types/contract/alert";
 import { usePaginatedResource } from "./usePaginatedResource";
@@ -12,6 +12,25 @@ export function useAlerts(
 ) {
   return usePaginatedResource<Alert>(
     (signal) => getAlerts(filter, { signal }),
+    [
+      filter.status,
+      filter.type,
+      filter.severity,
+      filter.from,
+      filter.to,
+      filter.limit,
+      filter.offset,
+    ],
+    options,
+  );
+}
+
+export function useStoredAlerts(
+  filter: AlertFilter = {},
+  options: AsyncOptions = { pollMs: ALERTS_POLL_MS },
+) {
+  return usePaginatedResource<Alert>(
+    (signal) => getStoredAlerts(filter, { signal }),
     [
       filter.status,
       filter.type,

@@ -108,8 +108,6 @@ function buildAlert(incident: TomTomIncident): Alert | null {
     detected_at: startTime,
   };
 
-  if (severity !== "low") return base;
-
   const stream: EventStreamMeta = {
     status: (properties.magnitudeOfDelay ?? 0) >= 2 ? "warning" : "neutral",
     title: description,

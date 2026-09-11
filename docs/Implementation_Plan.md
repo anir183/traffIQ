@@ -963,6 +963,123 @@ Phase 1.15's clamps swung the speed heatmap from "full-screen wash" to "not visi
 
 ---
 
+## Phase 1.17 — Give Incident & Event Stream live incidents; decouple Avg Speed from SDK tile harvest
+
+### Goal
+
+Two live-data defects surfaced after 1.16. (1) The Analysis **"Incident & Event Stream"** panel and the **Recent Incidents** list never showed live TomTom incidents: `buildAlert` only attached `event_stream` to **low-severity** incidents, and live incidents are almost always high/medium, so the stream stayed "No incidents to show." while the map was full of markers. (2) The **Avg Speed** tab was empty: it was the only view on the TomTom map harvested from the SDK vector-flow source (`harvestFlowSamples`/`resolveFlowSourceLayer` → `querySourceFeatures("vectorTilesFlow")`); with the module hidden or tiles not loaded for that path it yielded zero features and had no fallback, so no heatmap ever painted.
+
+### Root causes
+
+1. `api/tomtom/incidents.ts` `buildAlert` returned the alert _without_ `event_stream` whenever `severity !== "low"`. Since the stream/triage selectors partition on `event_stream`, the Event Stream showed only low-severity scrape artifacts while the triage list showed the rest — and whichever side the real incidents fell on appeared empty.
+2. TomTom `Avg Speed` heatmap was fed by live vector-tile harvesting of `vectorTilesFlow` (`viewportFlow.ts`). The SDK traffic/flow module starts hidden, and the tap point (`mapp.tsx:refreshSpeedHeatmap`) had no fallback dataset — contrast traffic/nodes which render SDK-native or the catalog roads. So the tab could stay empty indefinitely for exactly the user who has a key set. The same live average-speed data was already proven elsewhere via `fetchRoadFlow()` + the 24-road catalog (`flowHeatmapFeatures`), which powers the overview Average-Speed chart.
+
+### Changes
+
+| File                            | Change                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/tomtom/incidents.ts`       | Removed the `if (severity !== "low") return base;` early-exit in `buildAlert`; **every** live incident now carries an `event_stream` (status `warning` when `magnitudeOfDelay >= 2`, else `neutral`). The Event Stream therefore shows the live incidents that match the map, at every severity.                                                                                   |
+| `types/ui/adapters.ts`          | Added `listIncidentAlerts(alerts) = alerts.filter(a => a.alert_id.startsWith("tt_")                                                                                                                                                                                                                                                                                                |     | !hasEventStream(a))`— live incidents (id prefix`tt_`) plus static triage — and removed the now-unused `triageAlerts`. Keeps the static/mock list behavior identical (stream system events stay out of Recent Incidents) while the live list mirrors the map. |
+| `pages/incident/incidents.tsx`  | `Recent Incidents`/`Incident Logs` now source from `listIncidentAlerts` instead of `triageAlerts`, so with a key set the list populates from live incidents instead of being "empty by partition".                                                                                                                                                                                 |
+| `pages/analysis/mapp.tsx`       | `TomTomTrafficView.refreshSpeedHeatmap` no longer gates on `getSource(FLOW_SOURCE_ID)` and now paints `flowHeatmapFeatures(samplesRef.current, "speed")` (the same `fetchRoadFlow` catalog dataset as the overview chart) instead of `speedHeatmapFeatures(harvestFlowSamples(map))`. Scheduled refreshes (source/moveend/zoomend/watchdog) keep re-rendering the same sample set. |
+| `api/tomtom/viewportFlow.ts`    | Deleted the now-dead tile-harvest path: `resolveFlowSourceLayer`, its `flowSourceLayerCache`, `harvestFlowSamples`, `RawFlowFeature`, and the `MapLibreMap`/`FlowSample` imports. `startFlowModule`, `FLOW_SOURCE_ID`, `isFlowSegmentFeature`, `normalizeFlowFeatureProps` remain (traffic-mode hover popups still need them).                                                     |
+| `components/map/flowHeatmap.ts` | **Deleted** — its only export `speedHeatmapFeatures` (harvester→point-ribbons) has no callers left.                                                                                                                                                                                                                                                                                |
+
+### Behavior
+
+- **Incident & Event Stream**: shows live incidents while the key is set (all severities; warning/neutral per `magnitudeOfDelay`), matching the map markers; still shows mock system events when no key.
+- **Recent Incidents / Incident logs**: populated from live incidents when keyed; unchanged (triage-only) in mock mode.
+- **Avg Speed**: always paints — 24 Kolkata roads with live `currentSpeed` colors (slow red → fast green) and schematic fallback geometry per road even if the flow fetch fails; no longer depends on the SDK tile source. Traffic/nodes/incidents untouched.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev (key set): event stream lists live incidents and updates on poll; incident list is populated; switching the map to Avg Speed paints the network heatmap immediately (no blank); mock mode still shows system events in the stream.
+
+---
+
+## Phase 1.18 — Drop the Avg Speed map mode; Incident Management runs on the mock detection corpus
+
+### Goal
+
+Product direction after 1.17: the **Avg Speed map mode** (red→amber→green network heatmap) is redundant next to Traffic, and the **Incident Management** tab was echoing the overview's live TomTom incidents — the same population as the analysis "Incident & Event Stream" panel (redundant). The Incident Management tab should instead showcase the platform's own **vehicle + camera processed detections** (blacklisted vehicle, speed violation, wrong-way, signal malfunction, accident, route anomaly, road construction — the `mock/data/alerts.ts` seed corpus), with the map plotting points from that mock data. The overview map + analysis stream keep TomTom.
+
+### Changes
+
+| File                           | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages/analysis/mapp.tsx`      | `MapMode` narrowed to `"traffic" \| "incidents" \| "nodes"`; the **Avg Speed** switcher entry is gone. `TomTomTrafficView` lost the speed heatmap dependencies (`refreshSpeedHeatmap`, `lastSpeedRefreshRef`/`heatmapTimerRef`/`watchdogTimerRef`), the speed branch + heatmap-layer hide in `applyMode`, and the speed scheduling/watchdog effect — only a slim `webglcontextrestored → applyMode` self-heal survives. `CustomTrafficView` computes its (traffic-only) congestion heatmap with `HEATMAP_TOMTOM` + `flowHeatmapFeatures(null)`. |
+| `components/map/heatmap.ts`    | Deleted the unused `HEATMAP_FLOW_SPEED` ramp.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `components/map/overlays.ts`   | `flowHeatmapFeatures` lost its `mode: "traffic" \| "speed"` switch — it now always emits congestion weights (the speed-greens variant is gone).                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `api/mock/handlers.ts`         | Extracted shared `filterAlerts(alerts, {status,type,severity})`; added **`getStoredAlerts(query)`** returning the static `ALERTS` corpus (TomTom never involved). `getAlerts` is unchanged (TomTom-when-keyed) for the analysis page.                                                                                                                                                                                                                                                                                                           |
+| `api/endpoints/alerts.ts`      | Added **`getStoredAlerts(filter, options)`**: mock → `mock.getStoredAlerts`; backend → `GET /alerts` (identical to `getAlerts`' backend branch — real backend detections).                                                                                                                                                                                                                                                                                                                                                                      |
+| `hooks/useAlerts.ts`           | Added **`useStoredAlerts(filter, options)`** mirroring `useAlerts` (same 30 s poll).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `pages/incident/map.tsx`       | Switched `useAlerts()` → `useStoredAlerts()`. Markers now come from the mock corpus via `mapIncidentPoints` (active + has coordinates).                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `pages/incident/incidents.tsx` | Switched `useAlerts()` → `useStoredAlerts()`; feed stays `listIncidentAlerts` (the 15 seeded triage detections; `es_` system events stay out).                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `api/mock/data/alerts.ts`      | Added `latitude`/`longitude` to the static `TRIAGE` seed rows (coordinates match each location label, e.g. Howrah Bridge 22.588/88.324, Sector V 22.5744/88.427, Dhakuria 22.52/88.37, Ballygunge Phari 22.526/88.377) so the Incident Management map plots ~6 active seeded points across the city (was 2).                                                                                                                                                                                                                                    |
+
+### Behavior
+
+- **Map switcher** now shows Traffic / Incidents / Nodes only.
+- **Incident Management** tab shows the seeded vehicle/camera detections (list + map), independent of `VITE_TOMTOM_API_KEY`; no overlap with the analysis event stream.
+- **Overview** (map modes incl. Incidents, "Incident & Event Stream" panel, Network Overview card) still uses TomTom live alerts; the **header bell** now reads the same seeded detections as the Incident Management tab so its badge + dropdown match.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev (key set): map switcher has three tabs; Incident Management list shows the 15 seeded detections with a populated map (active markers across Kolkata) and works identically with the key removed; analysis event stream + overview incidents still list live TomTom data.
+
+---
+
+## Phase 1.19 — Incident map markers match listings; popup overflow; Event Stream rename; congestion-index sensitivity
+
+### Goal
+
+Four polish fixes: (1) the Incident Management map plotted only 6 of the 15 seeded detections (it filtered `status === "active"`); the map should mirror the full list. (2) Alert popups overflowed their box (maplibre's `.maplibregl-popup-content` caps ~240 px but the popup root was 256 px wide and long unbroken strings never wrapped). (3) The overview panel heading should be "Event Stream" (there are no "incidents" in it beyond alerts). (4) The live congestion index read too low on congested corridors because `summarizeFlow` diluted peak congestion across all 24 roads with a free-flow-weighted deficit.
+
+### Changes
+
+| File                                | Change                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types/ui/adapters.ts`              | `mapIncidentPoints(alerts, includeInactive = false)` — new option skips the `status === "active"` gate so a map can plot every seeded detection (analysis map keeps the active-only default).                                                                                                                                               |
+| `components/map/helpers.ts`         | `addPulseMarker(map, lngLat, color, size, animate = true)` — when `animate` is false the ping halo is omitted (solid dot only).                                                                                                                                                                                                             |
+| `pages/incident/map.tsx`            | Plots `mapIncidentPoints(items, true)` — all 15. Markers: active = pulsing severity dot, investigating = solid severity dot, resolved = gray `#94a3b8`; legend gains a **Resolved** swatch; popup set to `maxWidth: "15rem"`; empty-note now "No incidents to display".                                                                     |
+| `components/map/alertPopup.ts`      | Root `w-56 overflow-hidden rounded-lg` (fits the ~240 px popup cap); `break-words` on the title, severity·type label, detail, and row values (`min-w-0`); rows use `items-baseline` so wrapped values align.                                                                                                                                |
+| `pages/analysis/incident-queue.tsx` | Heading renamed **"Incident & Event Stream" → "Event Stream"**.                                                                                                                                                                                                                                                                             |
+| `api/tomtom/flow.ts`                | `summarizeFlow` now computes per-road congestion `p = (1 − min(current/free,1))·100`, then `congestionScore = round(0.5·mean(p) + 0.5·p90(p))` — congested corridors push the city index up instead of being diluted by free-flowing roads; `avgSpeedKmh` unchanged. `congestedSegments`/popup chips keep their ratio-based per-road score. |
+| `pages/analysis/overview.tsx`       | Congestion level bands recalibrated to the new scale: **≥55 High, ≥25 Moderate, else Low** (was 70/40).                                                                                                                                                                                                                                     |
+
+### Behavior
+
+- Incident Management map mirrors the 15 listings (3 pulsing, 3 solid severity — active/investigating — and 9 gray resolved), hover popups fit their box.
+- Overview congestion index is more sensitive: moderate/heavy corridors read Moderate/High instead of sitting at ~33 "Low"; free-flow still reads Low.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev (key set): incident map shows 15 markers with dimmed resolved dots and no popup overflow; overview heading "Event Stream"; Network Overview card index/label rise into Moderate on busy corridors and stay Low off-peak; re-run with the key removed — mock summary still renders (static 68 → High), incident map unchanged (seed-driven).
+
+---
+
+## Phase 1.20 — Header bell syncs to the Incident Management corpus
+
+### Goal
+
+The navbar notification bell still polled TomTom live alerts (`useAlerts`), so its badge count and dropdown disagreed with the Incident Management tab (which is seed-driven and has no TomTom). The bell should mirror the Incident Management list.
+
+### Changes
+
+| File                          | Change                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `header/NotificationBell.tsx` | Switched `useAlerts()` → `useStoredAlerts()` and feed the bell from `listIncidentAlerts(storedAlerts)` — exactly the corpus the Incident Management list renders. Badge count (`activeAlertCount`) and dropdown (`activeAlerts(..., 6)`) now count/final the seeded detections (`es_` system events stay out). |
+
+### Behavior
+
+- Bell badge + dropdown match the Incident Management tab's active seeded detections regardless of `VITE_TOMTOM_API_KEY`; "Show all incidents" still routes to `/incident`. The analysis "Event Stream" panel and overview keep their own data sources.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev: bell badge shows 6 and the dropdown lists the same active seeded incidents as Incident Management → Active, with or without the key.
+
+---
+
 ## PHASE 2 — Auth-Gated Features
 
 **Goal:** Full auth integration, admin panel, system logs, settings, notifications. App is feature-complete.
