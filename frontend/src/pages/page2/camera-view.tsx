@@ -9,6 +9,7 @@ import {
 } from "../../types/ui/adapters";
 import InlineFetchStatus from "../../components/ui/fetch-status";
 import { LiveFeedCanvas } from "../../components/camera/LiveFeedCanvas";
+import { VideoFeed } from "../../components/camera/VideoFeed";
 import type { CameraMeta } from "../../types/contract/camera";
 
 const SNAPSHOT_REFRESH_MS = 12_000;
@@ -47,7 +48,7 @@ function FeedPane({ camera }: { camera: CameraMeta }) {
   }
 
   const simulated = (
-    <div className="h-full w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-800 shadow-2xl">
+    <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-800 shadow-2xl">
       <LiveFeedCanvas
         cameraId={camera.camera_id}
         name={camera.name}
@@ -57,6 +58,19 @@ function FeedPane({ camera }: { camera: CameraMeta }) {
       />
     </div>
   );
+
+  if (camera.stream_type === "hls") {
+    return (
+      <div className="h-full w-full overflow-hidden rounded-2xl border border-slate-800 shadow-2xl">
+        <VideoFeed
+          camera={camera}
+          controls
+          className="h-full w-full object-contain"
+          fallback={simulated}
+        />
+      </div>
+    );
+  }
 
   return snapshotUrl && !snapshotFailed ? (
     <img
@@ -157,7 +171,7 @@ function CameraViewer() {
       </div>
 
       {/* Feed body */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-slate-950 p-6">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-slate-950 px-4 py-6">
         {/* Prev */}
         {neighbors && (
           <button

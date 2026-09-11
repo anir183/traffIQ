@@ -6,6 +6,7 @@ import { useCameras } from "../../hooks/useCameras";
 import InlineFetchStatus from "../../components/ui/fetch-status";
 import Pagination from "../../components/ui/pagination";
 import { LiveFeedCanvas } from "../../components/camera/LiveFeedCanvas";
+import { VideoFeed } from "../../components/camera/VideoFeed";
 import type { CameraMeta } from "../../types/contract/camera";
 
 const COLS = 2;
@@ -22,7 +23,12 @@ function CameraView({ camera }: { camera: CameraMeta }) {
     camera.stream_type === "snapshot" && camera.stream_url
       ? camera.stream_url
       : undefined;
-  const hasFeed = !!snapshotUrl || camera.stream_type === "procedural";
+  const hlsUrl =
+    camera.stream_type === "hls" && camera.stream_url
+      ? camera.stream_url
+      : undefined;
+  const hasFeed =
+    !!snapshotUrl || !!hlsUrl || camera.stream_type === "procedural";
 
   useEffect(() => {
     if (!snapshotUrl) return;
@@ -48,6 +54,12 @@ function CameraView({ camera }: { camera: CameraMeta }) {
         alt=""
         className="absolute inset-0 h-full w-full object-cover"
         onError={() => setImgFailed(true)}
+      />
+    ) : hlsUrl ? (
+      <VideoFeed
+        camera={camera}
+        className="absolute inset-0 h-full w-full object-cover"
+        fallback={simulatedThumb}
       />
     ) : null;
 

@@ -1,5 +1,5 @@
 import type { CameraMeta } from "../../../types/contract/camera";
-import { FEED_SOURCES } from "./feedSources";
+import { FEED_SOURCES, LIVE_FEEDS } from "./feedSources";
 
 export const CIRCUITS = [
   "Esplanade Circuit",
@@ -32,7 +32,7 @@ const COORDS: Record<string, [number, number]> = {
   CAM_009: [22.586, 88.434],
 };
 
-export const CAMERAS: CameraMeta[] = Array.from(
+const SIMULATED_CAMERAS: CameraMeta[] = Array.from(
   { length: 11 },
   (_, i): CameraMeta => {
     const cameraId = `CAM_${String(i + 1).padStart(3, "0")}`;
@@ -51,6 +51,23 @@ export const CAMERAS: CameraMeta[] = Array.from(
     };
   },
 );
+
+const EXTERNAL_CAMERAS: CameraMeta[] = LIVE_FEEDS.map((entry): CameraMeta => ({
+  camera_id: entry.id,
+  name: entry.name,
+  circuit: "External Feeds",
+  location: entry.location,
+  latitude: entry.latitude,
+  longitude: entry.longitude,
+  status: "online",
+  stream_type: entry.type,
+  stream_url: entry.url,
+}));
+
+export const CAMERAS: CameraMeta[] = [
+  ...SIMULATED_CAMERAS,
+  ...EXTERNAL_CAMERAS,
+];
 
 export function getCameraMeta(cameraId: string): CameraMeta | undefined {
   return CAMERAS.find((camera) => camera.camera_id === cameraId);
