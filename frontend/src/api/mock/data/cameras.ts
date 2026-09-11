@@ -72,3 +72,30 @@ export const CAMERAS: CameraMeta[] = [
 export function getCameraMeta(cameraId: string): CameraMeta | undefined {
   return CAMERAS.find((camera) => camera.camera_id === cameraId);
 }
+
+/**
+ * True when at least one real (non-simulated) feed URL is configured.
+ */
+export function hasConfiguredLiveFeeds(): boolean {
+  return LIVE_FEEDS.some((entry) => entry.url.trim().length > 0);
+}
+
+/**
+ * Browser connectivity (defaults to online outside a browser, e.g. tests).
+ */
+export function isFrontendOnline(): boolean {
+  return typeof navigator === "undefined" ? true : navigator.onLine;
+}
+
+/**
+ * The camera set the Live Feed should present right now: when real feeds are
+ * configured AND the frontend is online, hide the simulated/offline local
+ * cameras and show only the real external feeds; otherwise show the full
+ * simulated catalog.
+ */
+export function getVisibleCameras(): CameraMeta[] {
+  if (hasConfiguredLiveFeeds() && isFrontendOnline()) {
+    return EXTERNAL_CAMERAS;
+  }
+  return CAMERAS;
+}

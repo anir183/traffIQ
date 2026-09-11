@@ -34,7 +34,7 @@ import type { Bbox } from "../../components/map/incidentsApi";
 import { tomtomKeyIsSet } from "../tomtom/keys";
 import { ALERTS } from "./data/alerts";
 import { ANPR_EVENTS } from "./data/anprEvents";
-import { CAMERAS } from "./data/cameras";
+import { CAMERAS, getVisibleCameras } from "./data/cameras";
 import { DENSITY_FORECAST } from "./data/densityForecast";
 import { SEGMENTS } from "./data/segments";
 import { TRAFFIC_SUMMARY } from "./data/traffic";
@@ -183,7 +183,7 @@ export async function getCameras(
   query: CameraQuery = {},
 ): Promise<Paginated<CameraMeta>> {
   const { circuit, status, limit, offset } = query;
-  const filtered = CAMERAS.filter((camera) => {
+  const filtered = getVisibleCameras().filter((camera) => {
     if (circuit && camera.circuit !== circuit) return false;
     if (status && camera.status !== status) return false;
     return true;
@@ -192,7 +192,9 @@ export async function getCameras(
 }
 
 export async function getCameraById(cameraId: string): Promise<CameraMeta> {
-  const camera = CAMERAS.find((entry) => entry.camera_id === cameraId);
+  const camera = getVisibleCameras().find(
+    (entry) => entry.camera_id === cameraId,
+  );
   if (!camera) {
     throw new ApiError(`Camera ${cameraId} not found`, "CAMERA_NOT_FOUND", 404);
   }
