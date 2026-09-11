@@ -1,5 +1,7 @@
 export type CameraStatus = "online" | "offline";
 
+export type FeedSourceKind = "procedural" | "snapshot" | "hls";
+
 export interface CameraMeta {
   camera_id: string;
   name: string;
@@ -9,4 +11,6 @@ export interface CameraMeta {
   latitude?: number;
   longitude?: number;
   status: CameraStatus;
+  stream_type?: FeedSourceKind;
+  stream_url?: string;
 }

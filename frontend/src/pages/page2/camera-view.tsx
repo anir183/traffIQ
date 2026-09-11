@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Video, X } from "lucide-react";
 import { useCameras } from "../../hooks/useCameras";
@@ -8,6 +8,68 @@ import {
   cameraPosition,
 } from "../../types/ui/adapters";
 import InlineFetchStatus from "../../components/ui/fetch-status";
+import { LiveFeedCanvas } from "../../components/camera/LiveFeedCanvas";
+import type { CameraMeta } from "../../types/contract/camera";
+
+const SNAPSHOT_REFRESH_MS = 12_000;
+
+function bustUrl(url: string, tick: number): string {
+  return `${url}${url.includes("?") ? "&" : "?"}t=${tick}`;
+}
+
+function FeedPane({ camera }: { camera: CameraMeta }) {
+  const snapshotUrl =
+    camera.stream_type === "snapshot" && camera.stream_url
+      ? camera.stream_url
+      : undefined;
+  const [snapshotTick, setSnapshotTick] = useState(0);
+  const [snapshotFailed, setSnapshotFailed] = useState(false);
+
+  useEffect(() => {
+    if (!snapshotUrl) return;
+    const timer = setInterval(
+      () => setSnapshotTick((t) => t + 1),
+      SNAPSHOT_REFRESH_MS,
+    );
+    return () => clearInterval(timer);
+  }, [snapshotUrl]);
+
+  if (!camera.stream_type) {
+    return (
+      <div className="flex h-full w-full max-w-5xl flex-col items-center justify-center gap-4 rounded-2xl border border-slate-800 bg-slate-900">
+        <Video className="h-16 w-16 text-slate-600" aria-hidden="true" />
+        <span className="text-base font-medium text-slate-300">
+          {camera.name}
+        </span>
+        <span className="text-sm text-slate-500">No signal</span>
+      </div>
+    );
+  }
+
+  const simulated = (
+    <div className="h-full w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-800 shadow-2xl">
+      <LiveFeedCanvas
+        cameraId={camera.camera_id}
+        name={camera.name}
+        latitude={camera.latitude}
+        longitude={camera.longitude}
+        className="h-full w-full"
+      />
+    </div>
+  );
+
+  return snapshotUrl && !snapshotFailed ? (
+    <img
+      key={snapshotTick}
+      src={bustUrl(snapshotUrl, snapshotTick)}
+      alt={`${camera.name} live feed`}
+      onError={() => setSnapshotFailed(true)}
+      className="max-h-full max-w-full rounded-2xl border border-slate-800 object-contain shadow-2xl"
+    />
+  ) : (
+    simulated
+  );
+}
 
 function CameraViewer() {
   const { cameraId } = useParams<{ cameraId: string }>();
@@ -23,8 +85,14 @@ function CameraViewer() {
     return () => document.removeEventListener("keydown", onKey);
   }, [close]);
 
+  const feedCamera = cameraId
+    ? loading
+      ? undefined
+      : cameraById(cameras, cameraId)
+    : undefined;
+
   if (!cameraId) return null;
-  const camera = loading ? undefined : cameraById(cameras, cameraId);
+  const camera = feedCamera;
   if (!camera) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-50/95 text-slate-700 dark:bg-slate-950/95 dark:text-slate-200">
@@ -66,10 +134,17 @@ function CameraViewer() {
           <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
             {camera.circuit}
           </span>
-          <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:bg-red-500/10 dark:text-red-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-            Live
-          </span>
+          {camera.stream_type ? (
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600 dark:bg-red-500/10 dark:text-red-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              Live
+            </span>
+          ) : (
+            <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+              Offline
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -81,8 +156,8 @@ function CameraViewer() {
         </button>
       </div>
 
-      {/* Placeholder body */}
-      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-slate-100 p-6 dark:bg-slate-950">
+      {/* Feed body */}
+      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-slate-950 p-6">
         {/* Prev */}
         {neighbors && (
           <button
@@ -99,15 +174,7 @@ function CameraViewer() {
           </button>
         )}
 
-        <div className="flex w-full max-w-5xl flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
-          <Video className="h-16 w-16 text-slate-400 dark:text-slate-600" />
-          <span className="text-base font-medium text-slate-600 dark:text-slate-400">
-            {camera.name}
-          </span>
-          <span className="text-sm text-slate-400 dark:text-slate-600">
-            No signal
-          </span>
-        </div>
+        <FeedPane key={camera.camera_id} camera={camera} />
 
         {/* Next */}
         {neighbors && (
