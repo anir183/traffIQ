@@ -1080,6 +1080,92 @@ The navbar notification bell still polled TomTom live alerts (`useAlerts`), so i
 
 ---
 
+## Phase 1.21 — Mock camera feeds for the Live Feed section (simulated default, pluggable real feeds)
+
+### Goal
+
+Give the Live Feed section working "camera feeds" under `VITE_DATA_SOURCE=mock`: every feed-capable camera renders a simulated traffic-corridor feed (live on the detail view, static thumbnail on the grid tile) with the amount of traffic driven by the live `fetchRoadFlow` road-congestion index. The feed config is a pluggable registry (`feedSources.ts`): swap a camera's entry to `snapshot` (HTML-loaded still/MJPEG URL) or `hls` (`.m3u8`, playback pending — needs hls.js) to hook in a real camera without any component changes. Contract + current camera count also tightened to 11.
+
+### Changes
+
+| File                                             | Change                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `types/contract/camera.ts`                       | Added `FeedSourceKind` (`"procedural" | "snapshot" | "hls"`) + optional `stream_type` / `stream_url` on `CameraMeta`.                                                                                                                                                                                                                                        |
+| `api/mock/data/feedSources.ts`                   | New `FEED_SOURCES` registry keyed by camera id (8 cameras seeded → `procedural`) + `getFeedSource()`. Pasting a `snapshot`/`hls` URL here is the only step needed to wire a real feed. Top-of-file comment documents the IRL hookup contract (HTTPS/mixed-content, CORS, `<img>`/hls constraints).                                                            |
+| `api/mock/data/cameras.ts`                       | Rewritten to apply `FEED_SOURCES` per camera; count reduced **40 → 11** (`CAM_001`…`CAM_011`); 8 seeded live + 3 offline (`CAM_008`, `CAM_010`, `CAM_011`); adds lat/lng coords for the 7 named cameras; seed status derived from feed presence (`online` iff a feed exists).                                                                                   |
+| `api/mock/data/traffic.ts`                       | (unchanged; its `{ length: 40 }` is unrelated traffic time-series data, not cameras)                                                                                                                                                                                                                                                                         |
+| `components/camera/liveFeedSim.ts`               | New pure-module: `hashCode`, `mulberry32`, `createVehicles`, `nearestRoadCongestion(lat, lon)` (nearest road-flow sample via `fetchRoadFlow`), `renderFeedFrame(ctx, w, h, seed, congestion, now, vehicles)` — draws the perspective road corridor, lane markings, vehicle sprites, blinking LIVE dot, clock, and a "SIMULATED FEED · POC" watermark. Splitting the pure renderer out keeps `LiveFeedCanvas` a components+hooks-only file (eslint react-refresh). |
+| `components/camera/LiveFeedCanvas.tsx`           | Canvas component: `ResizeObserver` + devicePixelRatio backing-store sizing, RAF loop (animated) or single static frame (`animated={false}` for tiles), per-camera deterministic seed (`useMemo(hashCode(cameraId))`), vehicle density from `density ?? nearestRoadCongestion(lat,long) ?? seed fallback`.                                                       |
+| `pages/page2/feed.tsx`                           | Camera tiles now show the live feed: snapshot `<img>` refreshed every 12 s (cache-busted, falls back to simulated on `onError`) or a static `LiveFeedCanvas` frame; red LIVE pill + gradient name/circuit overlay over feed tiles; offline tiles keep the `<Video>` icon layout. Footer count becomes `"8 live · 11 cameras"`.                                   |
+| `pages/page2/camera-view.tsx`                    | Feed body extracted into a `FeedPane` keyed by `camera.camera_id` (own state per camera — also removes the `react-hooks/set-state-in-effect` reset hack). **Offline cameras (no `stream_type`) render a "No signal" placeholder instead of a simulated feed.** Header badge: red "Live" only for feed cameras, gray "Offline" otherwise. Snapshot player refreshes every 12 s with `onError` fallback to the simulated canvas. |
+
+### Behavior
+
+- `mock` + no key: 11 cameras, 8 with live (simulated) feeds; clicking an offline camera shows "No signal", not a fake feed.
+- Each simulated feed's traffic density tracks the nearest real road-flow sample (`fetchRoadFlow`) so conjunction looks lighter/heavier with the congestion index.
+- To add real feeds: drop a camera URL into `feedSources.ts`. `snapshot` (still JPEG or MJPEG) renders immediately via `<img>`; `hls` renders (falls back to simulated) until hls.js is added.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev (`VITE_DATA_SOURCE=mock`): grid shows 11 tiles / "8 live · 11 cameras"; live tiles animate a static-frame thumbnail, offline tiles show the icon; opening a live camera animates the corridor feed with per-camera density, opening an offline camera shows "No signal".
+
+---
+
+## Phase 1.22 — Real HLS feeds (hls.js) for the Live Feed PoC
+
+### Goal
+
+Enable actual video playback for `stream_type: "hls"` cameras. The existing simulated/snapshot pipeline stays untouched; a new pluggable **external/live camera set** (`LIVE_FEEDS`) streams real HLS manifests (e.g. Caltrans `wzmedia`) through **hls.js** on the tile thumbnails and the detail player, with the simulated canvas as a graceful fallback whenever a manifest can't load.
+
+### Changes
+
+| File                                       | Change                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `package.json`                             | Added `hls.js` dependency. Rollup code-splits it into its own lazy chunk (`VideoFeed-*.js`) — only downloaded when an HLS camera renders.                                                                                                                                                                                          |
+| `api/mock/data/feedSources.ts`             | New `LIVE_FEEDS` registry (`LiveFeedEntry[]`: id/name/location/type/url/lat/lon). Each entry with a URL becomes an `EXT_xxx` camera automatically — drop in more URLs to grow the live set with no code changes. Seeded with one demo: `EXT_001` "San Luis Reservoir" → `https://wzmedia.dot.ca.gov/D10/MER_EB152_SanLuisReservoir.stream/playlist.m3u8`. `FEED_SOURCES` comment updated: `hls` playback is now wired (not a "planned slot"). |
+| `api/mock/data/cameras.ts`                 | `CAMERAS` is now the 11 existing simulated/offline cameras **plus** the external cameras derived from `LIVE_FEEDS` (circuit `"External Feeds"`, `status: "online"`, `stream_type: "hls"`). Existing ids/behavior unchanged.                                                                                                           |
+| `components/camera/VideoFeed.tsx`          | New shared player. Native HLS (Safari/iOS, `canPlayType("application/vnd.apple.mpegurl")`) → `video.src = url`; otherwise `new Hls()` → `loadSource` + `attachMedia`, destroyed on unmount/URL change. Renders `fallback` (the simulated canvas) when: HLS unsupported, no URL, or a **fatal** `Events.ERROR` fires — a flaky/bot-blocked feed never shows a black box. `muted + autoPlay + playsInline` (autoplay policy), `controls` prop for the detail view. |
+| `pages/page2/feed.tsx`                     | Tile `hasFeed` now includes `stream_type: "hls"`. HLS tiles auto-play the **muted live video thumbnail** (`VideoFeed`, `object-cover`, canvas fallback) behind the red LIVE pill; snapshot/procedural tiles unchanged. Footer count reflects the new set (e.g. "9 live · 12 cameras").                                                |
+| `pages/page2/camera-view.tsx`              | `FeedPane` branch order: `hls` → full-bleed `VideoFeed` with controls (canvas fallback) · `snapshot` → `<img>` · else simulated canvas · no `stream_type` → "No signal". Header badge logic unchanged (Live/Offline).                                                                                                                  |
+
+### Behavior
+
+- `mock` mode now ships 11 local cameras + the external live ones. EXT_001 plays the real Caltrans highway-cam HLS stream on both the grid tile (muted live thumb) and the detail player (with controls).
+- This sandbox/data-center IP is 403'd by `wzmedia.dot.ca.gov` (bot-block) and the origin's CORS is `Access-Control-Allow-Origin: *`, so whether it plays depends on the viewer's network — hls.js reads segments with no CORS issue; any failure paths into the simulated canvas automatically.
+- Adding another real feed elsewhere: append one object to `LIVE_FEEDS` in `feedSources.ts` (works for `hls` and `snapshot` URLs alike).
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev (`VITE_DATA_SOURCE=mock`): `CAMERAS` lists 11 + `EXT_001`; the EXT_001 tile shows a muted live video thumbnail + LIVE pill; opening it plays the stream with controls (falls back to the simulated corridor feed while the manifest is unreachable). Test setup note: hls.js is code-split into a lazy chunk so the bundle only grows on load of an HLS camera.
+
+---
+
+## Phase 1.23 — Real-feed-first camera visibility
+
+### Goal
+
+When real (external) feeds are configured **and** the frontend is online, the Live Feed should present only the real feeds — the simulated/offline local cameras are demos and get in the way. When there are no real feeds or the frontend is offline, the simulated catalog is shown instead.
+
+### Changes
+
+| File                        | Change                                                                                                                                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/mock/data/cameras.ts`  | Split the catalog into `SIMULATED_CAMERAS` (the 11) + `EXTERNAL_CAMERAS` (from `LIVE_FEEDS`). New helpers `hasConfiguredLiveFeeds()` (any `LIVE_FEEDS` entry with a URL), `isFrontendOnline()` (`navigator.onLine`, online-safe outside a browser), and `getVisibleCameras()` — returns `EXTERNAL_CAMERAS` when real feeds ∧ online, else the full `CAMERAS`. |
+| `api/mock/handlers.ts`      | `getCameras`/`getCameraById` resolve against `getVisibleCameras()` instead of `CAMERAS`, so hidden simulated cameras are also unfindable by deep link.                                                                                              |
+| `hooks/useCameras.ts`       | Re-fetches on `window` `online`/`offline` events (stable `useCallback` `refetch`) so the grid toggles between the two sets live when connectivity flips.                                                                                          |
+
+### Behavior
+
+- **Online + real feeds configured:** Live Feed (grid, navigation circuits, detail player, overview camera count) shows only the external live cameras — no simulated tiles.
+- **Offline or no real feeds:** the full simulated catalog (8 procedural/online + 3 offline) appears as before.
+- Simulated/hidden cameras return 404 from the mock endpoint during real-feed mode.
+
+### Verification
+
+`npm run format && npx tsc -b && npm run lint && npm run build` all clean. Dev: with `EXT_001` configured and network up, the grid lists only the external camera(s); toggling the network (or empty `LIVE_FEEDS`) flips back to the 11 simulated/offline cameras.
+
+---
+
 ## PHASE 2 — Auth-Gated Features
 
 **Goal:** Full auth integration, admin panel, system logs, settings, notifications. App is feature-complete.
