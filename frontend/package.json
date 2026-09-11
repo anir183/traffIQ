@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "@tomtom-org/maps-sdk": "^0.51.5",
     "lucide-react": "^1.43.0",

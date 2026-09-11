@@ -15,7 +15,7 @@ const FLOW_SAMPLES_SOURCE = "flow-samples-source";
 
 function flowTileUrl(type: "relative" | "absolute"): string {
   const key = tomtomApiKey();
-  return `${FLOW_TILE_URL}/${type}/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}&tileSize=256`;
+  return `${FLOW_TILE_URL}/${type}/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}&tileSize=256&thickness=2`;
 }
 
 function ensureRasterOverlay(
@@ -123,7 +123,7 @@ export function syncFlowSamples(
       visibility: "none",
     },
     paint: {
-      "line-width": 7,
+      "line-width": 4,
       "line-color": "#ffffff",
       "line-opacity": 0.9,
     },
@@ -138,7 +138,7 @@ export function syncFlowSamples(
       visibility: "none",
     },
     paint: {
-      "line-width": 4,
+      "line-width": 2,
       "line-opacity": 0.9,
       "line-color": [
         "case",
@@ -159,10 +159,10 @@ export function syncFlowSamples(
     source: FLOW_SAMPLES_SOURCE,
     layout: { visibility: "none" },
     paint: {
-      "circle-radius": 4,
+      "circle-radius": 3,
       "circle-color": "#64748b",
       "circle-opacity": 0.9,
-      "circle-stroke-width": 1.5,
+      "circle-stroke-width": 1,
       "circle-stroke-color": "#ffffff",
     },
   });
