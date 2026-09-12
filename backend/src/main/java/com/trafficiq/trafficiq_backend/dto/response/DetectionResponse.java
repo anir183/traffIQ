@@ -1,81 +1,39 @@
-package com.trafficiq.trafficiq_backend.entity;
-
-import jakarta.persistence.*;
+package com.trafficiq.trafficiq_backend.dto.response;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(
-        name = "detections",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        columnNames = "event_id"
-                )
-        }
-)
-public class Detection {
+public class DetectionResponse {
 
-    @Id
-    @GeneratedValue(
-            strategy = GenerationType.IDENTITY
-    )
     private Long id;
 
-    @Column(
-            name = "event_id",
-            nullable = false,
-            unique = true
-    )
     private String eventId;
 
-    @Column(name = "local_track_id")
     private Integer localTrackId;
 
-    @Column(
-            name = "detected_at",
-            nullable = false
-    )
+    private String plateNumber;
+
+    private String vehicleType;
+
+    private String cameraId;
+
     private LocalDateTime detectedAt;
 
-    @Column(
-            name = "first_seen",
-            nullable = false
-    )
     private LocalDateTime firstSeen;
 
-    @Column(
-            name = "last_seen",
-            nullable = false
-    )
     private LocalDateTime lastSeen;
 
-    @Column(name = "speed_kmh")
     private Double speedKmh;
 
     private String direction;
 
-    @Column(name = "vehicle_confidence")
     private Double vehicleConfidence;
 
-    @Column(name = "plate_confidence")
     private Double plateConfidence;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "vehicle_id",
-            nullable = false
-    )
-    private Vehicle vehicle;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-            name = "camera_id",
-            nullable = false
-    )
-    private Camera camera;
-
-    public Detection() {
+    public DetectionResponse() {
     }
+
 
     public Long getId() {
         return id;
@@ -87,6 +45,7 @@ public class Detection {
         this.id = id;
     }
 
+
     public String getEventId() {
         return eventId;
     }
@@ -96,6 +55,7 @@ public class Detection {
     ) {
         this.eventId = eventId;
     }
+
 
     public Integer getLocalTrackId() {
         return localTrackId;
@@ -107,6 +67,40 @@ public class Detection {
         this.localTrackId = localTrackId;
     }
 
+
+    public String getPlateNumber() {
+        return plateNumber;
+    }
+
+    public void setPlateNumber(
+            String plateNumber
+    ) {
+        this.plateNumber = plateNumber;
+    }
+
+
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public void setVehicleType(
+            String vehicleType
+    ) {
+        this.vehicleType = vehicleType;
+    }
+
+
+    public String getCameraId() {
+        return cameraId;
+    }
+
+    public void setCameraId(
+            String cameraId
+    ) {
+        this.cameraId = cameraId;
+    }
+
+
     public LocalDateTime getDetectedAt() {
         return detectedAt;
     }
@@ -116,6 +110,7 @@ public class Detection {
     ) {
         this.detectedAt = detectedAt;
     }
+
 
     public LocalDateTime getFirstSeen() {
         return firstSeen;
@@ -127,6 +122,7 @@ public class Detection {
         this.firstSeen = firstSeen;
     }
 
+
     public LocalDateTime getLastSeen() {
         return lastSeen;
     }
@@ -136,6 +132,7 @@ public class Detection {
     ) {
         this.lastSeen = lastSeen;
     }
+
 
     public Double getSpeedKmh() {
         return speedKmh;
@@ -147,6 +144,7 @@ public class Detection {
         this.speedKmh = speedKmh;
     }
 
+
     public String getDirection() {
         return direction;
     }
@@ -156,6 +154,7 @@ public class Detection {
     ) {
         this.direction = direction;
     }
+
 
     public Double getVehicleConfidence() {
         return vehicleConfidence;
@@ -167,6 +166,7 @@ public class Detection {
         this.vehicleConfidence = vehicleConfidence;
     }
 
+
     public Double getPlateConfidence() {
         return plateConfidence;
     }
@@ -175,25 +175,5 @@ public class Detection {
             Double plateConfidence
     ) {
         this.plateConfidence = plateConfidence;
-    }
-
-    public Vehicle getVehicle() {
-        return vehicle;
-    }
-
-    public void setVehicle(
-            Vehicle vehicle
-    ) {
-        this.vehicle = vehicle;
-    }
-
-    public Camera getCamera() {
-        return camera;
-    }
-
-    public void setCamera(
-            Camera camera
-    ) {
-        this.camera = camera;
     }
 }

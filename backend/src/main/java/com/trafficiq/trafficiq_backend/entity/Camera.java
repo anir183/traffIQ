@@ -1,23 +1,27 @@
 package com.trafficiq.trafficiq_backend.entity;
 
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "cameras")
 public class Camera {
 
     @Id
+    @Column(
+            name = "camera_id",
+            nullable = false
+    )
     private String cameraId;
 
+    @Column(nullable = false)
     private boolean active = true;
 
     public Camera() {
     }
 
-    public Camera(String cameraId) {
+    public Camera(
+            String cameraId
+    ) {
         this.cameraId = cameraId;
         this.active = true;
     }
@@ -26,7 +30,9 @@ public class Camera {
         return cameraId;
     }
 
-    public void setCameraId(String cameraId) {
+    public void setCameraId(
+            String cameraId
+    ) {
         this.cameraId = cameraId;
     }
 
@@ -34,7 +40,9 @@ public class Camera {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(
+            boolean active
+    ) {
         this.active = active;
     }
 }
