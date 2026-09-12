@@ -1,10 +1,67 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Client } from "@stomp/stompjs";
 import { useAnprEvents } from "../../hooks/useAnprEvents";
 import { anprEventToEntry } from "../../types/ui/adapters";
 import type { VehicleType } from "../../types/traffic";
+import type { AnprEvent, VehicleClass } from "../../types/contract/anprEvent";
 import { useListPageSize } from "../../hooks/useListPageSize";
 import InlineFetchStatus from "../../components/ui/fetch-status";
 import Pagination from "../../components/ui/pagination";
+
+const WS_URL =
+  import.meta.env.VITE_WS_URL ?? "wss://websockettest-kkcj.onrender.com/ws";
+const WS_TOPIC = import.meta.env.VITE_WS_TOPIC ?? "/topic/detections";
+const WS_CONNECT_TIMEOUT_MS = 8_000;
+
+interface WsDetection {
+  id?: string | number;
+  eventId?: string;
+  localTrackId?: number;
+  plateNumber?: string;
+  vehicleType?: string;
+  cameraId?: string;
+  detectedAt?: string;
+  speedKmh?: number;
+  direction?: string;
+  vehicleConfidence?: number;
+  plateConfidence?: number;
+}
+
+function wsDetectionToEvent(raw: WsDetection): AnprEvent {
+  const plateText = raw.plateNumber ?? "";
+  const type = (raw.vehicleType ?? "other").toLowerCase() as VehicleClass;
+  return {
+    event_id: String(
+      raw.eventId ?? raw.id ?? `ws_${Date.now()}_${Math.random()}`,
+    ),
+    event_type: "vehicle_anpr",
+    camera_id: raw.cameraId ?? "—",
+    timestamp: raw.detectedAt ?? new Date().toISOString(),
+    local_track_id: Number(raw.localTrackId ?? 0),
+    vehicle: {
+      type,
+      type_confidence: Number(raw.vehicleConfidence ?? 0),
+      bbox: [0, 0, 0, 0],
+    },
+    plate: {
+      text: plateText,
+      confidence: Math.round((raw.plateConfidence ?? 0) * 100),
+      format_valid: true,
+      state_code: plateText.slice(0, 2).toUpperCase(),
+      state_auto_corrected: false,
+    },
+    speed: {
+      value_kmh: Number(raw.speedKmh ?? 0),
+      estimated: true,
+      direction: raw.direction ?? "unknown",
+    },
+  };
+}
+
+function wsMessageToEvents(payload: unknown): AnprEvent[] {
+  const list = Array.isArray(payload) ? payload : [payload];
+  return list.map((item) => wsDetectionToEvent(item as WsDetection));
+}
 
 const TYPE_STYLE: Record<
   VehicleType,
@@ -32,11 +89,80 @@ const TYPE_STYLE: Record<
   },
 };
 
+type FeedSource = "connecting" | "live" | "mock";
+
 function AnprLog() {
-  const { items, loading, error, refetch } = useAnprEvents();
-  const entries = items.map(anprEventToEntry);
+  const mockFeed = useAnprEvents();
+  const [source, setSource] = useState<FeedSource>("connecting");
+  const [liveItems, setLiveItems] = useState<AnprEvent[]>([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    let active = true;
+
+    const fallBackToMock = () => {
+      if (!active) return;
+      setSource((prev) => (prev === "live" ? prev : "mock"));
+    };
+
+    const client = new Client({
+      brokerURL: WS_URL,
+      reconnectDelay: 5_000,
+
+      onConnect: () => {
+        if (!active) return;
+        setSource("live");
+
+        client.subscribe(WS_TOPIC, (message) => {
+          try {
+            const events = wsMessageToEvents(JSON.parse(message.body));
+            if (events.length === 0) return;
+            setLiveItems((prev) => [...events, ...prev].slice(0, 200));
+          } catch (err) {
+            console.error("Failed to parse detection message:", err);
+          }
+        });
+      },
+
+      onStompError: (frame) => {
+        console.error("STOMP error:", frame);
+        fallBackToMock();
+      },
+
+      onWebSocketError: (evt) => {
+        console.error("WebSocket error:", evt);
+        fallBackToMock();
+      },
+    });
+
+    client.activate();
+
+    const timeoutId = window.setTimeout(() => {
+      if (!client.connected) fallBackToMock();
+    }, WS_CONNECT_TIMEOUT_MS);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+      void client.deactivate();
+    };
+  }, []);
+
+  const isLive = source === "live";
+  const items = isLive ? liveItems : mockFeed.items;
+  const loading = isLive ? false : mockFeed.loading;
+  const error = isLive ? null : mockFeed.error;
+
+  const refetch = () => {
+    if (isLive) {
+      setPage(1);
+    } else {
+      mockFeed.refetch();
+    }
+  };
+
+  const entries = items.map(anprEventToEntry);
 
   const filtered = entries.filter((e) =>
     e.vehicleNumber.toLowerCase().includes(search.toLowerCase()),
@@ -67,6 +193,33 @@ function AnprLog() {
           value={search}
           onChange={(e) => handleSearch(e.target.value)}
         />
+        {source === "live" ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+            title="Live detections via WebSocket"
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live
+          </span>
+        ) : source === "mock" ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+            title="WebSocket unavailable — showing mock/rest data"
+          >
+            Mock
+          </span>
+        ) : (
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+            </span>
+            Connecting
+          </span>
+        )}
       </div>
 
       <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden">
