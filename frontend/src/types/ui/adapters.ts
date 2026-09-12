@@ -79,29 +79,14 @@ export function toLocaleString(value: number): string {
   return value.toLocaleString();
 }
 
-// export function anprEventToEntry(event: AnprEvent): AnprEntry {
-//   return {
-//     id: event.event_id,
-//     time: formatUtcTime(event.timestamp),
-//     vehicleNumber: event.plate.text,
-//     camera: event.camera_id,
-//     vehicleType: vehicleClassToUi(event.vehicle.type),
-//     confidence: Math.round(event.plate.confidence),
-//   };
-// }
-
 export function anprEventToEntry(event: AnprEvent): AnprEntry {
-  // Convert backend "CAR" to "car" to match your VehicleClass types
-  const normalizedType = event.vehicleType.toLowerCase() as VehicleClass;
-
   return {
-    id: event.eventId,
-    time: formatUtcTime(event.detectedAt), 
-    vehicleNumber: event.plateNumber,
-    camera: event.cameraId,
-    vehicleType: vehicleClassToUi(normalizedType),
-    // Assuming backend sends 0.94, multiply by 100 for the UI percentage
-    confidence: Math.round(event.plateConfidence * 100),
+    id: event.event_id,
+    time: formatUtcTime(event.timestamp),
+    vehicleNumber: event.plate.text,
+    camera: event.camera_id,
+    vehicleType: vehicleClassToUi(event.vehicle.type),
+    confidence: Math.round(event.plate.confidence),
   };
 }
 
@@ -162,18 +147,10 @@ export function criticalIncidentCounts(
   };
 }
 
-// export function activeAlerts(alerts: Alert[], max: number): Alert[] {
-//   return alerts
-//     .filter((alert) => alert.status === "active")
-//     .sort((a, b) => b.detected_at.localeCompare(a.detected_at))
-//     .slice(0, max);
-// }
-
 export function activeAlerts(alerts: Alert[], max: number): Alert[] {
   return alerts
     .filter((alert) => alert.status === "active")
-    // Safe sort: fall back to empty string if detected_at is undefined
-    .sort((a, b) => (b.detected_at || "").localeCompare(a.detected_at || ""))
+    .sort((a, b) => b.detected_at.localeCompare(a.detected_at))
     .slice(0, max);
 }
 
@@ -342,67 +319,25 @@ export interface DetectionRow {
   confidence: number;
 }
 
-// export function vehicleToDetections(
-//   detections: AnprEvent[],
-//   locationOf: (cameraId: string) => string = () => "",
-// ): DetectionRow[] {
-//   return [...detections]
-//     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-//     .map((event) => ({
-//       id: event.event_id,
-//       time: formatUtcTime(event.timestamp),
-//       camera: event.camera_id,
-//       location: locationOf(event.camera_id),
-//       speed: Math.round(event.speed.value_kmh),
-//       confidence: Math.round(event.plate.confidence),
-//     }));
-// }
-
-// export function vehicleToDetections(
-//   detections: AnprEvent[],
-//   locationOf: (cameraId: string) => string = () => "",
-// ): DetectionRow[] {
-//   return [...detections]
-//     // Sort using the new detectedAt field
-//     .sort((a, b) => b.detectedAt.localeCompare(a.detectedAt)) 
-//     .map((event) => ({
-//       id: event.eventId,
-//       time: formatUtcTime(event.detectedAt),
-//       camera: event.cameraId,
-//       location: locationOf(event.cameraId),
-//       speed: Math.round(event.speedKmh), 
-//       // Assuming backend sends 0.94, multiply by 100 for the UI percentage
-//       confidence: Math.round(event.plateConfidence * 100),
-//     }));
-// }
-
 export function vehicleToDetections(
   detections: AnprEvent[],
   locationOf: (cameraId: string) => string = () => "",
 ): DetectionRow[] {
   return [...detections]
-    // Safe sort: fall back to empty string if detectedAt is undefined
-    .sort((a, b) => (b.detectedAt || "").localeCompare(a.detectedAt || "")) 
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .map((event) => ({
-      id: event.eventId,
-      time: formatUtcTime(event.detectedAt || ""),
-      camera: event.cameraId,
-      location: locationOf(event.cameraId),
-      speed: Math.round(event.speedKmh || 0), 
-      confidence: Math.round((event.plateConfidence || 0) * 100),
+      id: event.event_id,
+      time: formatUtcTime(event.timestamp),
+      camera: event.camera_id,
+      location: locationOf(event.camera_id),
+      speed: Math.round(event.speed.value_kmh),
+      confidence: Math.round(event.plate.confidence),
     }));
 }
 
-// export function trajectoryPath(points: TrajectoryPoint[]): [number, number][] {
-//   return [...points]
-//     .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-//     .map((point) => [point.longitude, point.latitude]);
-// }
-
 export function trajectoryPath(points: TrajectoryPoint[]): [number, number][] {
   return [...points]
-    // Safe sort: fall back to empty string if timestamp is undefined
-    .sort((a, b) => (a.timestamp || "").localeCompare(b.timestamp || ""))
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
     .map((point) => [point.longitude, point.latitude]);
 }
 

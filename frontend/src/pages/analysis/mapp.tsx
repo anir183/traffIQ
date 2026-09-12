@@ -89,10 +89,11 @@ function MapModeSwitcher({ mode, onChange }: MapModeSwitcherProps) {
           type="button"
           onClick={() => onChange(item.id)}
           aria-pressed={mode === item.id}
-          className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${mode === item.id
-            ? "bg-blue-500 text-white shadow-sm"
-            : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-            }`}
+          className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            mode === item.id
+              ? "bg-blue-500 text-white shadow-sm"
+              : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          }`}
         >
           {item.label}
         </button>
@@ -390,8 +391,9 @@ function StatusPill({
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
         )}
         <span
-          className={`relative inline-flex h-2 w-2 rounded-full ${loading ? "bg-blue-500" : "bg-emerald-500"
-            }`}
+          className={`relative inline-flex h-2 w-2 rounded-full ${
+            loading ? "bg-blue-500" : "bg-emerald-500"
+          }`}
         />
       </span>
       {statusText}
@@ -494,7 +496,7 @@ function TomTomTrafficView() {
           applyMode(map.mapLibreMap, modeRef.current);
         }
       })
-      .catch(() => { });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
