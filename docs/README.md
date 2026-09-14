@@ -50,16 +50,16 @@ historical traffic insights.
 
 ## Index
 
-| Topic        | Link              |
-| ------------ | ----------------- |
-| Architecture | ./Architecture.md |
-| Technologies | ./Technologies.md |
-| Edge         | ./Edge.md         |
-| Backend      | ./Backend.md      |
-| Frontend     | ./Frontend.md     |
-| InterOp      | ./InterOp.md      |
-| Hardware     | ./Hardware.md     |
-| Budget       | ./Budget.md       |
+| Topic        | Link                    |
+| ------------ | ----------------------- |
+| Architecture | [Go](./Architecture.md) |
+| Technologies | [Go](./Technologies.md) |
+| Edge         | [Go](./Edge.md)         |
+| Backend      | [Go](./Backend.md)      |
+| Frontend     | [Go](./Frontend.md)     |
+| InterOp      | [Go](./InterOp.md)      |
+| Hardware     | [Go](./Hardware.md)     |
+| Budget       | [Go](./Budget.md)       |
 
 ## Features
 

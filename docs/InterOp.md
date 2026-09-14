@@ -41,21 +41,21 @@ The system is divided into four major levels.
 ``` text
 ┌─────────────────────────────────────────────┐
 │                 GIS DASHBOARD               │
-│       Visualization / Investigation          │
+│       Visualization / Investigation         │
 └───────────────────────▲─────────────────────┘
                         │ API / WebSocket
 ┌───────────────────────┴─────────────────────┐
-│                GLOBAL BACKEND                │
-│      City-wide correlation and analytics     │
+│                GLOBAL BACKEND               │
+│      City-wide correlation and analytics    │
 └───────────────────────▲─────────────────────┘
                         │ Regional Data
 ┌───────────────────────┴─────────────────────┐
-│               REGIONAL BACKEND               │
-│ Validation / Identity / Trajectories / Data  │
+│               REGIONAL BACKEND              │
+│ Validation / Identity / Trajectories / Data │
 └───────────────────────▲─────────────────────┘
                         │ Structured Events
 ┌───────────────────────┴─────────────────────┐
-│                  AI LAYER                    │
+│                  AI LAYER                   │
 │ Detection / Tracking / ANPR / Movement      │
 └───────────────────────▲─────────────────────┘
                         │ Video
@@ -130,19 +130,19 @@ Conceptually:
 │ Frame Processing                            │
 │   │                                         │
 │   ▼                                         │
-│ Vehicle Detection ─────► Vehicle Tracking  │
-│   │                              │           │
-│   ▼                              │           │
-│ Plate Detection                 │           │
-│   │                              │           │
-│   ▼                              │           │
-│ Plate Recognition               │           │
-│   │                              │           │
-│   └──────────────┬───────────────┘           │
-│                  ▼                           │
+│ Vehicle Detection ─────► Vehicle Tracking   │
+│   │                              │          │
+│   ▼                              │          │
+│ Plate Detection                  │          │
+│   │                              │          │
+│   ▼                              │          │
+│ Plate Recognition                │          │
+│   │                              │          │
+│   └──────────────┬───────────────┘          │
+│                  ▼                          │
 │          Speed / Direction                  │
-│                  │                           │
-│                  ▼                           │
+│                  │                          │
+│                  ▼                          │
 │          Structured Event                   │
 └─────────────────────────────────────────────┘
 ```
@@ -223,31 +223,31 @@ The complete camera-to-event pipeline is:
 │       │                                     │
 │       ▼                                     │
 │  Vehicle Detection ──────► Vehicle Tracking │
-│       │                         │           │
-│       ▼                         │           │
-│  Plate Detection               │           │
-│       │                         │           │
-│       ▼                         │           │
-│  ┌─────────────────────────┐   │           │
-│  │ Plate Recognition       │   │           │
-│  │                         │   │           │
-│  │ Raw / Enhanced / SR     │   │           │
-│  │        ↓                │   │           │
-│  │ Character Segmentation  │   │           │
-│  │        ↓                │   │           │
-│  │ Character Models        │   │           │
-│  │        ↓                │   │           │
-│  │ Confidence Ranking      │   │           │
-│  │        ↓                │   │           │
-│  │ Top 3 Plate Candidates  │   │           │
-│  └────────────┬────────────┘   │           │
-│               │                │           │
-│               └───────┬────────┘           │
-│                       ▼                    │
-│              Speed / Direction             │
-│                       │                    │
-│                       ▼                    │
-│              Structured Event              │
+│       │                        │            │
+│       ▼                        │            │
+│  Plate Detection               │            │
+│       │                        │            │
+│       ▼                        │            │
+│  ┌─────────────────────────┐   │            │
+│  │ Plate Recognition       │   │            │
+│  │                         │   │            │
+│  │ Raw / Enhanced / SR     │   │            │
+│  │        ↓                │   │            │
+│  │ Character Segmentation  │   │            │
+│  │        ↓                │   │            │
+│  │ Character Models        │   │            │
+│  │        ↓                │   │            │
+│  │ Confidence Ranking      │   │            │
+│  │        ↓                │   │            │
+│  │ Top 3 Plate Candidates  │   │            │
+│  └────────────┬────────────┘   │            │
+│               │                │            │
+│               └───────┬────────┘            │
+│                       ▼                     │
+│              Speed / Direction              │
+│                       │                     │
+│                       ▼                     │
+│              Structured Event               │
 └───────────────────────┬─────────────────────┘
                         │
                         │ EVENTS
@@ -1427,17 +1427,17 @@ contract remains stable.
 │  Vehicle Detection ──────► Vehicle Tracking │
 │       │                         │           │
 │       ▼                         │           │
-│  Plate Detection               │           │
+│  Plate Detection                │           │
 │       │                         │           │
 │       ▼                         │           │
-│  Plate Recognition             │           │
+│  Plate Recognition              │           │
 │       │                         │           │
 │       └───────────┬─────────────┘           │
 │                   ▼                         │
 │            Speed / Direction                │
 │                   │                         │
 │                   ▼                         │
-│           Structured Event                 │
+│           Structured Event                  │
 └───────────────────┬─────────────────────────┘
                     │
                     │ EVENTS
@@ -1478,7 +1478,7 @@ contract remains stable.
 │      ├── Traffic Flow                       │
 │      ├── OD Matrix                          │
 │      ├── Bottleneck Detection               │
-│      ├── Heatmaps                            │
+│      ├── Heatmaps                           │
 │      └── Historical Trends                  │
 │                                             │
 │  Alert Engine                               │
