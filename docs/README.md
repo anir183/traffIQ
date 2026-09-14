@@ -50,16 +50,18 @@ historical traffic insights.
 
 ## Index
 
-| Topic        | Link                    |
-| ------------ | ----------------------- |
-| Architecture | [Go](./Architecture.md) |
-| Technologies | [Go](./Technologies.md) |
-| Edge         | [Go](./Edge.md)         |
-| Backend      | [Go](./Backend.md)      |
-| Frontend     | [Go](./Frontend.md)     |
-| InterOp      | [Go](./InterOp.md)      |
-| Hardware     | [Go](./Hardware.md)     |
-| Budget       | [Go](./Budget.md)       |
+| Topic          | Link                      |
+| -------------- | ------------------------- |
+| Architecture   | [Go](./Architecture.md)   |
+| Technologies   | [Go](./Technologies.md)   |
+| Edge           | [Go](./Edge.md)           |
+| AI Training    | [Go](./AI-Training.md)    |
+| Backend        | [Go](./Backend.md)        |
+| Specifications | [Go](./Specifications.md) |
+| Frontend       | [Go](./Frontend.md)       |
+| InterOp        | [Go](./InterOp.md)        |
+| Hardware       | [Go](./Hardware.md)       |
+| Budget         | [Go](./Budget.md)         |
 
 ## Features
 
