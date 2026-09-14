@@ -528,8 +528,8 @@ These observations can be combined.
                 │ Evidence Aggregation  │
                 │                       │
                 │ Per-character scores  │
-                │ Cross-input agreement  │
-                │ Image quality          │
+                │ Cross-input agreement │
+                │ Image quality         │
                 └───────────┬───────────┘
                             │
                             ▼
@@ -537,9 +537,9 @@ These observations can be combined.
                             │
                   ┌─────────┼─────────┐
                   ▼         ▼         ▼
-                #1        #2        #3
+                 #1         #2        #3
              WB12AB1234 WB12A81234 WB12AB123A
-               0.94       0.67       0.41
+                0.94       0.67       0.41
                             │
                             ▼
                    Plate Recognition Event
@@ -764,7 +764,7 @@ Vehicle Region
 Plate Detection   Movement
      │               │
      ▼               ├── Position
-ANPR               ├── Speed
+    ANPR             ├── Speed
      │               └── Direction
      │
      └───────────────┐
@@ -1223,9 +1223,9 @@ The most important boundary in the architecture is the observation interface.
                   │
                   │ VehicleObservation
                   ▼
-          ┌─────────────────┐
-          │ Regional Backend│
-          └─────────────────┘
+          ┌──────────────────┐
+          │ Regional Backend │
+          └──────────────────┘
 ```
 
 The backend should not depend on how an observation was produced.
@@ -1270,10 +1270,10 @@ This separation allows the AI pipeline and backend to be developed independently
 # 28. Final Edge Data Flow
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                       CAMERA LAYER                          │
-│                                                             │
-│     Camera 1              Camera 2              Camera N    │
+┌────────────────────────────────────────────────────────────┐
+│                       CAMERA LAYER                         │
+│                                                            │
+│     Camera 1              Camera 2              Camera N   │
 └────────┬────────────────────┬────────────────────┬─────────┘
          │                    │                    │
          └────────────────────┼────────────────────┘

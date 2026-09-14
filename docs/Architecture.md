@@ -25,9 +25,9 @@ The architecture is divided into four major layers:
 │              REGIONAL BACKEND                 │
 │                                               │
 │ Ingestion → Validation → Identity Resolution  │
-│                  ↓                            │
+│                     ↓                         │
 │          Regional Trajectories                │
-│                  ↓                            │
+│                     ↓                         │
 │           Regional Analytics                  │
 └───────────────────────┬───────────────────────┘
                         │
@@ -216,13 +216,13 @@ A city-wide deployment can be divided into multiple geographic regions.
 ```text
                          CITY-WIDE CCTV / ANPR NETWORK
                                       │
-                 ┌────────────────────┼────────────────────┐
-                 │                    │                    │
-                 ▼                    ▼                    ▼
-          REGION A               REGION B               REGION C
-        100 Cameras            100 Cameras            100 Cameras
-                 │                    │                    │
-                 ▼                    ▼                    ▼
+                 ┌────────────────────┼───────────────────────┐
+                 │                    │                       │
+                 ▼                    ▼                       ▼
+          REGION A               REGION B                  REGION C
+        100 Cameras            100 Cameras               100 Cameras
+                 │                    │                       │
+                 ▼                    ▼                       ▼
           ┌───────────┐          ┌───────────┐          ┌───────────┐
           │ EDGE AI   │          │ EDGE AI   │          │ EDGE AI   │
           │   UNIT    │          │   UNIT    │          │   UNIT    │
