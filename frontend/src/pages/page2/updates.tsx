@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Client } from "@stomp/stompjs";
-import { useAnprEvents } from "../../hooks/useAnprEvents";
 import { anprEventToEntry } from "../../types/ui/adapters";
 import type { VehicleType } from "../../types/traffic";
 import type { AnprEvent, VehicleClass } from "../../types/contract/anprEvent";
@@ -89,10 +88,9 @@ const TYPE_STYLE: Record<
   },
 };
 
-type FeedSource = "connecting" | "live" | "mock";
+type FeedSource = "connecting" | "live" | "disconnected";
 
 function AnprLog() {
-  const mockFeed = useAnprEvents();
   const [source, setSource] = useState<FeedSource>("connecting");
   const [liveItems, setLiveItems] = useState<AnprEvent[]>([]);
   const [search, setSearch] = useState("");
@@ -101,9 +99,9 @@ function AnprLog() {
   useEffect(() => {
     let active = true;
 
-    const fallBackToMock = () => {
+    const handleDisconnect = () => {
       if (!active) return;
-      setSource((prev) => (prev === "live" ? prev : "mock"));
+      setSource("disconnected");
     };
 
     const client = new Client({
@@ -127,19 +125,19 @@ function AnprLog() {
 
       onStompError: (frame) => {
         console.error("STOMP error:", frame);
-        fallBackToMock();
+        handleDisconnect();
       },
 
       onWebSocketError: (evt) => {
         console.error("WebSocket error:", evt);
-        fallBackToMock();
+        handleDisconnect();
       },
     });
 
     client.activate();
 
     const timeoutId = window.setTimeout(() => {
-      if (!client.connected) fallBackToMock();
+      if (!client.connected) handleDisconnect();
     }, WS_CONNECT_TIMEOUT_MS);
 
     return () => {
@@ -149,17 +147,12 @@ function AnprLog() {
     };
   }, []);
 
-  const isLive = source === "live";
-  const items = isLive ? liveItems : mockFeed.items;
-  const loading = isLive ? false : mockFeed.loading;
-  const error = isLive ? null : mockFeed.error;
+  const items = liveItems;
+  const loading = source === "connecting";
+  const error = source === "disconnected" ? new Error("Disconnected from live feed") : null;
 
   const refetch = () => {
-    if (isLive) {
-      setPage(1);
-    } else {
-      mockFeed.refetch();
-    }
+    setPage(1);
   };
 
   const entries = items.map(anprEventToEntry);
@@ -204,12 +197,12 @@ function AnprLog() {
             </span>
             Live
           </span>
-        ) : source === "mock" ? (
+        ) : source === "disconnected" ? (
           <span
-            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400"
-            title="WebSocket unavailable — showing mock/rest data"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-500 dark:bg-red-900/20 dark:text-red-400"
+            title="WebSocket disconnected"
           >
-            Mock
+            Disconnected
           </span>
         ) : (
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
@@ -275,7 +268,7 @@ function AnprLog() {
             hasData={filtered.length > 0}
             error={error}
             onRetry={refetch}
-            emptyNote="No vehicles found."
+            emptyNote="SEARCHING FOR LATEST DATA......"
           />
         )}
       </div>

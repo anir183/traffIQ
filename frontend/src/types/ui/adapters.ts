@@ -296,14 +296,12 @@ export function vehicleToDetails(
   fallbackDetections = 0,
 ): VehicleDetailRow[] {
   const detections = vehicle.detection_count ?? fallbackDetections;
+  const makeModel = [vehicle.make, vehicle.model].filter(Boolean).join(" ");
+
   return [
     { label: "Plate Number", value: vehicle.plate_text },
     { label: "Vehicle Type", value: vehicleTypeLabel(vehicle.vehicle_type) },
-    {
-      label: "Make / Model",
-      value:
-        [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "\u2014",
-    },
+    ...(makeModel ? [{ label: "Make / Model", value: makeModel }] : []),
     { label: "First Seen", value: formatUtcDateTime(vehicle.first_seen) },
     { label: "Last Seen", value: formatUtcDateTime(vehicle.last_seen) },
     { label: "Total Detections", value: String(detections) },

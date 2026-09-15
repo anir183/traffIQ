@@ -3,9 +3,9 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
+  Rectangle,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -233,11 +233,16 @@ function CongestedSegmentsCard() {
                 cursor={cursorFill}
                 formatter={(value) => `${value} congestion`}
               />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {segments.map((_, i) => (
-                  <Cell key={i} fill={colors[i % colors.length]} />
-                ))}
-              </Bar>
+              <Bar
+                dataKey="value"
+                shape={(props: any) => (
+                  <Rectangle
+                    {...props}
+                    fill={colors[props.index % colors.length]}
+                    radius={[0, 4, 4, 0]}
+                  />
+                )}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
