@@ -11,6 +11,7 @@ import com.trafficiq.matcher.VehicleMatchingService;
 import com.trafficiq.repository.CameraRepository;
 import com.trafficiq.repository.DetectionRepository;
 import com.trafficiq.repository.VehicleRepository;
+import com.trafficiq.websocket.LiveDetectionPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,23 +24,29 @@ public class MlDetectionService {
     private final VehicleRepository vehicleRepository;
     private final DetectionRepository detectionRepository;
     private final VehicleMatchingService vehicleMatchingService;
+    private final LiveDetectionPublisher liveDetectionPublisher;
 
     public MlDetectionService(
             CameraRepository cameraRepository,
             VehicleRepository vehicleRepository,
             DetectionRepository detectionRepository,
-            VehicleMatchingService vehicleMatchingService) {
+            VehicleMatchingService vehicleMatchingService,
+            LiveDetectionPublisher liveDetectionPublisher) {
 
         this.cameraRepository = cameraRepository;
         this.vehicleRepository = vehicleRepository;
         this.detectionRepository = detectionRepository;
         this.vehicleMatchingService = vehicleMatchingService;
+        this.liveDetectionPublisher = liveDetectionPublisher;
     }
 
     @Transactional
     public MlIngestResponse ingestDetection(
             MlDetectionRequest request) {
 
+        /*
+         * Prevent duplicate ML events.
+         */
         if (detectionRepository
                 .findByEventId(request.getEventId())
                 .isPresent()) {
@@ -50,7 +57,9 @@ public class MlDetectionService {
             );
         }
 
-
+        /*
+         * Find the backend-configured camera.
+         */
         Camera camera = cameraRepository
                 .findByCameraCode(request.getCameraId())
                 .orElseThrow(() ->
@@ -60,6 +69,9 @@ public class MlDetectionService {
                         )
                 );
 
+        /*
+         * Convert ML timestamp to Instant.
+         */
         Instant detectedAt;
 
         try {
@@ -75,14 +87,20 @@ public class MlDetectionService {
             );
         }
 
-
+        /*
+         * Find an existing global vehicle
+         * or prepare a new vehicle.
+         */
         VehicleMatchingService.MatchResult matchResult =
                 vehicleMatchingService.findVehicle(
                         request,
                         camera
                 );
 
-
+        /*
+         * No valid plate candidate means
+         * the detection cannot be accepted.
+         */
         if (matchResult.getVehicle() == null) {
 
             throw new IllegalArgumentException(
@@ -94,6 +112,9 @@ public class MlDetectionService {
         Vehicle vehicle =
                 matchResult.getVehicle();
 
+        /*
+         * New vehicle.
+         */
         if (matchResult.isNewVehicle()) {
 
             vehicle.setFirstSeen(detectedAt);
@@ -106,7 +127,8 @@ public class MlDetectionService {
                     Instant.now()
             );
 
-            vehicle = vehicleRepository.save(vehicle);
+            vehicle =
+                    vehicleRepository.save(vehicle);
 
         } else {
 
@@ -122,6 +144,7 @@ public class MlDetectionService {
             vehicle.setTotalDetections(
                     currentCount + 1
             );
+
 
             if (vehicle.getVehicleType()
                     == VehicleType.UNKNOWN) {
@@ -155,6 +178,7 @@ public class MlDetectionService {
                 detectedAt
         );
 
+
         if (matchResult.getMatchedCandidate() != null) {
 
             detection.setPlateNumber(
@@ -172,9 +196,7 @@ public class MlDetectionService {
             );
         }
 
-        /*
-         * Vehicle information from ML.
-         */
+
         detection.setVehicleType(
                 convertVehicleType(
                         request.getVehicle().getType()
@@ -204,16 +226,37 @@ public class MlDetectionService {
             );
         }
 
+
         detection.setLocalTrackId(
                 request.getLocalTrackId()
         );
+
 
         detection.setCreatedAt(
                 Instant.now()
         );
 
+
         detection =
                 detectionRepository.save(detection);
+
+
+        liveDetectionPublisher.publish(
+                vehicle.getId(),
+                detection.getEventId(),
+                detection.getLocalTrackId(),
+                detection.getPlateNumber(),
+                detection.getVehicleType().name(),
+                camera.getCameraCode(),
+                detection.getDetectedAt().toString(),
+                detection.getSpeedKmh(),
+                detection.getDirection() != null
+                        ? detection.getDirection().name()
+                        : "UNKNOWN",
+                detection.getVehicleConfidence(),
+                detection.getPlateConfidence()
+        );
+
 
         return new MlIngestResponse(
                 "Detection ingested successfully",

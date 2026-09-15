@@ -28,4 +28,13 @@ public class DetectionController {
 
         return ResponseEntity.ok(detections);
     }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<DetectionResponse>> getRecentDetections() {
+
+        List<DetectionResponse> detections =
+                detectionService.getRecentDetections();
+
+        return ResponseEntity.ok(detections);
+    }
 }
