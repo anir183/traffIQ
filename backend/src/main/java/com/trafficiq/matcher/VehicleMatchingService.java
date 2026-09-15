@@ -11,8 +11,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class VehicleMatchingService {
@@ -34,14 +37,30 @@ public class VehicleMatchingService {
             MlDetectionRequest request,
             Camera currentCamera) {
 
+
+        if (currentCamera == null) {
+            return new MatchResult(
+                    null,
+                    null,
+                    false
+            );
+        }
+
+        if (currentCamera.getSequenceOrder() == null
+                || currentCamera.getSequenceOrder() <= 0) {
+
+            return new MatchResult(
+                    null,
+                    null,
+                    false
+            );
+        }
+
+
         List<MlDetectionRequest.PlateCandidate> candidates =
                 getValidCandidates(request);
 
-        /*
-         * No valid plate candidates.
-         *
-         * We cannot safely identify the global vehicle.
-         */
+
         if (candidates.isEmpty()) {
             return new MatchResult(
                     null,
@@ -50,25 +69,29 @@ public class VehicleMatchingService {
             );
         }
 
-        Instant currentTime =
-                Instant.parse(request.getTimestamp());
+        Instant currentTime;
+
+        try {
+            currentTime =
+                    Instant.parse(request.getTimestamp());
+
+        } catch (Exception exception) {
+
+
+            return new MatchResult(
+                    null,
+                    null,
+                    false
+            );
+        }
+
 
         Instant fromTime =
                 currentTime.minus(
                         Duration.ofMinutes(matchingWindowMinutes)
                 );
 
-        /*
-         * Check candidates in confidence order.
-         *
-         * Example:
-         *
-         * WB45 -> 95%
-         * WB23 -> 90%
-         * WB12 -> 80%
-         *
-         * First successful match wins.
-         */
+
         for (MlDetectionRequest.PlateCandidate candidate : candidates) {
 
             String plateNumber =
@@ -82,12 +105,9 @@ public class VehicleMatchingService {
                             currentTime
                     );
 
-            /*
-             * If this candidate was found in a previous
-             * camera within the allowed time window,
-             * reuse that vehicle.
-             */
+
             if (!previousDetections.isEmpty()) {
+
 
                 Detection previousDetection =
                         previousDetections.get(0);
@@ -95,20 +115,18 @@ public class VehicleMatchingService {
                 Vehicle existingVehicle =
                         previousDetection.getVehicle();
 
-                return new MatchResult(
-                        existingVehicle,
-                        candidate,
-                        false
-                );
+
+                if (existingVehicle != null) {
+
+                    return new MatchResult(
+                            existingVehicle,
+                            candidate,
+                            false
+                    );
+                }
             }
         }
 
-        /*
-         * No candidate matched any previous camera
-         * within the allowed time window.
-         *
-         * Therefore create a new global vehicle.
-         */
         MlDetectionRequest.PlateCandidate bestCandidate =
                 candidates.get(0);
 
@@ -131,26 +149,64 @@ public class VehicleMatchingService {
         );
     }
 
+
+
     private List<MlDetectionRequest.PlateCandidate> getValidCandidates(
             MlDetectionRequest request) {
 
-        if (request.getPlate() == null
+        if (request == null
+                || request.getPlate() == null
                 || request.getPlate().getCandidates() == null) {
 
             return List.of();
         }
 
-        return request.getPlate()
-                .getCandidates()
-                .stream()
-                .filter(this::isValidCandidate)
-                .sorted(
-                        Comparator.comparing(
-                                MlDetectionRequest.PlateCandidate::getConfidence
-                        ).reversed()
-                )
-                .toList();
+        Map<String, MlDetectionRequest.PlateCandidate> uniqueCandidates =
+                new HashMap<>();
+
+        for (MlDetectionRequest.PlateCandidate candidate
+                : request.getPlate().getCandidates()) {
+
+            if (!isValidCandidate(candidate)) {
+                continue;
+            }
+
+            String normalizedPlate =
+                    normalizePlate(candidate.getData());
+
+
+            if (normalizedPlate.isBlank()) {
+                continue;
+            }
+
+            MlDetectionRequest.PlateCandidate existing =
+                    uniqueCandidates.get(normalizedPlate);
+
+
+            if (existing == null
+                    || candidate.getConfidence()
+                    > existing.getConfidence()) {
+
+                uniqueCandidates.put(
+                        normalizedPlate,
+                        candidate
+                );
+            }
+        }
+
+        List<MlDetectionRequest.PlateCandidate> result =
+                new ArrayList<>(uniqueCandidates.values());
+
+
+        result.sort(
+                Comparator.comparing(
+                        MlDetectionRequest.PlateCandidate::getConfidence
+                ).reversed()
+        );
+
+        return result;
     }
+
 
     private boolean isValidCandidate(
             MlDetectionRequest.PlateCandidate candidate) {
@@ -159,29 +215,46 @@ public class VehicleMatchingService {
             return false;
         }
 
+
         if (candidate.getData() == null
                 || candidate.getData().isBlank()) {
+
             return false;
         }
+
 
         if (candidate.getConfidence() == null) {
             return false;
         }
 
-        if (Boolean.FALSE.equals(candidate.getFormatValid())) {
+        if (candidate.getConfidence() < 0.0
+                || candidate.getConfidence() > 1.0) {
+
+            return false;
+        }
+
+        if (Boolean.FALSE.equals(
+                candidate.getFormatValid())) {
+
             return false;
         }
 
         return true;
     }
 
+
     private String normalizePlate(String plate) {
+
+        if (plate == null) {
+            return "";
+        }
 
         return plate
                 .trim()
                 .toUpperCase()
                 .replaceAll("\\s+", "");
     }
+
 
     private VehicleType convertVehicleType(String type) {
 
@@ -190,18 +263,24 @@ public class VehicleMatchingService {
         }
 
         try {
+
             return VehicleType.valueOf(
                     type.trim().toUpperCase()
             );
+
         } catch (IllegalArgumentException exception) {
+
             return VehicleType.UNKNOWN;
         }
     }
 
+
     public static class MatchResult {
 
         private final Vehicle vehicle;
+
         private final MlDetectionRequest.PlateCandidate matchedCandidate;
+
         private final boolean newVehicle;
 
         public MatchResult(
