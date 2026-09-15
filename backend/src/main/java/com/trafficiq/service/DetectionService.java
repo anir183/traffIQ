@@ -53,6 +53,18 @@ public class DetectionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<DetectionResponse> getRecentDetections() {
+
+        List<Detection> detections =
+                detectionRepository
+                        .findTop15ByOrderByDetectedAtDesc();
+
+        return detections.stream()
+                .map(this::toDetectionResponse)
+                .toList();
+    }
+
     private DetectionResponse toDetectionResponse(
             Detection detection) {
 

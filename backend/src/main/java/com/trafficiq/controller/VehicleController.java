@@ -1,6 +1,7 @@
 package com.trafficiq.controller;
 
 import com.trafficiq.dto.response.TrajectoryPoint;
+import com.trafficiq.dto.response.TrajectoryResponse;
 import com.trafficiq.dto.response.VehicleResponse;
 import com.trafficiq.service.VehicleService;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,9 @@ public class VehicleController {
 
     private final VehicleService vehicleService;
 
-    public VehicleController(VehicleService vehicleService) {
+    public VehicleController(
+            VehicleService vehicleService) {
+
         this.vehicleService = vehicleService;
     }
 
@@ -23,7 +26,9 @@ public class VehicleController {
             @RequestParam String plateNumber) {
 
         VehicleResponse response =
-                vehicleService.findByPlateNumber(plateNumber);
+                vehicleService.findByPlateNumber(
+                        plateNumber
+                );
 
         return ResponseEntity.ok(response);
     }
@@ -36,5 +41,17 @@ public class VehicleController {
                 vehicleService.getTrajectory(vehicleId);
 
         return ResponseEntity.ok(trajectory);
+    }
+
+    @GetMapping("/trajectory")
+    public ResponseEntity<TrajectoryResponse> getTrajectoryByPlateNumber(
+            @RequestParam String plateNumber) {
+
+        TrajectoryResponse response =
+                vehicleService.getTrajectoryByPlateNumber(
+                        plateNumber
+                );
+
+        return ResponseEntity.ok(response);
     }
 }

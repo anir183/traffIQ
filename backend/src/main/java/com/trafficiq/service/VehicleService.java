@@ -1,6 +1,7 @@
 package com.trafficiq.service;
 
 import com.trafficiq.dto.response.TrajectoryPoint;
+import com.trafficiq.dto.response.TrajectoryResponse;
 import com.trafficiq.dto.response.VehicleResponse;
 import com.trafficiq.entity.Detection;
 import com.trafficiq.entity.Vehicle;
@@ -76,6 +77,49 @@ public class VehicleService {
         return detections.stream()
                 .map(this::toTrajectoryPoint)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TrajectoryResponse getTrajectoryByPlateNumber(
+            String plateNumber) {
+
+        String normalizedPlate =
+                normalizePlate(plateNumber);
+
+        if (normalizedPlate.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Plate number must not be blank"
+            );
+        }
+
+        Vehicle vehicle =
+                vehicleRepository
+                        .findByPlateNumber(normalizedPlate)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Vehicle not found: "
+                                                + normalizedPlate
+                                )
+                        );
+
+        VehicleResponse vehicleResponse =
+                toVehicleResponse(vehicle);
+
+        List<Detection> detections =
+                detectionRepository
+                        .findByVehicleIdOrderByDetectedAtAsc(
+                                vehicle.getId()
+                        );
+
+        List<TrajectoryPoint> trajectory =
+                detections.stream()
+                        .map(this::toTrajectoryPoint)
+                        .toList();
+
+        return new TrajectoryResponse(
+                vehicleResponse,
+                trajectory
+        );
     }
 
     private VehicleResponse toVehicleResponse(
