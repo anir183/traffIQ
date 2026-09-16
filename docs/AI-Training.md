@@ -27,40 +27,40 @@ The complete vehicle-processing pipeline is approximately:
                 ┌─────────────┴─────────────┐
                 │                           │
                 ▼                           ▼
-         Vehicle Attributes            Plate Detection
-         • Type                         │
-         • Color                        ▼
-                                   Plate Tracking
-                                         │
-                                         ▼
-                                  Plate Image Crop
-                                         │
-                                         ▼
-                                  Image Enhancement
-                                         │
-                                         ▼
-                                      LPSR
-                                         │
-                                         ▼
-                               Enhanced Plate Frames
-                                         │
-                                         ▼
-                              Character Detection/OCR
-                                         │
-                                         ▼
-                         Character Time-series Matching
-                                         │
-                                         ▼
-                                Final Plate Result
-                                         │
-                ┌────────────────────────┼────────────────────┐
-                │                        │                    │
-                ▼                        ▼                    ▼
-          Speed Estimation        Direction Estimation   Vehicle Metadata
-                │                        │                    │
-                └────────────────────────┼────────────────────┘
-                                         ▼
-                              VehicleObservation
+         Vehicle Attributes          Plate Detection
+         • Type                             │
+         • Color                            ▼
+                                      Plate Tracking
+                                            │
+                                            ▼
+                                     Plate Image Crop
+                                            │
+                                            ▼
+                                     Image Enhancement
+                                            │
+                                            ▼
+                                          LPSR
+                                            │
+                                            ▼
+                                   Enhanced Plate Frames
+                                            │
+                                            ▼
+                                  Character Detection/OCR
+                                            │
+                                            ▼
+                               Character Time-series Matching
+                                            │
+                                            ▼
+                                    Final Plate Result
+                                            │
+                   ┌────────────────────────┼────────────────────┐
+                   │                        │                    │
+                   ▼                        ▼                    ▼
+           Speed Estimation        Direction Estimation   Vehicle Metadata
+                   │                        │                    │
+                   └────────────────────────┼────────────────────┘
+                                            ▼
+                                    VehicleObservation
 ```
 
 The important architectural principle is:
@@ -1568,7 +1568,7 @@ model artifacts
 # 41. End-to-End Training and Deployment Flow
 
 ```text
-                 ANNOTATED DATA
+                ANNOTATED DATA
                        │
                        ▼
               DATA PREPARATION
@@ -1582,10 +1582,10 @@ model artifacts
  Vehicle Models     Plate Models     ANPR Models
        │               │                │
        │               │          ┌─────┴─────┐
-       │               │          │            │
+       │               │          │           │
        │               │         LPSR     Character Model
-       │               │          │            │
-       │               │          └─────┬──────┘
+       │               │          │           │
+       │               │          └─────┬─────┘
        │               │                ▼
        │               │      Time-series Matching
        └───────────────┼────────────────┘
@@ -1624,45 +1624,45 @@ model artifacts
                 │                         │
                 ▼                         ▼
         Vehicle Attributes          Plate Detector
-        • type                       │
-        • color                      ▼
-                                Plate Tracking
-                                      │
-                                      ▼
-                                 Plate Crop
-                                      │
-                                      ▼
-                                   LPSR
-                                      │
-                                      ▼
-                              Character Detector
-                                      │
-                                      ▼
-                              Character Recognition
-                                      │
-                                      ▼
-                         Character Time-series Matching
-                                      │
-                                      ▼
-                              Final Plate Identity
-                                      │
-                 ┌────────────────────┼────────────────────┐
-                 │                    │                    │
-                 ▼                    ▼                    ▼
-           Speed Estimation    Direction Estimation   Attributes
-                 │                    │                    │
-                 └────────────────────┼────────────────────┘
-                                      ▼
-                              Evidence Fusion
-                                      │
-                                      ▼
-                           VehicleObservation
-                                      │
-                                      ▼
-                                 Redpanda
-                                      │
-                                      ▼
-                              traffIQ Backend
+        • type                            │
+        • color                           ▼
+                                    Plate Tracking
+                                          │
+                                          ▼
+                                     Plate Crop
+                                          │
+                                          ▼
+                                        LPSR
+                                          │
+                                          ▼
+                                  Character Detector
+                                          │
+                                          ▼
+                                 Character Recognition
+                                          │
+                                          ▼
+                            Character Time-series Matching
+                                          │
+                                          ▼
+                                  Final Plate Identity
+                                          │
+                     ┌────────────────────┼────────────────────┐
+                     │                    │                    │
+                     ▼                    ▼                    ▼
+              Speed Estimation    Direction Estimation   Attributes
+                     │                    │                    │
+                     └────────────────────┼────────────────────┘
+                                          ▼
+                                   Evidence Fusion
+                                          │
+                                          ▼
+                                 VehicleObservation
+                                          │
+                                          ▼
+                                      Redpanda
+                                          │
+                                          ▼
+                                   traffIQ Backend
 ```
 
 ---

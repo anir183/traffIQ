@@ -214,13 +214,13 @@ The architecture separates **perception**, **correlation**, and **analytics**, a
 A city-wide deployment can be divided into multiple geographic regions.
 
 ```text
-                         CITY-WIDE CCTV / ANPR NETWORK
+                        CITY-WIDE CCTV / ANPR NETWORK
                                       │
                  ┌────────────────────┼───────────────────────┐
                  │                    │                       │
                  ▼                    ▼                       ▼
-          REGION A               REGION B                  REGION C
-        100 Cameras            100 Cameras               100 Cameras
+              REGION A             REGION B                REGION C
+            100 Cameras          100 Cameras             100 Cameras
                  │                    │                       │
                  ▼                    ▼                       ▼
           ┌───────────┐          ┌───────────┐          ┌───────────┐

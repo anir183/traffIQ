@@ -28,7 +28,7 @@ The map should therefore be treated as a primary application surface
 rather than a decorative visualization.
 
 ``` text
-                 CITY TRAFFIC STATE
+                CITY TRAFFIC STATE
                         │
                         ▼
                 ┌──────────────┐
