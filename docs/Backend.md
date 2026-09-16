@@ -289,13 +289,13 @@ A plate recognition result is evidence, not necessarily absolute truth.
                          ▼
                     Identity Score
                          │
-                  ┌──────┼──────┐
-                  ▼      ▼      ▼
-                Match  Uncertain New Vehicle
-                  │      │
-                  ▼      ▼
-               Merge   Retain
-               Track  Candidates
+                ┌────────┼────────────────┐
+                ▼        ▼                ▼
+              Match  Uncertain     New Vehicle
+                │      │
+                ▼      ▼
+             Merge   Retain
+             Track  Candidates
 ```
 
 Identity resolution can use:
@@ -820,14 +820,14 @@ City-wide trajectories enable origin-destination analysis.
                     Group Vehicles
                           │
                           ▼
-                    OD Matrix
+                      OD Matrix
                           │
               ┌───────────┼───────────┐
               ▼           ▼           ▼
            Zone A       Zone B       Zone C
               │           │           │
               └──────┬────┴────┬──────┘
-                     ▼          ▼
+                     ▼         ▼
                  Flow Counts / Percentages
                           │
                           ▼
@@ -1348,9 +1348,9 @@ This is especially important in a distributed deployment because a system can re
     Global Correlation     Global Storage
           │                     │
           ▼                     ├── Vehicles
-    City-wide Identity         ├── Trajectories
-          │                    ├── Alerts
-          ▼                    └── Aggregates
+    City-wide Identity          ├── Trajectories
+          │                     ├── Alerts
+          ▼                     └── Aggregates
     City-wide Trajectory
           │
      ┌────┼──────────────┐
