@@ -25,6 +25,7 @@ import {
   segmentCongestionData,
   segmentSpeedData,
 } from "../../types/ui/adapters";
+import { useAnimatedCounter } from "../../hooks/useAnimatedCounter";
 
 const CONGESTION_COLORS = [
   "#0f172a",
@@ -121,6 +122,10 @@ function NetworkOverviewCard() {
     metrics?.congestion_score ?? 0,
     heroSize,
   );
+  const animatedCongestionScore = useAnimatedCounter(
+    metrics?.congestion_score ?? 2,
+    1000
+  );
 
   if (!metrics) {
     return (
@@ -156,7 +161,7 @@ function NetworkOverviewCard() {
             className="font-bold leading-none"
             style={{ fontSize: `${congestionFontSize}px` }}
           >
-            {metrics.congestion_score}
+            {animatedCongestionScore}
           </span>
           <span className="flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${congestionTone}`} />
