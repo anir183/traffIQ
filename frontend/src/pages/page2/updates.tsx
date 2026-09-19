@@ -5,26 +5,54 @@
 // import type { AnprEvent, VehicleClass } from "../../types/contract/anprEvent";
 // import { useListPageSize } from "../../hooks/useListPageSize";
 // import InlineFetchStatus from "../../components/ui/fetch-status";
-// import Pagination from "../../components/ui/pagination";
+// import Pagination from
+// ============================================================
+// WEBSOCKET RESPONSE
+// ============================================================
+
+interface WsDetection {
+
+  id?: string | number;
+
+  eventId?: string;
+
+  localTrackId?: number;
+
+  plateNumber?: string;
+
+  vehicleType?: string;
+
+  cameraId?: string;
+
+  detectedAt?: string;
+
+  speedKmh?: number;
+
+  direction?: string;
+
+  vehicleConfidence?: number;
+
+  plateConfidence?: number;
+} "../../components/ui/pagination";
 
 // const WS_URL =
 //   import.meta.env.VITE_WS_URL ?? "wss://traffiq-backend-k1tw.onrender.com/ws";
 // const WS_TOPIC = import.meta.env.VITE_WS_TOPIC ?? "/topic/live-detections";
 // const WS_CONNECT_TIMEOUT_MS = 8_000;
 
-// interface WsDetection {
-//   id?: string | number;
-//   eventId?: string;
-//   localTrackId?: number;
-//   plateNumber?: string;
-//   vehicleType?: string;
-//   cameraId?: string;
-//   detectedAt?: string;
-//   speedKmh?: number;
-//   direction?: string;
-//   vehicleConfidence?: number;
-//   plateConfidence?: number;
-// }
+interface WsDetection {
+  id?: string | number;
+  eventId?: string;
+  localTrackId?: number;
+  plateNumber?: string;
+  vehicleType?: string;
+  cameraId?: string;
+  detectedAt?: string;
+  speedKmh?: number;
+  direction?: string;
+  vehicleConfidence?: number;
+  plateConfidence?: number;
+}
 
 // function wsDetectionToEvent(raw: WsDetection): AnprEvent {
 //   const plateText = raw.plateNumber ?? "";
@@ -307,10 +335,7 @@ import type {
   VehicleClass,
 } from "../../types/contract/anprEvent";
 
-import { useListPageSize } from "../../hooks/useListPageSize";
 import InlineFetchStatus from "../../components/ui/fetch-status";
-import Pagination from "../../components/ui/pagination";
-
 
 // ============================================================
 // BACKEND CONNECTION
@@ -335,88 +360,35 @@ const RECENT_API_URL =
 
 
 // Maximum number of detections displayed
-const MAX_RECENT_DETECTIONS = 15;
+const MAX_RECENT_DETECTIONS = 200;
 
 
 // ============================================================
 // WEBSOCKET RESPONSE
 // ============================================================
 
-interface WsDetection {
-
-  id?: string | number;
-
-  eventId?: string;
-
-  localTrackId?: number;
-
-  plateNumber?: string;
-
-  vehicleType?: string;
-
-  cameraId?: string;
-
-  detectedAt?: string;
-
-  speedKmh?: number;
-
-  direction?: string;
-
-  vehicleConfidence?: number;
-
-  plateConfidence?: number;
-}
-
-
-// ============================================================
-// REST RESPONSE
-// ============================================================
 
 interface RecentDetection {
-
   detectionId?: number;
-
   eventId?: string;
-
   vehicleId?: number;
-
   plateNumber?: string;
-
   camera?: string;
-
-  cameraId?: string;
-
   detectedAt?: string;
-
   vehicleType?: string;
-
   vehicleConfidence?: number;
-
   plateConfidence?: number;
-
   speedKmh?: number;
-
   direction?: string;
 }
-
-
-// ============================================================
-// WEBSOCKET JSON → FRONTEND ANPR EVENT
-// ============================================================
 
 function wsDetectionToEvent(
   raw: WsDetection
 ): AnprEvent {
-
-  const plateText =
-    raw.plateNumber ?? "";
-
+  const plateText = raw.plateNumber ?? "";
 
   const type =
-    (
-      raw.vehicleType ?? "other"
-    ).toLowerCase() as VehicleClass;
-
+    (raw.vehicleType ?? "other").toLowerCase() as VehicleClass;
 
   return {
 
@@ -446,17 +418,11 @@ function wsDetectionToEvent(
       type,
 
       type_confidence:
-        Number(
-          raw.vehicleConfidence ?? 0
-        ),
+        Number(raw.vehicleConfidence ?? 0),
 
-      bbox: [
-        0,
-        0,
-        0,
-        0,
-      ],
+      bbox: [0, 0, 0, 0],
     },
+
 
     plate: {
 
@@ -481,6 +447,7 @@ function wsDetectionToEvent(
       state_auto_corrected:
         false,
     },
+
 
     speed: {
 
@@ -554,13 +521,9 @@ function recentDetectionToEvent(
       `recent_${Date.now()}_${Math.random()}`
     ),
 
-    event_type:
-      "vehicle_anpr",
+    event_type: "vehicle_anpr",
 
-    camera_id:
-      raw.camera ??
-      raw.cameraId ??
-      "—",
+    camera_id: raw.camera ?? "—",
 
     timestamp:
       raw.detectedAt ??
@@ -638,8 +601,7 @@ const TYPE_STYLE: Record<
     bg: string;
     fg: string;
     icon: string;
-  }
-> = {
+  }> = {
 
   Car: {
 
@@ -665,6 +627,7 @@ const TYPE_STYLE: Record<
       "🚚",
   },
 
+
   Bike: {
 
     bg:
@@ -676,6 +639,7 @@ const TYPE_STYLE: Record<
     icon:
       "🏍️",
   },
+
 
   Bus: {
 
@@ -719,10 +683,6 @@ function AnprLog() {
 
   const [search, setSearch] =
     useState("");
-
-
-  const [page, setPage] =
-    useState(1);
 
 
   // ==========================================================
@@ -924,11 +884,6 @@ function AnprLog() {
                 );
 
 
-                // New detection should
-                // return to page 1.
-
-                setPage(1);
-
               } catch (error) {
 
                 console.error(
@@ -1063,8 +1018,8 @@ function AnprLog() {
   const error =
     source === "disconnected"
       ? new Error(
-          "Disconnected from live feed"
-        )
+        "Disconnected from live feed"
+      )
       : null;
 
 
@@ -1074,7 +1029,7 @@ function AnprLog() {
 
   const refetch = () => {
 
-    setPage(1);
+    // No-op
 
   };
 
@@ -1083,69 +1038,11 @@ function AnprLog() {
   // CONVERT TO UI ENTRIES
   // ==========================================================
 
-  const entries =
-    items.map(
-      anprEventToEntry
-    );
+  const entries = items.map(anprEventToEntry);
 
-
-  // ==========================================================
-  // SEARCH
-  // ==========================================================
-
-  const filtered =
-    entries.filter(
-      (entry) =>
-        entry.vehicleNumber
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
-    );
-
-
-  // ==========================================================
-  // PAGINATION
-  // ==========================================================
-
-  const {
-    containerRef,
-    rowsPerPage,
-  } =
-    useListPageSize<HTMLDivElement>(
-      { min: 5 },
-      filtered.length
-    );
-
-
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        filtered.length /
-          rowsPerPage
-      )
-    );
-
-
-  const safePage =
-    Math.min(
-      page,
-      totalPages
-    );
-
-
-  const startIndex =
-    (safePage - 1) *
-    rowsPerPage;
-
-
-  const pageItems =
-    filtered.slice(
-      startIndex,
-      startIndex +
-        rowsPerPage
-    );
+  const filtered = entries.filter((e) =>
+    e.vehicleNumber.toLowerCase().includes(search.toLowerCase()),
+  );
 
 
   // ==========================================================
@@ -1158,8 +1055,6 @@ function AnprLog() {
       setSearch(
         value
       );
-
-      setPage(1);
 
     };
 
@@ -1215,9 +1110,11 @@ function AnprLog() {
 
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
 
+
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
             </span>
+
 
             Live
 
@@ -1251,11 +1148,14 @@ function AnprLog() {
 
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
 
+
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
 
             </span>
 
+
             Connecting
+
 
           </span>
 
@@ -1270,17 +1170,17 @@ function AnprLog() {
 
       <div
 
-        ref={containerRef}
-
-        className="min-h-0 flex-1 overflow-hidden"
+        className="min-h-0 flex-1 overflow-y-auto"
 
       >
 
-        <table className="w-full table-fixed border-collapse text-sm">
+        <table className="w-full table-fixed border-collapse text-sm relative">
 
-          <thead>
+
+          <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
 
             <tr className="border-b border-slate-100 text-left text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+
 
               <th className="w-6 px-2 py-2.5 font-medium" />
 
@@ -1326,7 +1226,7 @@ function AnprLog() {
 
           <tbody>
 
-            {pageItems.map(
+            {filtered.map(
               (entry) => (
 
                 <tr
@@ -1411,6 +1311,7 @@ function AnprLog() {
 
           </tbody>
 
+
         </table>
 
 
@@ -1423,11 +1324,7 @@ function AnprLog() {
           <InlineFetchStatus
 
             loading={loading}
-
-            hasData={
-              filtered.length > 0
-            }
-
+            hasData={filtered.length > 0}
             error={error}
 
             onRetry={refetch}
@@ -1446,48 +1343,20 @@ function AnprLog() {
 
 
       {/* ====================================================
-          PAGINATION
+          STATUS FOOTER
           ==================================================== */}
 
       {filtered.length > 0 && (
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-800">
 
+
           <span className="text-slate-400 dark:text-slate-500">
 
-            Showing{" "}
-
-            {startIndex + 1}
-
-            –
-
-            {startIndex +
-              pageItems.length}
-
-            {" "}of{" "}
-
-            {filtered.length}
+            Showing {filtered.length} recent detection{filtered.length === 1 ? "" : "s"}
 
           </span>
 
-
-          {totalPages > 1 && (
-
-            <Pagination
-
-              page={safePage}
-
-              totalPages={
-                totalPages
-              }
-
-              onChange={
-                setPage
-              }
-
-            />
-
-          )}
 
         </div>
 

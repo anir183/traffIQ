@@ -17,7 +17,7 @@
 //     let active = true;
 //     setLoading(true);
 //     setError(null);
-    
+
 //     const url = new URL(HISTORY_API_URL);
 //     url.searchParams.append("plate", plate);
 
@@ -126,7 +126,7 @@
 //           </div>
 
 //           <div className="my-4 border-t border-slate-100 dark:border-slate-800" />
-          
+
 //           <h4 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
 //             VEHICLE HISTORY DETAILS
 //           </h4>
@@ -359,33 +359,33 @@ export default function VehicleInformation({ plate }: { plate: string }) {
   // Vehicle information displayed at top
   const vehicleDetails = vehicle
     ? [
-        {
-          label: "Plate Number",
-          value: vehicle.plateNumber ?? "—"
-        },
-        {
-          label: "Vehicle Type",
-          value: vehicle.vehicleType ?? "—"
-        },
-        {
-          label: "First Seen",
-          value: formatDate(
-            vehicle.firstSeen
-          )
-        },
-        {
-          label: "Last Seen",
-          value: formatDate(
-            vehicle.lastSeen
-          )
-        },
-        {
-          label: "Total Detections",
-          value: String(
-            vehicle.totalDetections ?? 0
-          )
-        }
-      ]
+      {
+        label: "Plate Number",
+        value: vehicle.plateNumber ?? "—"
+      },
+      {
+        label: "Vehicle Type",
+        value: vehicle.vehicleType ?? "—"
+      },
+      {
+        label: "First Seen",
+        value: formatDate(
+          vehicle.firstSeen
+        )
+      },
+      {
+        label: "Last Seen",
+        value: formatDate(
+          vehicle.lastSeen
+        )
+      },
+      {
+        label: "Total Detections",
+        value: String(
+          vehicle.totalDetections ?? 0
+        )
+      }
+    ]
     : [];
 
   return (
@@ -517,8 +517,8 @@ export default function VehicleInformation({ plate }: { plate: string }) {
                           typeof val === "object"
                             ? JSON.stringify(val)
                             : String(
-                                val ?? "—"
-                              );
+                              val ?? "—"
+                            );
 
                         return (
 
