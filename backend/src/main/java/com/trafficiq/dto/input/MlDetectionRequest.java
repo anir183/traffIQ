@@ -20,12 +20,6 @@ public class MlDetectionRequest {
     @NotBlank
     private String timestamp;
 
-    @NotNull
-    private Double latitude;
-
-    @NotNull
-    private Double longitude;
-
     private Long localTrackId;
 
     @Valid
@@ -77,22 +71,6 @@ public class MlDetectionRequest {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public Double getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(Double latitude) {
-        this.latitude = latitude;
-    }
-
-    public Double getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(Double longitude) {
-        this.longitude = longitude;
     }
 
     public Long getLocalTrackId() {
@@ -300,8 +278,11 @@ public class MlDetectionRequest {
     public static class BoundingBox {
 
         private Double x1;
+
         private Double y1;
+
         private Double x2;
+
         private Double y2;
 
         public BoundingBox() {

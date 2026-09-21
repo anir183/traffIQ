@@ -8,14 +8,19 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
-public interface DetectionRepository extends JpaRepository<Detection, Long> {
+import org.springframework.data.domain.Pageable;
+public interface DetectionRepository
+        extends JpaRepository<Detection, Long> {
 
     Optional<Detection> findByEventId(String eventId);
 
-    List<Detection> findByVehicleIdOrderByDetectedAtAsc(Long vehicleId);
+    List<Detection> findByVehicleIdOrderByDetectedAtAsc(
+            Long vehicleId
+    );
 
-    List<Detection> findByCameraIdOrderByDetectedAtDesc(Long cameraId);
+    List<Detection> findByCameraIdOrderByDetectedAtDesc(
+            Long cameraId
+    );
 
     List<Detection> findByPlateNumberOrderByDetectedAtDesc(
             String plateNumber
@@ -37,4 +42,6 @@ public interface DetectionRepository extends JpaRepository<Detection, Long> {
             @Param("fromTime") Instant fromTime,
             @Param("toTime") Instant toTime
     );
+    List<Detection> findByOrderByDetectedAtDesc(Pageable pageable);
+    List<Detection> findTop15ByOrderByDetectedAtDesc();
 }
