@@ -1,6 +1,7 @@
-> [!IMPORTANT]
-> This is the state of the project when the prototype was submitted to SIH 2026
-> Second Internal Selection Round in TMSL, and we unfortunately knocked out.
+> [!NOTE]
+> This branch has been cleaned up for development. Refer to previous iterations
+> at [SIH Internal Round 1](https://github.com/anir183/traffIQ/tree/sih-internal-r1)
+> and [SIH Internal Round 2](https://github.com/anir183/traffIQ/tree/sih-internal-r2)
 
 # traffIQ
 
@@ -52,100 +53,7 @@ historical traffic insights.
                  └──────────────────┘
 ```
 
-## Index
-
-| Topic          | Link                      |
-| -------------- | ------------------------- |
-| Architecture   | [Go](./Architecture.md)   |
-| Technologies   | [Go](./Technologies.md)   |
-| Edge           | [Go](./Edge.md)           |
-| AI Training    | [Go](./AI-Training.md)    |
-| Backend        | [Go](./Backend.md)        |
-| Specifications | [Go](./Specifications.md) |
-| Frontend       | [Go](./Frontend.md)       |
-| InterOp        | [Go](./InterOp.md)        |
-| Hardware       | [Go](./Hardware.md)       |
-| Budget         | [Go](./Budget.md)         |
-
-## Features
-
-* Multi-camera vehicle tracking
-* Automatic Number Plate Recognition (ANPR)
-* Cross-camera vehicle correlation
-* Vehicle trajectory reconstruction
-* Traffic density and congestion analysis
-* Vehicle speed and direction estimation
-* Origin-destination and traffic-flow analysis
-* Real-time traffic visualization
-* Blacklisted vehicle and route-anomaly alerts
-* GIS-based traffic analytics
-
-## Architecture
-
-```text
-CCTV / ANPR Cameras
-        │
-        ▼
-   AI Processing
-        │
-        ▼
-Vehicle Observations
-        │
-        ▼
-    Redpanda
-        │
-        ▼
- Regional / Global Backend
-        │
-   ┌────┼────┐
-   ▼    ▼    ▼
-  DB  Analytics Alerts
-        │
-        ▼
-   Web GIS Dashboard
-```
-
-The initial architecture uses **centralized AI processing**, allowing existing camera infrastructure to be used without dedicated hardware at every camera.
-
-A future deployment can move the AI pipeline to dedicated **edge-compute nodes attached to individual cameras**, reducing video bandwidth and central GPU requirements.
-
-## Technology Stack (Tentative)
-
-| Component        | Technology                |
-| ---------------- | ------------------------- |
-| Backend          | Java, Spring Boot         |
-| Computer Vision  | Python, OpenCV, GStreamer |
-| Object Detection | YOLO                      |
-| Object Tracking  | ByteTrack / BoT-SORT      |
-| ANPR / OCR       | OCR pipeline              |
-| Event Streaming  | Redpanda                  |
-| Database         | PostgreSQL, PostGIS       |
-| Cache            | Valkey                    |
-| Frontend         | React, TypeScript         |
-| Maps             | MapLibre GL JS            |
-| API              | REST, WebSocket           |
-| Infrastructure   | Docker Compose            |
-| Cloud            | AWS                       |
-
-## Repository Structure (Tentative)
-
-```text
-traffIQ/
-├── backend/           # Backend services
-├── edge/              # Computer-vision pipeline
-├── simulator/         # Synthetic camera/vehicle data
-├── frontend/          # Web GIS dashboard
-├── infrastructure/   # Deployment configuration
-├── data/              # Datasets and sample media
-├── docs/              # Project documentation
-├── scripts/           # Utility scripts
-├── compose.yaml
-├── README.md
-└── LICENSE
-```
-
 ## Vision
 
 **traffIQ turns camera observations into city-wide vehicle intelligence which
 provides actionable insights and data with spatiotemporal significance.**
-
