@@ -1,0 +1,13 @@
+export type ErrorCode =
+  | "PLATE_NOT_FOUND"
+  | "CAMERA_NOT_FOUND"
+  | "NO_DATA"
+  | "INVALID_PARAMS"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "RATE_LIMITED"
+  | "INTERNAL"
+  | "INVALID_CREDENTIALS"
+  | "EMAIL_TAKEN"
+  | "PASSWORD_WEAK"
+  | "NOT_FOUND";
