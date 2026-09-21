@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> This is the state of the project when the prototype was submitted to SIH 2026
+> Second Internal Selection Round in TMSL, and we unfortunately knocked out.
+
 # traffIQ
 
 ### City-Wide AI Engine for Multi-Camera Vehicle Tracking & Traffic Analytics
