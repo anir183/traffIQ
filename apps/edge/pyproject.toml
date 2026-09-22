@@ -1,0 +1,30 @@
+[project]
+name = "traffiq"
+version = "0.0.0"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "pydantic-settings>=2.15.0",
+    "uvicorn[standard]>=0.53.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]
+
+[project.scripts]
+traffiq = "traffiq.main:run"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src/traffiq"]
+sources = ["src"]
+
+[tool.fastapi]
+entrypoint = "traffiq.api.app:app"
